@@ -4,13 +4,14 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:user_auth_crudd10/pages/home_page.dart';
 import 'package:user_auth_crudd10/pages/others/profile_page.dart';
+import 'package:user_auth_crudd10/pages/screens/MyPlanPage.dart';
+import 'package:user_auth_crudd10/pages/screens/chatFrutia/ChatHistoryPage.dart';
 import 'package:user_auth_crudd10/pages/screens/chatFrutia/ChatScreenFrutia.dart';
-import 'package:user_auth_crudd10/pages/screens/fields_screen.dart';
-import 'package:user_auth_crudd10/pages/screens/planPro/MembershipDetailsScreen.dart';
+import 'package:user_auth_crudd10/pages/screens/planPro/ProgressPage.dart';
 import 'package:user_auth_crudd10/services/BonoService.dart';
 import 'package:user_auth_crudd10/services/storage_service.dart';
 import 'package:user_auth_crudd10/utils/constantes.dart';
-import 'package:user_auth_crudd10/utils/colors.dart'; // Import FrutiaColors
+import 'package:user_auth_crudd10/utils/colors.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int initialIndex;
@@ -41,9 +42,9 @@ class _BottomNavBarState extends State<BottomNavBar> {
     // Lista fija de páginas
     _pages = [
       HomePage(),
-      ChatScreenFrutia(),
-      FieldsScreen(),
-      MembershipDetailsScreen(),
+      ChatHistoryPage(), // Al tocar "Frutia", irá a ChatHistoryPage
+      MyPlanPage(),
+      ProgressPage(),
       ProfilePage(),
     ];
   }
@@ -51,104 +52,124 @@ class _BottomNavBarState extends State<BottomNavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: Container(
-        color: FrutiaColors.primaryBackground, // White background
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: FrutiaColors.accent, // Red for selected items
-              unselectedItemColor:
-                  FrutiaColors.disabledText, // Gray for unselected items
-              backgroundColor:
-                  FrutiaColors.primaryBackground, // White background
-              currentIndex: _selectedIndex,
-              onTap: _changeIndex,
-              elevation: 0,
-              iconSize: 22,
-              selectedFontSize: 12,
-              unselectedFontSize: 12,
-              showSelectedLabels: true,
-              showUnselectedLabels: true,
-              items: [
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.home,
-                      color: _selectedIndex == 0
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Menú",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.message,
-                      color: _selectedIndex == 1
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Frutia",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.food_bank,
-                      color: _selectedIndex == 2
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Mi Plan",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.lock,
-                      color: _selectedIndex == 3
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Plan PRO",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.person,
-                      color: _selectedIndex == 4
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Perfil",
-                ),
-              ],
-            ),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFD1B3), // Naranja suave
+              Color(0xFFFF6F61), // Rojo cálido
+            ],
           ),
+        ),
+        child: Stack(
+          children: [
+            _pages[_selectedIndex],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                color: FrutiaColors.primaryBackground,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: BottomNavigationBar(
+                      type: BottomNavigationBarType.fixed,
+                      selectedItemColor: FrutiaColors.accent,
+                      unselectedItemColor: FrutiaColors.disabledText,
+                      backgroundColor: FrutiaColors.primaryBackground,
+                      currentIndex: _selectedIndex,
+                      onTap: _changeIndex,
+                      elevation: 0,
+                      iconSize: 22,
+                      selectedFontSize: 12,
+                      unselectedFontSize: 12,
+                      showSelectedLabels: true,
+                      showUnselectedLabels: true,
+                      items: [
+                        BottomNavigationBarItem(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.person,
+                              color: _selectedIndex == 0
+                                  ? FrutiaColors.accent
+                                  : FrutiaColors.disabledText,
+                              size: 22,
+                            ),
+                          ),
+                          label: "Perfil",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.message,
+                              color: _selectedIndex == 1
+                                  ? FrutiaColors.accent
+                                  : FrutiaColors.disabledText,
+                              size: 22,
+                            ),
+                          ),
+                          label: "Frutia",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.food_bank,
+                              color: _selectedIndex == 2
+                                  ? FrutiaColors.accent
+                                  : FrutiaColors.disabledText,
+                              size: 22,
+                            ),
+                          ),
+                          label: "Mi Plan",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.auto_graph_outlined,
+                              color: _selectedIndex == 3
+                                  ? FrutiaColors.accent
+                                  : FrutiaColors.disabledText,
+                              size: 22,
+                            ),
+                          ),
+                          label: "Progreso",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.book,
+                              color: _selectedIndex == 4
+                                  ? FrutiaColors.accent
+                                  : FrutiaColors.disabledText,
+                              size: 22,
+                            ),
+                          ),
+                          label: "Nosotros",
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// Plan Feature Widget (kept for context, no changes needed)
+// Plan Feature Widget (sin cambios)
 class PlanFeature extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -175,18 +196,19 @@ class PlanFeature extends StatelessWidget {
   }
 }
 
-// Animated Button Widget with Icon (kept for context, no changes needed)
+// Animated Button Widget (sin cambios)
 class AnimatedButton extends StatefulWidget {
   final String text;
   final IconData icon;
   final Color color;
   final VoidCallback onPressed;
 
-  const AnimatedButton(
-      {required this.text,
-      required this.icon,
-      required this.color,
-      required this.onPressed});
+  const AnimatedButton({
+    required this.text,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
   _AnimatedButtonState createState() => _AnimatedButtonState();

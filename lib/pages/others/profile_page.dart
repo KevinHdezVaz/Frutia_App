@@ -1,502 +1,107 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:user_auth_crudd10/auth/auth_check.dart';
-import 'package:user_auth_crudd10/auth/auth_service.dart';
-import 'package:user_auth_crudd10/pages/InvitationsScreen.dart';
-import 'package:user_auth_crudd10/pages/VerifyProfilePage.dart';
-import 'package:user_auth_crudd10/pages/WalletScreen.dart';
-import 'package:user_auth_crudd10/pages/others/StatsTab.dart';
-import 'package:user_auth_crudd10/pages/screens/Equipos/NotificationHistoryScreen.dart';
-import 'package:user_auth_crudd10/pages/screens/Equipos/detalle_equipo.screen.dart';
-import 'package:user_auth_crudd10/pages/screens/Equipos/lista_equipos_screen.dart';
-import 'package:user_auth_crudd10/pages/screens/UpdateProfileScreen.dart';
-import 'package:user_auth_crudd10/pages/screens/bookin/booking_screen.dart';
-import 'package:user_auth_crudd10/services/equipo_service.dart';
-import 'package:user_auth_crudd10/utils/colors.dart'; // Import FrutiaColors
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:user_auth_crudd10/utils/colors.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  final _authService = AuthService();
-  Map<String, dynamic>? userData;
-  final _equipoService = EquipoService();
-  bool _isLoadingEquipos = false;
-  int _invitacionesPendientes = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserProfile();
-  }
-
-  Future<void> _loadUserProfile() async {
-    try {
-      final response = await _authService.getProfile();
-      setState(() => userData = response);
-    } catch (e) {
-      print('Error cargando perfil: $e');
-    }
-  }
-
-  Future<void> _logout() async {
-    try {
-      showDialog(
-          context: context,
-          builder: (context) =>
-              const Center(child: CircularProgressIndicator()));
-      await _authService.logout();
-      Navigator.of(context, rootNavigator: true).pop();
-      Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => AuthCheckMain()),
-          (route) => false);
-    } catch (e) {
-      Navigator.of(context, rootNavigator: true).pop();
-      print('Error cerrando sesión: $e');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: FrutiaColors.primaryBackground,
-        body: userData == null
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  ProfilePic(userData: userData),
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Card(
-                      elevation: 10,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: LinearGradient(
-                            colors: [
-                              FrutiaColors.accent.withOpacity(0.7),
-                              FrutiaColors.secondaryText.withOpacity(0.3),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 50, vertical: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.person,
-                                      color: Colors.white, size: 24),
-                                  const SizedBox(width: 20),
-                                  Text(
-                                    userData!['name'] ?? '',
-                                    style: GoogleFonts.inter(
-                                      color: FrutiaColors.primaryBackground,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (userData!['is_verified'] == true)
-                                    const SizedBox(width: 8),
-                                  if (userData!['is_verified'] == true)
-                                    const Icon(
-                                      Icons.verified,
-                                      color: Colors.white,
-                                      size: 30,
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  const Icon(Icons.email,
-                                      color: Colors.white, size: 24),
-                                  const SizedBox(width: 20),
-                                  Text(
-                                    userData!['email'] ?? '',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 13, color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Center(
-                                child: userData!['is_verified'] == true
-                                    ? SizedBox.shrink()
-                                    : ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  VerifyProfilePage(),
-                                            ),
-                                          ).then((_) {
-                                            _loadUserProfile();
-                                          });
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: FrutiaColors.accent,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 17, vertical: 12),
-                                        ),
-                                        child: Text(
-                                          'Verificar Perfil',
-                                          style: GoogleFonts.inter(
-                                            color:
-                                                FrutiaColors.primaryBackground,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  TabBar(
-                    tabs: [
-                      Tab(
-                          child: Text('PROGRESO',
-                              style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: FrutiaColors.accent))),
-                      Tab(
-                          child: Text('OPCIONES',
-                              style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: FrutiaColors.accent))),
-                    ],
-                    indicatorColor: FrutiaColors.accent,
-                    labelColor: FrutiaColors.accent,
-                    unselectedLabelColor: FrutiaColors.secondaryText,
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        // OPCIONES Tab: Calorie Chart, Weight Goal, Daily Streak
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Calorie Burn Chart
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: FrutiaColors.secondaryBackground,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: FrutiaColors.shadow,
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Calorías Quemadas',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: FrutiaColors.accent,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    SizedBox(
-                                      height: 150,
-                                      child: CustomPaint(
-                                        painter: CalorieChartPainter(),
-                                        child: Container(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              // Weight Goal
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: FrutiaColors.secondaryBackground,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: FrutiaColors.shadow,
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Peso Meta',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: FrutiaColors.accent,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'Meta: 70 kg (Progreso: 65 kg)',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 16,
-                                        color: FrutiaColors.primaryText,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    LinearProgressIndicator(
-                                      value: 0.65, // 65% progress
-                                      backgroundColor:
-                                          FrutiaColors.secondaryText,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          FrutiaColors.success),
-                                      minHeight: 10,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              // Daily Streak
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: FrutiaColors.secondaryBackground,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: FrutiaColors.shadow,
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Racha Diaria',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: FrutiaColors.accent,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Image.asset(
-                                      'assets/images/daily_streak.png', // Placeholder image
-                                      height: 100,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // ESTADÍSTICAS Tab: Menu Items
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              _buildMenuItem(
-                                icon: Icons.person,
-                                title: 'Editar Perfil',
-                                subtitle: 'Datos de usuario',
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            UpdateProfileScreen())),
-                              ),
-                              _buildMenuItem(
-                                icon: Icons.notifications,
-                                title: 'Invitaciones',
-                                subtitle: 'Ver invitaciones',
-                                count: _invitacionesPendientes,
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            InvitationsScreen())),
-                              ),
-                              _buildMenuItem(
-                                icon: Icons.monetization_on,
-                                title: 'Monedero',
-                                subtitle: 'Ver mi Monedero',
-                                count: _invitacionesPendientes,
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => WalletScreen())),
-                              ),
-                              _buildMenuItem(
-                                icon: Icons.exit_to_app,
-                                title: 'Cerrar sesión',
-                                subtitle: 'Salir',
-                                onTap: _logout,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    int count = 0,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: FrutiaColors.primaryBackground,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-                color: FrutiaColors.secondaryText.withOpacity(0.2),
-                spreadRadius: 1,
-                blurRadius: 2,
-                offset: const Offset(0, 1))
-          ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFD1B3), // Naranja suave
+              Color(0xFFFF6F61), // Rojo cálido
+            ],
+          ),
         ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(icon, color: FrutiaColors.accent),
-            if (count > 0)
-              Positioned(
-                right: -8,
-                top: -8,
-                child: Container(
-                  padding: EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                      color: FrutiaColors.accent, shape: BoxShape.circle),
-                  constraints: BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Center(
-                    child: Text(count.toString(),
-                        style: TextStyle(
-                            color: FrutiaColors.primaryBackground,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold)),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Imagen de Frutia
+                Center(
+                  child: Image.asset(
+                    'assets/images/fruta22.png', // Placeholder para la imagen de Frutia
+                    height: 200,
+                    fit: BoxFit.contain,
+                  ).animate().fadeIn(duration: 800.ms).scale(
+                      begin: const Offset(0.8, 0.8),
+                      end: const Offset(1.0, 1.0),
+                      duration: 800.ms,
+                      curve: Curves.easeOut),
+                ),
+                const SizedBox(height: 24),
+
+                // Contenedor de texto
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Card(
+                    elevation: 10,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    color: FrutiaColors.secondaryBackground,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Nosotros',
+                            style: GoogleFonts.lato(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: FrutiaColors.primaryText,
+                            ),
+                          ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Creamos esta app con una idea clara: la nutrición no debería sentirse como una carga, ni depender de planes genéricos que no se adaptan a tu vida. Por eso combinamos ciencia, tecnología e inteligencia artificial para ofrecerte un acompañamiento real, sin fórmulas mágicas, sin promesas vacías, y sin complicarte el día a día.',
+                            style: GoogleFonts.lato(
+                              fontSize: 14,
+                              color: FrutiaColors.secondaryText,
+                            ),
+                          ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Cada cuerpo es distinto, y creemos que tu alimentación debe respetarlo. Por eso, nuestro sistema se adapta a tus metas, tus gustos, tu rutina y hasta tu presupuesto. No importa si entrenas en el gimnasio, juegas fútbol los domingos o simplemente quieres comer mejor sin gastar de más: tu plan es tuyo y evoluciona contigo.',
+                            style: GoogleFonts.lato(
+                              fontSize: 14,
+                              color: FrutiaColors.secondaryText,
+                            ),
+                          ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Nos mueve la idea de que la tecnología puede humanizarse. Por eso nuestra IA, Frutia, no es solo un robot que te lanza datos. Puedes decidir cómo quieres que te trate: motivadora, relajada o directa. Como si tuvieras un nutricionista virtual que sí te entiende.',
+                            style: GoogleFonts.lato(
+                              fontSize: 14,
+                              color: FrutiaColors.secondaryText,
+                            ),
+                          ).animate().fadeIn(delay: 800.ms, duration: 800.ms),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Somos un equipo de nutricionistas, desarrolladores, diseñadores y soñadores, comprometidos con una nutrición accesible, realista y personalizada. Y lo más importante: hecha para durar.',
+                            style: GoogleFonts.lato(
+                              fontSize: 14,
+                              color: FrutiaColors.secondaryText,
+                            ),
+                          ).animate().fadeIn(delay: 1000.ms, duration: 800.ms),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
-      title: Text(title,
-          style: GoogleFonts.inter(
-              color: FrutiaColors.accent,
-              fontSize: 16,
-              fontWeight: FontWeight.w500)),
-      subtitle: Text(subtitle,
-          style: GoogleFonts.inter(
-              fontSize: 14, color: FrutiaColors.secondaryText)),
-      trailing: const Icon(Icons.chevron_right, color: FrutiaColors.accent),
-      onTap: onTap,
-    );
-  }
-}
-
-// Custom Painter for Calorie Chart (Simple Bar Chart)
-class CalorieChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = FrutiaColors.success
-      ..style = PaintingStyle.fill;
-
-    final List<double> data = [
-      200,
-      350,
-      150,
-      400
-    ]; // Sample calorie data (daily)
-    final maxValue = data.reduce((a, b) => a > b ? a : b);
-    final barWidth = size.width / data.length * 0.6;
-    final spacing = size.width / data.length * 0.4;
-
-    for (var i = 0; i < data.length; i++) {
-      final barHeight = (data[i] / maxValue) * (size.height - 20);
-      final left = i * (barWidth + spacing);
-      final rect =
-          Rect.fromLTWH(left, size.height - barHeight, barWidth, barHeight);
-      canvas.drawRect(rect, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class ProfilePic extends StatelessWidget {
-  final Map<String, dynamic>? userData;
-  const ProfilePic({Key? key, required this.userData}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    String? imageUrl = userData != null && userData!['profile_image'] != null
-        ? 'https://proyect.aftconta.mx/storage/${userData!['profile_image']}'
-        : null;
-    return SafeArea(
-      child: SizedBox(
-        height: 115,
-        width: 115,
-        child: Stack(
-          fit: StackFit.expand,
-          clipBehavior: Clip.none,
-          children: [
-            CircleAvatar(
-              backgroundImage: imageUrl != null
-                  ? NetworkImage(imageUrl)
-                  : const AssetImage('assets/icons/jugadore.png')
-                      as ImageProvider,
-              onBackgroundImageError: (exception, stackTrace) =>
-                  print('Error loading image: $exception'),
+                const SizedBox(height: 24),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
