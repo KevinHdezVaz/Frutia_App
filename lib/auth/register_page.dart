@@ -18,14 +18,15 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage>
     with TickerProviderStateMixin {
   bool isObscure = true;
+  bool isObscureConfirm = true; // Estado separado para el campo de confirmación
 
   // Text Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController =
+      TextEditingController(); // Nuevo controlador
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
-  int _weight = 70; // Default weight
-  int _height = 175; // Default height
   final _authService = AuthService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId:
@@ -58,35 +59,12 @@ class _RegisterPageState extends State<RegisterPage>
     _controller.forward();
   }
 
-  void _incrementWeight() {
-    setState(() {
-      _weight++;
-    });
-  }
-
-  void _decrementWeight() {
-    setState(() {
-      if (_weight > 0) _weight--;
-    });
-  }
-
-  void _incrementHeight() {
-    setState(() {
-      _height++;
-    });
-  }
-
-  void _decrementHeight() {
-    setState(() {
-      if (_height > 0) _height--;
-    });
-  }
-
   @override
   void dispose() {
     _controller.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose(); // Dispose del nuevo controlador
     _nameController.dispose();
     _ageController.dispose();
     super.dispose();
@@ -164,6 +142,7 @@ class _RegisterPageState extends State<RegisterPage>
   bool validateRegister() {
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty ||
         _nameController.text.isEmpty ||
         _ageController.text.isEmpty) {
       showErrorSnackBar("Por favor complete todos los campos obligatorios");
@@ -180,6 +159,10 @@ class _RegisterPageState extends State<RegisterPage>
     }
     if (_passwordController.text.length < 6) {
       showErrorSnackBar("La contraseña debe tener al menos 6 caracteres");
+      return false;
+    }
+    if (_passwordController.text != _confirmPasswordController.text) {
+      showErrorSnackBar("Las contraseñas no coinciden");
       return false;
     }
     if (int.tryParse(_ageController.text) == null ||
@@ -208,422 +191,377 @@ class _RegisterPageState extends State<RegisterPage>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                LoginPage(showLoginPage: widget.showLoginPage),
-          ),
-        );
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor:
-            FrutiaColors.primaryBackground, // Solid white background
-        appBar: AppBar(
-          title: const Text("Registro"),
-          titleTextStyle: TextStyle(
-            color: Color(0xFF2D2D2D),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: FrutiaColors.accent),
-            onPressed: widget.showLoginPage,
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFD1B3), // Naranja suave
+              Color(0xFFFF6F61), // Rojo cálido
+            ],
           ),
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                    child: Card(
-                      elevation: 20,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Imagen de la fruta en la parte superior
+              Positioned(
+                top: size.height * 0.05,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    height: 150,
+                    width: 150,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/fruta22.png'),
+                        fit: BoxFit.contain,
                       ),
-                      child: Container(
-                        height: size.height *
-                            0.8, // Increased height to accommodate more fields
-                        width: size.width * 0.9,
-                        padding: EdgeInsets.all(16.0),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(height: 20),
-                              // Welcome Text
-                              Text(
-                                "Bienvenido, Completa tu registro.",
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.lato(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: FrutiaColors.accent,
-                                ),
-                              ),
-                              SizedBox(height: 30),
-                              // Name TextField
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: TextField(
-                                  cursorColor: FrutiaColors.accent,
-                                  controller: _nameController,
-                                  decoration: InputDecoration(
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.secondaryText,
-                                        width: 1.0,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.accent,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    labelText: "Nombre completo",
-                                    labelStyle:
-                                        TextStyle(color: Color(0xFF2D2D2D)),
-                                    prefixIcon: Icon(
-                                      Icons.person,
-                                      color: FrutiaColors.accent,
-                                    ),
-                                    filled: true,
-                                    fillColor: FrutiaColors.primaryBackground,
-                                  ),
-                                  style: TextStyle(color: Color(0xFF2D2D2D)),
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              // Age Field
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: TextField(
-                                  cursorColor: FrutiaColors.accent,
-                                  controller: _ageController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.secondaryText,
-                                        width: 1.0,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.accent,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    labelText: 'Edad',
-                                    labelStyle:
-                                        TextStyle(color: Color(0xFF2D2D2D)),
-                                    prefixIcon: Icon(Icons.calendar_today,
-                                        color: FrutiaColors.accent),
-                                    filled: true,
-                                    fillColor: FrutiaColors.primaryBackground,
-                                  ),
-                                  style: TextStyle(color: Color(0xFF2D2D2D)),
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              // Email TextField
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: TextField(
-                                  cursorColor: FrutiaColors.accent,
-                                  controller: _emailController,
-                                  decoration: InputDecoration(
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.secondaryText,
-                                        width: 1.0,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.accent,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    labelText: "Correo electrónico",
-                                    labelStyle:
-                                        TextStyle(color: Color(0xFF2D2D2D)),
-                                    prefixIcon: Icon(
-                                      Icons.email_outlined,
-                                      color: FrutiaColors.accent,
-                                    ),
-                                    filled: true,
-                                    fillColor: FrutiaColors.primaryBackground,
-                                  ),
-                                  style: TextStyle(color: Color(0xFF2D2D2D)),
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              // Password TextField
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: TextField(
-                                  cursorColor: FrutiaColors.accent,
-                                  controller: _passwordController,
-                                  obscureText: isObscure,
-                                  decoration: InputDecoration(
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.secondaryText,
-                                        width: 1.0,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: FrutiaColors.accent,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    labelText: "Contraseña",
-                                    labelStyle:
-                                        TextStyle(color: Color(0xFF2D2D2D)),
-                                    prefixIcon: Icon(
-                                      Icons.lock_outline,
-                                      color: FrutiaColors.accent,
-                                    ),
-                                    suffixIcon: IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          isObscure = !isObscure;
-                                        });
-                                      },
-                                      icon: Icon(
-                                        isObscure
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                        color: FrutiaColors.accent,
-                                      ),
-                                    ),
-                                    filled: true,
-                                    fillColor: FrutiaColors.primaryBackground,
-                                  ),
-                                  style: TextStyle(color: Color(0xFF2D2D2D)),
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              // Weight Field
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: Row(
+                    ),
+                  ),
+                ),
+              ),
+              // Contenido principal
+              Column(
+                children: [
+                  AppBar(
+                    title: const Text("Registro"),
+                    titleTextStyle: TextStyle(
+                      color: Color(0xFF2D2D2D),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios,
+                          color: Color(0xFFE63946)),
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                LoginPage(showLoginPage: widget.showLoginPage),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 20.0),
+                          child: Card(
+                            elevation: 20,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Container(
+                              height: size.height *
+                                  0.75, // Ajustado para incluir AppBar
+                              width: size.width * 0.9,
+                              padding: EdgeInsets.all(16.0),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.fitness_center,
-                                        color: FrutiaColors.accent),
-                                    SizedBox(width: 10),
+                                    SizedBox(height: 20),
+                                    // Welcome Text
                                     Text(
-                                      'Peso',
-                                      style: TextStyle(
-                                        color: Color(0xFF2D2D2D),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Container(
-                                        margin: EdgeInsets.only(left: 20),
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 10),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color:
-                                                  FrutiaColors.secondaryText),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(Icons.remove,
-                                                  color: FrutiaColors.accent),
-                                              onPressed: _decrementWeight,
-                                            ),
-                                            Text(
-                                              '$_weight kg',
-                                              style: TextStyle(
-                                                color: Color(0xFF2D2D2D),
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(Icons.add,
-                                                  color: FrutiaColors.accent),
-                                              onPressed: _incrementWeight,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              // Height Field
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.straighten,
-                                        color: FrutiaColors.accent),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      'Altura',
-                                      style: TextStyle(
-                                        color: Color(0xFF2D2D2D),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Container(
-                                        margin: EdgeInsets.only(left: 20),
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 10),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color:
-                                                  FrutiaColors.secondaryText),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(Icons.remove,
-                                                  color: FrutiaColors.accent),
-                                              onPressed: _decrementHeight,
-                                            ),
-                                            Text(
-                                              '$_height cm',
-                                              style: TextStyle(
-                                                color: Color(0xFF2D2D2D),
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(Icons.add,
-                                                  color: FrutiaColors.accent),
-                                              onPressed: _incrementHeight,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 40),
-                              // Sign Up Button
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: Container(
-                                  width: size.width * 0.8,
-                                  child: ElevatedButton(
-                                    onPressed: signUp,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: FrutiaColors.accent,
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      elevation: 8,
-                                    ),
-                                    child: Text(
-                                      "Crea tu cuenta",
-                                      style: GoogleFonts.inter(
+                                      "Bienvenido, Completa tu registro.",
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.lato(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: FrutiaColors.primaryBackground,
+                                        color: FrutiaColors.accent,
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              // Sign Up with Google Button
-                              SlideTransition(
-                                position: _slideAnimation,
-                                child: Container(
-                                  width: size.width * 0.8,
-                                  child: OutlinedButton(
-                                    onPressed: signUpWithGoogle,
-                                    style: OutlinedButton.styleFrom(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 16),
-                                      side: BorderSide(
-                                          color: FrutiaColors.accent,
-                                          width: 1.5),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Image.asset(
-                                          'assets/icons/google.png',
-                                          height: 24,
-                                          width: 24,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                            return Icon(
-                                              Icons.account_circle,
+                                    SizedBox(height: 30),
+                                    // Name TextField
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: TextField(
+                                        cursorColor: FrutiaColors.accent,
+                                        controller: _nameController,
+                                        decoration: InputDecoration(
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.secondaryText,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
                                               color: FrutiaColors.accent,
-                                              size: 24,
-                                            );
-                                          },
-                                        ),
-                                        SizedBox(width: 10),
-                                        Text(
-                                          "Unirse con Google",
-                                          style: GoogleFonts.inter(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          labelText: "Nombre completo",
+                                          labelStyle: TextStyle(
+                                              color: Color(0xFF2D2D2D)),
+                                          prefixIcon: Icon(
+                                            Icons.person,
                                             color: FrutiaColors.accent,
                                           ),
+                                          filled: true,
+                                          fillColor:
+                                              FrutiaColors.primaryBackground,
                                         ),
-                                      ],
+                                        style:
+                                            TextStyle(color: Color(0xFF2D2D2D)),
+                                      ),
                                     ),
-                                  ),
+
+                                    SizedBox(height: 20),
+                                    // Email TextField
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: TextField(
+                                        cursorColor: FrutiaColors.accent,
+                                        controller: _emailController,
+                                        decoration: InputDecoration(
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.secondaryText,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.accent,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          labelText: "Correo electrónico",
+                                          labelStyle: TextStyle(
+                                              color: Color(0xFF2D2D2D)),
+                                          prefixIcon: Icon(
+                                            Icons.email_outlined,
+                                            color: FrutiaColors.accent,
+                                          ),
+                                          filled: true,
+                                          fillColor:
+                                              FrutiaColors.primaryBackground,
+                                        ),
+                                        style:
+                                            TextStyle(color: Color(0xFF2D2D2D)),
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+                                    // Password TextField
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: TextField(
+                                        cursorColor: FrutiaColors.accent,
+                                        controller: _passwordController,
+                                        obscureText: isObscure,
+                                        decoration: InputDecoration(
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.secondaryText,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.accent,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          labelText: "Contraseña",
+                                          labelStyle: TextStyle(
+                                              color: Color(0xFF2D2D2D)),
+                                          prefixIcon: Icon(
+                                            Icons.lock_outline,
+                                            color: FrutiaColors.accent,
+                                          ),
+                                          suffixIcon: IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                isObscure = !isObscure;
+                                              });
+                                            },
+                                            icon: Icon(
+                                              isObscure
+                                                  ? Icons.visibility_off
+                                                  : Icons.visibility,
+                                              color: FrutiaColors.accent,
+                                            ),
+                                          ),
+                                          filled: true,
+                                          fillColor:
+                                              FrutiaColors.primaryBackground,
+                                        ),
+                                        style:
+                                            TextStyle(color: Color(0xFF2D2D2D)),
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+                                    // Confirm Password TextField
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: TextField(
+                                        cursorColor: FrutiaColors.accent,
+                                        controller: _confirmPasswordController,
+                                        obscureText: isObscureConfirm,
+                                        decoration: InputDecoration(
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.secondaryText,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.accent,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          labelText: "Confirmar Contraseña",
+                                          labelStyle: TextStyle(
+                                              color: Color(0xFF2D2D2D)),
+                                          prefixIcon: Icon(
+                                            Icons.lock_outline,
+                                            color: FrutiaColors.accent,
+                                          ),
+                                          suffixIcon: IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                isObscureConfirm =
+                                                    !isObscureConfirm;
+                                              });
+                                            },
+                                            icon: Icon(
+                                              isObscureConfirm
+                                                  ? Icons.visibility_off
+                                                  : Icons.visibility,
+                                              color: FrutiaColors.accent,
+                                            ),
+                                          ),
+                                          filled: true,
+                                          fillColor:
+                                              FrutiaColors.primaryBackground,
+                                        ),
+                                        style:
+                                            TextStyle(color: Color(0xFF2D2D2D)),
+                                      ),
+                                    ),
+                                    SizedBox(height: 40),
+                                    // Sign Up Button
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: Container(
+                                        width: size.width * 0.8,
+                                        child: ElevatedButton(
+                                          onPressed: signUp,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                FrutiaColors.accent,
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 16),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            elevation: 8,
+                                          ),
+                                          child: Text(
+                                            "Crea tu cuenta",
+                                            style: GoogleFonts.inter(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: FrutiaColors
+                                                  .primaryBackground,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+                                    // Sign Up with Google Button
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: Container(
+                                        width: size.width * 0.8,
+                                        child: OutlinedButton(
+                                          onPressed: signUpWithGoogle,
+                                          style: OutlinedButton.styleFrom(
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 16),
+                                            side: BorderSide(
+                                                color: FrutiaColors.accent,
+                                                width: 1.5),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Image.asset(
+                                                'assets/icons/google.png',
+                                                height: 24,
+                                                width: 24,
+                                                errorBuilder: (context, error,
+                                                    stackTrace) {
+                                                  return Icon(
+                                                    Icons.account_circle,
+                                                    color: FrutiaColors.accent,
+                                                    size: 24,
+                                                  );
+                                                },
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                "Unirse con Google",
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: FrutiaColors.accent,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

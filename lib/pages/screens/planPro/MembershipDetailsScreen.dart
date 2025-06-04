@@ -13,16 +13,24 @@ class MembershipDetailsScreen extends StatefulWidget {
 class _MembershipDetailsScreenState extends State<MembershipDetailsScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _fadeAnimation =
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _scaleAnimation =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _slideAnimation = Tween<Offset>(
+            begin: const Offset(0, 0.5), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
   }
 
@@ -37,101 +45,180 @@ class _MembershipDetailsScreenState extends State<MembershipDetailsScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: FrutiaColors.primaryBackground, // Solid white background
+      backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
         title: Text(
           'Plan PRO',
           style: GoogleFonts.lato(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2D2D2D),
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            color: FrutiaColors.primaryText,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.close, color: FrutiaColors.accent, size: 28),
+            icon: Icon(Icons.close, color: FrutiaColors.accent, size: 30),
             onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Animated Title
+              // Animated Title with Badge
               FadeTransition(
-                opacity: _animation,
-                child: Text(
-                  'Tu Membresía Actual',
-                  style: GoogleFonts.lato(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D2D2D),
-                    letterSpacing: 1.5,
-                  ),
+                opacity: _fadeAnimation,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tu Membresía Actual',
+                      style: GoogleFonts.lato(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: FrutiaColors.primaryText,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: FrutiaColors.success,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: FrutiaColors.success.withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'Activa',
+                        style: GoogleFonts.lato(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: FrutiaColors.primaryBackground,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 20),
-              // Circular Progress Indicator
+              const SizedBox(height: 25),
+              // Progress Section
               Center(
-                child: SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: CircularProgressIndicator(
-                    value: 0.75, // 75% progress
-                    strokeWidth: 8.0,
-                    backgroundColor: FrutiaColors.secondaryText,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
-                  ),
+                child: Column(
+                  children: [
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              FrutiaColors.accent.withOpacity(0.2),
+                              FrutiaColors.primaryBackground,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: FrutiaColors.accent.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: 0.75, // 75% progress
+                            strokeWidth: 10.0,
+                            backgroundColor:
+                                FrutiaColors.secondaryText.withOpacity(0.3),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                FrutiaColors.accent),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Text(
+                      '75% Completado',
+                      style: GoogleFonts.lato(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: FrutiaColors.primaryText,
+                      ),
+                    ),
+                    Text(
+                      'Vence el 15/06/2025',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: FrutiaColors.secondaryText,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 20),
-              // Plan Card with Gradient and Shadow
+              const SizedBox(height: 30),
+              // Plan Card with Enhanced Design
               ScaleTransition(
-                scale: _animation,
+                scale: _scaleAnimation,
                 child: Card(
-                  elevation: 12,
+                  elevation: 15,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
+                    borderRadius: BorderRadius.circular(25.0),
                   ),
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          FrutiaColors.accent.withOpacity(0.15),
-                          Colors.white
+                          FrutiaColors.accent.withOpacity(0.1),
+                          FrutiaColors.secondaryBackground,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(20.0),
+                      borderRadius: BorderRadius.circular(25.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: FrutiaColors.accent.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    padding: EdgeInsets.all(20.0),
-                    width: size.width * 0.9,
+                    padding: const EdgeInsets.all(25.0),
+                    width: size.width * 0.95,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Icon(Icons.local_dining,
-                                color: FrutiaColors.accent, size: 24),
-                            SizedBox(width: 10),
+                                color: FrutiaColors.accent, size: 28),
+                            const SizedBox(width: 12),
                             Text(
                               'Plan Frutia',
                               style: GoogleFonts.lato(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D2D2D),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: FrutiaColors.primaryText,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 15),
+                        const SizedBox(height: 20),
                         PlanFeature(
                             icon: Icons.person, text: 'Nutricionista virtual'),
                         PlanFeature(
@@ -150,42 +237,41 @@ class _MembershipDetailsScreenState extends State<MembershipDetailsScreen>
                   ),
                 ),
               ),
-              SizedBox(height: 25),
-              // Warning Message with Animation
+              const SizedBox(height: 30),
+              // Enhanced Warning Message
               SlideTransition(
-                position:
-                    Tween<Offset>(begin: Offset(0, 0.5), end: Offset(0, 0))
-                        .animate(_animation),
+                position: _slideAnimation,
                 child: Container(
-                  padding: EdgeInsets.all(15.0),
+                  padding: const EdgeInsets.all(18.0),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        FrutiaColors.accent.withOpacity(0.2),
-                        Colors.white
+                        FrutiaColors.accent.withOpacity(0.15),
+                        FrutiaColors.primaryBackground,
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(15.0),
+                    borderRadius: BorderRadius.circular(18.0),
                     boxShadow: [
                       BoxShadow(
-                        color: FrutiaColors.accent.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: Offset(0, 5),
+                        color: FrutiaColors.accent.withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.warning_amber,
-                          color: FrutiaColors.accent, size: 28),
-                      SizedBox(width: 12),
+                          color: FrutiaColors.accent, size: 30),
+                      const SizedBox(width: 15),
                       Expanded(
                         child: Text(
-                          '¡Quedate, tu mejor versión aún está por venir!',
+                          '¡Quédate, tu mejor versión aún está por venir!',
                           style: GoogleFonts.lato(
                             fontSize: 16,
-                            color: Color(0xFF2D2D2D),
+                            color: FrutiaColors.primaryText,
                             fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -193,8 +279,8 @@ class _MembershipDetailsScreenState extends State<MembershipDetailsScreen>
                   ),
                 ),
               ),
-              SizedBox(height: 30),
-              // Action Buttons wrapped in Column
+              const SizedBox(height: 35),
+              // Enhanced Action Buttons
               Column(
                 children: [
                   Row(
@@ -210,7 +296,7 @@ class _MembershipDetailsScreenState extends State<MembershipDetailsScreen>
                           },
                         ),
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: AnimatedButton(
                           text: 'Método de Pago',
@@ -223,29 +309,50 @@ class _MembershipDetailsScreenState extends State<MembershipDetailsScreen>
                       ),
                     ],
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 15),
+                  Center(
+                    child: AnimatedButton(
+                      text: 'Actualizar Plan',
+                      icon: Icons.upgrade,
+                      color: FrutiaColors.plan,
+                      onPressed: () {
+                        // Placeholder for upgrade action
+                      },
+                    ),
+                  ),
                 ],
               ),
-              SizedBox(height: 15),
-              // Progress Note with Stylish Design
+              const SizedBox(height: 20),
+              // Enhanced Progress Note
               Center(
                 child: Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
                   decoration: BoxDecoration(
                     color: FrutiaColors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10.0),
+                    borderRadius: BorderRadius.circular(12.0),
+                    border: Border.all(
+                        color: FrutiaColors.accent.withOpacity(0.3), width: 1),
                   ),
-                  child: Text(
-                    '• Si te vas, tu progreso también se irá.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: FrutiaColors.secondaryText,
-                      fontStyle: FontStyle.italic,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 16, color: FrutiaColors.secondaryText),
+                      const SizedBox(width: 8),
+                      Text(
+                        '• Si te vas, tu progreso también se irá.',
+                        style: GoogleFonts.lato(
+                          fontSize: 12,
+                          color: FrutiaColors.secondaryText,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
+              const SizedBox(height: 25),
             ],
           ),
         ),
@@ -264,15 +371,19 @@ class PlanFeature extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          Icon(icon, color: FrutiaColors.accent, size: 20),
-          SizedBox(width: 8),
+          Icon(icon, color: FrutiaColors.accent, size: 22),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 16, color: Color(0xFF2D2D2D)),
+              style: GoogleFonts.lato(
+                fontSize: 16,
+                color: FrutiaColors.primaryText,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -288,11 +399,12 @@ class AnimatedButton extends StatefulWidget {
   final Color color;
   final VoidCallback onPressed;
 
-  const AnimatedButton(
-      {required this.text,
-      required this.icon,
-      required this.color,
-      required this.onPressed});
+  const AnimatedButton({
+    required this.text,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
   _AnimatedButtonState createState() => _AnimatedButtonState();
@@ -302,6 +414,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
 
   @override
   void initState() {
@@ -310,7 +423,17 @@ class _AnimatedButtonState extends State<AnimatedButton>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(_controller);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.7).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _controller.reverse();
+      }
+    });
   }
 
   @override
@@ -328,48 +451,60 @@ class _AnimatedButtonState extends State<AnimatedButton>
         widget.onPressed();
       },
       onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          width: (MediaQuery.of(context).size.width - 32 - 20) / 3 -
-              10, // Adjusted width for 3 buttons with padding
-          margin: EdgeInsets.symmetric(horizontal: 5.0),
-          padding: EdgeInsets.symmetric(vertical: 14.0, horizontal: 10.0),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [widget.color, widget.color.withOpacity(0.8)],
-            ),
-            borderRadius: BorderRadius.circular(12.0),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withOpacity(0.3),
-                blurRadius: 8,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(widget.icon,
-                  color: FrutiaColors.primaryBackground, size: 20),
-              SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  widget.text,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: widget.color == FrutiaColors.secondaryText
-                        ? FrutiaColors.primaryBackground
-                        : FrutiaColors.primaryBackground,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Opacity(
+            opacity: _opacityAnimation.value,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: (MediaQuery.of(context).size.width - 32 - 24) / 2.5,
+                margin: const EdgeInsets.symmetric(horizontal: 6.0),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 16.0, horizontal: 12.0),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      widget.color,
+                      widget.color.withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  textAlign: TextAlign.center,
+                  borderRadius: BorderRadius.circular(15.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(widget.icon,
+                        color: FrutiaColors.primaryBackground, size: 22),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        widget.text,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: FrutiaColors.primaryBackground,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -93,7 +93,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         context: context,
         builder: (context) => Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE63946)),
           ),
         ),
       );
@@ -142,9 +142,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       SnackBar(
         content: Text(
           message,
-          style: TextStyle(color: FrutiaColors.primaryBackground),
+          style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: FrutiaColors.accent,
+        backgroundColor: Color(0xFFE63946),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -158,291 +158,336 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: FrutiaColors.primaryBackground, // Solid white background
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFD1B3), // Naranja suave
+              Color(0xFFFF6F61), // Rojo cálido
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
             children: [
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                  child: Card(
-                    elevation: 20,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              // Imagen de la fruta en la parte superior
+              Positioned(
+                top: size.height * 0.05,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    height: 150,
+                    width: 150,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/fruta22.png'),
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    child: Container(
-                      height:
-                          size.height * 0.8, // Fixed height at 80% of screen
-                      width: size.width * 0.9,
-                      padding: EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Logo
-                          Image.asset(
-                            'assets/icons/logoapp.webp',
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.local_dining,
-                                size: 80,
-                                color: FrutiaColors.accent,
-                              );
-                            },
-                          ),
-                          SizedBox(height: 20),
-                          // Welcome Text
-                          Text(
-                            "Ingresa tu correo y contraseña o crea una cuenta.",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.lato(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xFF2D2D2D),
-                            ),
-                          ),
-                          SizedBox(height: 40),
-                          // Email TextField
-                          SlideTransition(
-                            position: _slideAnimation,
-                            child: TextField(
-                              cursorColor: FrutiaColors.accent,
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: FrutiaColors.secondaryText,
-                                    width: 1.0,
-                                  ),
+                  ),
+                ),
+              ),
+
+              // Contenido principal
+              Center(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+                    child: Card(
+                      elevation: 10,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      color: Colors.white.withOpacity(0.9),
+                      child: Container(
+                        width: size.width * 0.9,
+                        padding: EdgeInsets.all(24.0),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Logo
+
+                              SizedBox(height: 20),
+                              // Welcome Text
+                              Text(
+                                "Bienvenido a Frutia",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.lato(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D2D2D),
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: FrutiaColors.accent,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                labelText: "Correo",
-                                labelStyle: TextStyle(color: Color(0xFF2D2D2D)),
-                                prefixIcon: Icon(
-                                  Icons.email_outlined,
-                                  color: FrutiaColors.accent,
-                                ),
-                                filled: true,
-                                fillColor: FrutiaColors.primaryBackground,
                               ),
-                              style: TextStyle(color: Color(0xFF2D2D2D)),
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          // Password TextField
-                          SlideTransition(
-                            position: _slideAnimation,
-                            child: TextField(
-                              cursorColor: FrutiaColors.accent,
-                              controller: _passwordController,
-                              obscureText: isObscure,
-                              decoration: InputDecoration(
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: FrutiaColors.secondaryText,
-                                    width: 1.0,
-                                  ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Ingresa tus credenciales para continuar",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.lato(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xFF2D2D2D).withOpacity(0.7),
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: FrutiaColors.accent,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                labelText: "Contraseña",
-                                labelStyle: TextStyle(color: Color(0xFF2D2D2D)),
-                                prefixIcon: Icon(
-                                  Icons.lock_outline,
-                                  color: FrutiaColors.accent,
-                                ),
-                                suffixIcon: IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      isObscure = !isObscure;
-                                    });
-                                  },
-                                  icon: Icon(
-                                    isObscure
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                    color: FrutiaColors.accent,
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: FrutiaColors.primaryBackground,
                               ),
-                              style: TextStyle(color: Color(0xFF2D2D2D)),
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          // Remember Me and Forget Password Row
-                          SlideTransition(
-                            position: _slideAnimation,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Checkbox(
-                                      value: isRemember,
-                                      onChanged: (value) {
+                              SizedBox(height: 40),
+                              // Email TextField
+                              SlideTransition(
+                                position: _slideAnimation,
+                                child: TextField(
+                                  cursorColor: Color(0xFFE63946),
+                                  controller: _emailController,
+                                  decoration: InputDecoration(
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        color:
+                                            Color(0xFFF4A261).withOpacity(0.5),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        color: Color(0xFFE63946),
+                                        width: 2.0,
+                                      ),
+                                    ),
+                                    labelText: "Correo",
+                                    labelStyle: GoogleFonts.lato(
+                                      color: Color(0xFF2D2D2D).withOpacity(0.7),
+                                      fontSize: 16,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.email_outlined,
+                                      color: Color(0xFFE63946),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.8),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        vertical: 18, horizontal: 20),
+                                  ),
+                                  style: GoogleFonts.lato(
+                                    color: Color(0xFF2D2D2D),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 20),
+                              // Password TextField
+                              SlideTransition(
+                                position: _slideAnimation,
+                                child: TextField(
+                                  cursorColor: Color(0xFFE63946),
+                                  controller: _passwordController,
+                                  obscureText: isObscure,
+                                  decoration: InputDecoration(
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        color:
+                                            Color(0xFFF4A261).withOpacity(0.5),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        color: Color(0xFFE63946),
+                                        width: 2.0,
+                                      ),
+                                    ),
+                                    labelText: "Contraseña",
+                                    labelStyle: GoogleFonts.lato(
+                                      color: Color(0xFF2D2D2D).withOpacity(0.7),
+                                      fontSize: 16,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.lock_outline,
+                                      color: Color(0xFFE63946),
+                                    ),
+                                    suffixIcon: IconButton(
+                                      onPressed: () {
                                         setState(() {
-                                          isRemember = value ?? false;
+                                          isObscure = !isObscure;
                                         });
                                       },
-                                      activeColor: FrutiaColors.accent,
-                                      checkColor:
-                                          FrutiaColors.primaryBackground,
-                                    ),
-                                    Text(
-                                      'Recordarme',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Color(0xFF2D2D2D),
+                                      icon: Icon(
+                                        isObscure
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                        color: Color(0xFFE63946),
                                       ),
                                     ),
-                                  ],
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const ForgetPassPage(),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    "Olvidé mi contraseña",
-                                    style: TextStyle(
-                                      color: FrutiaColors.accent,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: FrutiaColors.accent,
-                                      decorationThickness: 1.5,
-                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.8),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        vertical: 18, horizontal: 20),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 40),
-                          // Sign In Button
-                          SlideTransition(
-                            position: _slideAnimation,
-                            child: Container(
-                              width: size.width * 0.8,
-                              child: ElevatedButton(
-                                onPressed: signIn,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: FrutiaColors.accent,
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: 8,
-                                ),
-                                child: Text(
-                                  "Entrar",
-                                  style: GoogleFonts.inter(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: FrutiaColors.primaryBackground,
+                                  style: GoogleFonts.lato(
+                                    color: Color(0xFF2D2D2D),
+                                    fontSize: 16,
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          // Sign In with Google Button
-                          SlideTransition(
-                            position: _slideAnimation,
-                            child: Container(
-                              width: size.width * 0.8,
-                              child: OutlinedButton(
-                                onPressed: signInWithGoogle,
-                                style: OutlinedButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  side: BorderSide(
-                                      color: FrutiaColors.accent, width: 1.5),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
+                              SizedBox(height: 20),
+                              // Remember Me and Forget Password Row
+                              SlideTransition(
+                                position: _slideAnimation,
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Image.asset(
-                                      'assets/icons/google.png',
-                                      height: 24,
-                                      width: 24,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return Icon(
-                                          Icons.account_circle,
-                                          color: FrutiaColors.accent,
-                                          size: 24,
+                                    Row(
+                                      children: [
+                                        Checkbox(
+                                          value: isRemember,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              isRemember = value ?? false;
+                                            });
+                                          },
+                                          activeColor: Color(0xFFE63946),
+                                          checkColor: Colors.white,
+                                        ),
+                                        Text(
+                                          'Recordarme',
+                                          style: GoogleFonts.lato(
+                                            fontSize: 14,
+                                            color: Color(0xFF2D2D2D),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const ForgetPassPage(),
+                                          ),
                                         );
                                       },
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      "Unirse con Google",
-                                      style: GoogleFonts.inter(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: FrutiaColors.accent,
+                                      child: Text(
+                                        "Olvidé mi contraseña",
+                                        style: GoogleFonts.lato(
+                                          color: Color(0xFFE63946),
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: Color(0xFFE63946),
+                                          decorationThickness: 1.5,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
+                              SizedBox(height: 40),
+                              // Sign In Button
+                              SlideTransition(
+                                position: _slideAnimation,
+                                child: Container(
+                                  width: size.width * 0.8,
+                                  child: ElevatedButton(
+                                    onPressed: signIn,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Color(0xFFE63946),
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      elevation: 5,
+                                    ),
+                                    child: Text(
+                                      "Entrar",
+                                      style: GoogleFonts.lato(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 20),
+                              // Sign In with Google Button
+                              SlideTransition(
+                                position: _slideAnimation,
+                                child: Container(
+                                  width: size.width * 0.8,
+                                  child: OutlinedButton(
+                                    onPressed: signInWithGoogle,
+                                    style: OutlinedButton.styleFrom(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 16),
+                                      side: BorderSide(
+                                          color: Color(0xFFE63946), width: 1.5),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Image.asset(
+                                          'assets/icons/google.png',
+                                          height: 24,
+                                          width: 24,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Icon(
+                                              Icons.account_circle,
+                                              color: Color(0xFFE63946),
+                                              size: 24,
+                                            );
+                                          },
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          "Unirse con Google",
+                                          style: GoogleFonts.lato(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFFE63946),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 20),
+                              // Create Account Link
+                              TextButton(
+                                onPressed: widget.showLoginPage,
+                                child: Text(
+                                  "Crea tu cuenta",
+                                  style: GoogleFonts.lato(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFFE63946),
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: Color(0xFFE63946),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-              // Create Account Link
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: TextButton(
-                    onPressed: widget.showLoginPage,
-                    child: Text(
-                      "Crea tu cuenta",
-                      style: GoogleFonts.inter(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        color: FrutiaColors.accent,
-                        decoration: TextDecoration.underline,
-                        decorationColor: FrutiaColors.accent,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
             ],
           ),
         ),

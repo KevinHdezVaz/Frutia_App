@@ -4,10 +4,9 @@ import 'package:user_auth_crudd10/auth/auth_check.dart';
 
 import 'constants2.dart';
 
-class OnBoardingCuatro extends StatelessWidget {
+class OnboardingScreenThree extends StatelessWidget {
   final PageController pageController;
-
-  OnBoardingCuatro({required this.pageController});
+  OnboardingScreenThree({required this.pageController});
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +15,14 @@ class OnBoardingCuatro extends StatelessWidget {
     }
 
     Color fondo = isDarkMode(context) ? Colors.white : Colors.black;
+
+    final sizeReference = 700.0;
+
+    double getResponsiveText(double size) {
+      final mediaQuery = MediaQuery.of(context);
+      final longestSide = mediaQuery.size.longestSide;
+      return size * sizeReference / longestSide;
+    }
 
     Size size = MediaQuery.of(context).size;
 
@@ -41,36 +48,6 @@ class OnBoardingCuatro extends StatelessWidget {
       );
     }
 
-    Widget ProfessionalItem(String text) {
-      return Padding(
-        padding: EdgeInsets.only(bottom: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 4, right: 8),
-              child: Icon(
-                Icons.circle,
-                size: 8,
-                color: Colors.black87,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                  height: 1.4,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(
@@ -83,62 +60,70 @@ class OnBoardingCuatro extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // Contenido principal (título y lista) en la parte superior
+              // Imagen de la fruta en la parte superior
               Positioned(
-                top: size.height * 0.15,
+                top: size.height * 0.10,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Estamos respaldados por profesionales",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                            fontSize: 28,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ProfessionalItem("Nutricionista 1"),
-                            ProfessionalItem("Nutricionista 2"),
-                            ProfessionalItem("Médico 1"),
-                            ProfessionalItem("Médico 2"),
-                            ProfessionalItem("Entrenador certificado 1"),
-                            ProfessionalItem("Entrenador certificado 2"),
-                          ],
-                        ),
-                      ],
+                  child: Container(
+                    height: 250,
+                    width: 350,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/frutastop.png'),
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              // Imagen de la fruta en la parte inferior
-              Positioned(
-                bottom: size.height * 0.10,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    height: 280,
-                    width: 350,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/frutamedica.png'),
-                        fit: BoxFit.contain,
+              // Contenido principal centrado (título y lista)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 200),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        "Recuerda",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontSize: 28,
+                          height: 1.3,
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 30),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              FeatureItem(
+                                  "❌ Los planes genéricos no funcionan. Cada cuerpo es distinto."),
+                              FeatureItem(
+                                  "🚫 No existen soluciones mágicas ni “tés milagrosos”."),
+                              FeatureItem(
+                                  "💸 Tu presupuesto importa, y debería ser parte del plan."),
+                              FeatureItem(
+                                  "🍽️ Tu comida debe gustarte, no estresarte."),
+                              FeatureItem(
+                                  "🤝 Estamos acá para darte un plan real, inteligente y hecho para ti."),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -154,30 +139,27 @@ class OnBoardingCuatro extends StatelessWidget {
                     const SizedBox(width: 8),
                     _buildPageIndicator(false),
                     const SizedBox(width: 8),
-                    _buildPageIndicator(false),
-                    const SizedBox(width: 8),
                     _buildPageIndicator(true),
+                    const SizedBox(width: 8),
+                    _buildPageIndicator(false),
                   ],
                 ),
               ),
 
-              // Botón de acción
+              // Botón de siguiente
               Positioned(
                 bottom: 30,
                 right: 30,
                 child: FloatingActionButton(
                   onPressed: () {
-                    _storeOnboardInfo();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AuthCheckMain(),
-                      ),
+                    pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
                     );
                   },
                   backgroundColor: Colors.white,
                   child: const Icon(
-                    Icons.check,
+                    Icons.navigate_next_rounded,
                     color: Colors.black,
                     size: 30,
                   ),

@@ -60,11 +60,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
             borderRadius: BorderRadius.circular(12),
             child: BottomNavigationBar(
               type: BottomNavigationBarType.fixed,
-              selectedItemColor:
-                  FrutiaColors.primaryBackground, // White for selected items
-              unselectedItemColor: FrutiaColors
-                  .secondaryText, // Lighter gray for unselected items
-              backgroundColor: FrutiaColors.accent, // Red accent for background
+              selectedItemColor: FrutiaColors.accent, // Red for selected items
+              unselectedItemColor:
+                  FrutiaColors.disabledText, // Gray for unselected items
+              backgroundColor:
+                  FrutiaColors.primaryBackground, // White background
               currentIndex: _selectedIndex,
               onTap: _changeIndex,
               elevation: 0,
@@ -77,17 +77,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 BottomNavigationBarItem(
                   icon: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _selectedIndex == 0
-                          ? FrutiaColors.secondaryText.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
                     child: Icon(
                       Icons.home,
                       color: _selectedIndex == 0
-                          ? FrutiaColors.primaryBackground
-                          : FrutiaColors.secondaryText,
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -96,17 +90,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 BottomNavigationBarItem(
                   icon: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _selectedIndex == 1
-                          ? FrutiaColors.secondaryText.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
                     child: Icon(
                       Icons.message,
                       color: _selectedIndex == 1
-                          ? FrutiaColors.primaryBackground
-                          : FrutiaColors.secondaryText,
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -115,17 +103,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 BottomNavigationBarItem(
                   icon: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _selectedIndex == 2
-                          ? FrutiaColors.secondaryText.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
                     child: Icon(
                       Icons.food_bank,
                       color: _selectedIndex == 2
-                          ? FrutiaColors.primaryBackground
-                          : FrutiaColors.secondaryText,
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -134,17 +116,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 BottomNavigationBarItem(
                   icon: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _selectedIndex == 3
-                          ? FrutiaColors.secondaryText.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
                     child: Icon(
                       Icons.lock,
                       color: _selectedIndex == 3
-                          ? FrutiaColors.primaryBackground
-                          : FrutiaColors.secondaryText,
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -153,17 +129,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 BottomNavigationBarItem(
                   icon: Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _selectedIndex == 4
-                          ? FrutiaColors.secondaryText.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
                     child: Icon(
                       Icons.person,
                       color: _selectedIndex == 4
-                          ? FrutiaColors.primaryBackground
-                          : FrutiaColors.secondaryText,
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
