@@ -3,6 +3,7 @@ import 'package:Frutia/onscreen/OnboardingScreenOne.dart';
 import 'package:Frutia/onscreen/OnboardingScreenThree.dart';
 import 'package:Frutia/onscreen/OnboardingScreenTwo.dart';
 import 'package:Frutia/onscreen/screen_cuatro.dart';
+import 'package:vibration/vibration.dart';
 
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({Key? key}) : super(key: key);

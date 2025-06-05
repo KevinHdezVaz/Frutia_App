@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
+import 'package:vibration/vibration.dart';
 
 import 'constants2.dart';
 

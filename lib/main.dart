@@ -12,7 +12,6 @@ import 'package:Frutia/pages/bottom_nav.dart';
 import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/settings/theme_data.dart';
 import 'package:Frutia/services/settings/theme_provider.dart';
-import 'package:Frutia/model/MathPartido.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'firebase_options.dart';
 import 'package:http/http.dart' as http;

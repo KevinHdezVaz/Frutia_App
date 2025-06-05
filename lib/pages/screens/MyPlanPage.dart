@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:vibration/vibration.dart';
 
 class MyPlanPage extends StatefulWidget {
   const MyPlanPage({super.key});
