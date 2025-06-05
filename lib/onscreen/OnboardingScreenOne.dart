@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vibration/vibration.dart';
 
 class OnboardingScreenOne extends StatelessWidget {
   final PageController pageController;
@@ -114,7 +115,11 @@ class OnboardingScreenOne extends StatelessWidget {
             bottom: 30,
             right: 30,
             child: FloatingActionButton(
-              onPressed: () {
+              onPressed: () async {
+                // Trigger vibration on button press
+                if (await Vibration.hasVibrator() ?? false) {
+                  Vibration.vibrate(duration: 50); // Short vibration
+                }
                 pageController.nextPage(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,

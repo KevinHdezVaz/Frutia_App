@@ -24,7 +24,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeVideoPlayer() async {
     try {
-      _controller = VideoPlayerController.asset('assets/images/videoFondo.mp4');
+      _controller =
+          VideoPlayerController.asset('assets/images/videoFondonew.mp4');
       await _controller.initialize();
       if (mounted) {
         setState(() {});

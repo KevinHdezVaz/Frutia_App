@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 import 'package:user_auth_crudd10/auth/auth_check.dart';
 
 import 'constants2.dart';
@@ -7,7 +8,8 @@ import 'constants2.dart';
 class OnBoardingCuatro extends StatelessWidget {
   final PageController pageController;
 
-  OnBoardingCuatro({required this.pageController});
+  const OnBoardingCuatro({Key? key, required this.pageController})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -166,8 +168,12 @@ class OnBoardingCuatro extends StatelessWidget {
                 bottom: 30,
                 right: 30,
                 child: FloatingActionButton(
-                  onPressed: () {
-                    _storeOnboardInfo();
+                  onPressed: () async {
+                    // Trigger vibration on button press
+                    if (await Vibration.hasVibrator() ?? false) {
+                      Vibration.vibrate(duration: 50); // Short vibration
+                    }
+                    await _storeOnboardInfo();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -191,8 +197,12 @@ class OnBoardingCuatro extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.topRight,
                   child: TextButton(
-                    onPressed: () {
-                      _storeOnboardInfo();
+                    onPressed: () async {
+                      // Trigger vibration on button press
+                      if (await Vibration.hasVibrator() ?? false) {
+                        Vibration.vibrate(duration: 50); // Short vibration
+                      }
+                      await _storeOnboardInfo();
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -232,7 +242,7 @@ class OnBoardingCuatro extends StatelessWidget {
     );
   }
 
-  _storeOnboardInfo() async {
+  Future<void> _storeOnboardInfo() async {
     print("Shared pref called");
     int isViewed = 0;
     SharedPreferences prefs = await SharedPreferences.getInstance();

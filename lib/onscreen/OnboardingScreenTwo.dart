@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:user_auth_crudd10/auth/auth_check.dart';
+import 'package:vibration/vibration.dart';
 
 import 'constants2.dart';
 
@@ -161,7 +162,11 @@ class OnboardingScreenTwo extends StatelessWidget {
                 bottom: 30,
                 right: 30,
                 child: FloatingActionButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    // Trigger vibration on button press
+                    if (await Vibration.hasVibrator() ?? false) {
+                      Vibration.vibrate(duration: 50); // Short vibration
+                    }
                     pageController.nextPage(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
