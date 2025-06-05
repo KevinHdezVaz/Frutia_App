@@ -3,9 +3,9 @@ import 'dart:developer' as developer; // Importar para logging
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:user_auth_crudd10/model/Bonos.dart';
-import 'package:user_auth_crudd10/model/UserBono.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
+import 'package:Frutia/model/Bonos.dart';
+import 'package:Frutia/model/UserBono.dart';
+import 'package:Frutia/services/storage_service.dart';
 
 class BonoService {
   final StorageService storage = StorageService();

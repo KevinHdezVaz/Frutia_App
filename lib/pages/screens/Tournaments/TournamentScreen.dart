@@ -1,9 +1,9 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:user_auth_crudd10/model/Torneo.dart';
-import 'package:user_auth_crudd10/pages/screens/Tournaments/TournamentDetails.dart';
-import 'package:user_auth_crudd10/services/torneo_service.dart';
+import 'package:Frutia/model/Torneo.dart';
+import 'package:Frutia/pages/screens/Tournaments/TournamentDetails.dart';
+import 'package:Frutia/services/torneo_service.dart';
 
 class TournamentsScreen extends StatefulWidget {
   @override

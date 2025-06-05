@@ -4,11 +4,11 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:user_auth_crudd10/model/Equipo.dart';
-import 'package:user_auth_crudd10/model/Torneo.dart';
-import 'package:user_auth_crudd10/pages/screens/Tournaments/SeleccionarEquipoScreen.dart';
-import 'package:user_auth_crudd10/services/equipo_service.dart';
-import 'package:user_auth_crudd10/services/torneo_service.dart';
+import 'package:Frutia/model/Equipo.dart';
+import 'package:Frutia/model/Torneo.dart';
+import 'package:Frutia/pages/screens/Tournaments/SeleccionarEquipoScreen.dart';
+import 'package:Frutia/services/equipo_service.dart';
+import 'package:Frutia/services/torneo_service.dart';
 
 class TournamentDetails extends StatefulWidget {
   final Torneo torneo;

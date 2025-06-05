@@ -1,4 +1,4 @@
-import 'package:user_auth_crudd10/model/WalletTransaction.dart';
+import 'package:Frutia/model/WalletTransaction.dart';
 
 class Wallet {
   double balance;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:user_auth_crudd10/model/ChatMessage.dart';
-import 'package:user_auth_crudd10/pages/screens/chatFrutia/ChatScreenFrutia.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/model/ChatMessage.dart';
+import 'package:Frutia/pages/screens/chatFrutia/ChatScreenFrutia.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class ChatHistoryPage extends StatelessWidget {
   const ChatHistoryPage({super.key});
@@ -11,8 +11,7 @@ class ChatHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
+       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,

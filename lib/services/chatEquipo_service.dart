@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:user_auth_crudd10/model/ChatMessage.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/model/ChatMessage.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/constantes.dart';
 import 'package:path/path.dart' as path;  // Agregar esta importación
 import 'package:http_parser/http_parser.dart';  // Agregar esta importación
 

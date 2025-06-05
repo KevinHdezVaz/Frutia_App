@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
-import 'package:user_auth_crudd10/model/Equipo.dart';
-import 'package:user_auth_crudd10/model/Miembro.dart';
-import 'package:user_auth_crudd10/model/User.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/model/Equipo.dart';
+import 'package:Frutia/model/Miembro.dart';
+import 'package:Frutia/model/User.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/constantes.dart';
 
 class EquipoService {
   final storage = StorageService();

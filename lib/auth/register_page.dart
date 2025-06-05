@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:user_auth_crudd10/auth/auth_check.dart';
-import 'package:user_auth_crudd10/auth/auth_service.dart';
-import 'package:user_auth_crudd10/auth/login_page.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/colors.dart'; // Import FrutiaColors
+import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/auth/login_page.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/colors.dart'; // Import FrutiaColors
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback showLoginPage;

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:user_auth_crudd10/model/Story.dart';
+import 'package:Frutia/model/Story.dart';
  
 
 class StoriesService {

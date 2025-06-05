@@ -1,4 +1,4 @@
-import 'package:user_auth_crudd10/model/OrderItem.dart';
+import 'package:Frutia/model/OrderItem.dart';
 
 class Order {
   final List<OrderItem> items;

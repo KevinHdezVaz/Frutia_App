@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -31,10 +31,10 @@ class ProfilePage extends StatelessWidget {
                     'assets/images/fruta22.png', // Placeholder para la imagen de Frutia
                     height: 200,
                     fit: BoxFit.contain,
-                  ).animate().fadeIn(duration: 800.ms).scale(
+                  ).animate().fadeIn(duration: 300.ms).scale(
                       begin: const Offset(0.8, 0.8),
                       end: const Offset(1.0, 1.0),
-                      duration: 800.ms,
+                      duration: 300.ms,
                       curve: Curves.easeOut),
                 ),
                 const SizedBox(height: 24),

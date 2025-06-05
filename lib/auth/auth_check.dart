@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:user_auth_crudd10/auth/auth_page_check.dart';
-import 'package:user_auth_crudd10/onscreen/QuestionnairePage.dart';
-import 'package:user_auth_crudd10/pages/bottom_nav.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
+import 'package:Frutia/auth/auth_page_check.dart';
+import 'package:Frutia/onscreen/QuestionnairePage.dart';
+import 'package:Frutia/pages/bottom_nav.dart';
+import 'package:Frutia/services/storage_service.dart';
 
 class AuthCheckMain extends StatelessWidget {
   const AuthCheckMain({super.key});

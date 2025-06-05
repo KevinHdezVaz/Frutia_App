@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-import 'package:user_auth_crudd10/services/VerificationService.dart';
+import 'package:Frutia/services/VerificationService.dart';
 
 class VerifyProfilePage extends StatefulWidget {
   const VerifyProfilePage({Key? key}) : super(key: key);

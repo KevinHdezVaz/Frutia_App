@@ -1,9 +1,9 @@
 // lib/services/wallet_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:user_auth_crudd10/model/Wallet.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/model/Wallet.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/constantes.dart';
  
 class WalletService {
   final StorageService storage = StorageService();
