@@ -4,9 +4,9 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:user_auth_crudd10/auth/auth_check.dart';
-import 'package:user_auth_crudd10/auth/login_page.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/auth/login_page.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class PersonalDataPage extends StatefulWidget {
   final VoidCallback showLoginPage;

@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/constantes.dart';
 
 class AuthService {
   final storage = StorageService();

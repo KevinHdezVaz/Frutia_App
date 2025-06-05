@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:user_auth_crudd10/model/field.dart';
-import 'package:user_auth_crudd10/model/MatchTeam.dart';
+import 'package:Frutia/model/field.dart';
+import 'package:Frutia/model/MatchTeam.dart';
 
 class MathPartido {
   final int id;

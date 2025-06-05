@@ -1,4 +1,4 @@
-package com.app.footconnect0
+package com.frutia.app.latam
 
 import io.flutter.embedding.android.FlutterActivity
 

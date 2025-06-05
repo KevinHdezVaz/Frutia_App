@@ -1,4 +1,4 @@
-import 'package:user_auth_crudd10/model/Miembro.dart';
+import 'package:Frutia/model/Miembro.dart';
 
 class Equipo {
   final int id;

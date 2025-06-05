@@ -5,7 +5,7 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = user_auth_crudd10
+PRODUCT_NAME = Frutia
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = com.example.userAuthCrudd10

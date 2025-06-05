@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/utils/constantes.dart';
 import '../model/Torneo.dart';
 
 class TorneoService {

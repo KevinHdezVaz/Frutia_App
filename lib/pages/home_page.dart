@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class HomePage extends StatelessWidget {
   // Sample data for the carousel

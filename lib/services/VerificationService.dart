@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:user_auth_crudd10/services/storage_service.dart'; // Importa tu StorageService
-import 'package:user_auth_crudd10/utils/constantes.dart'; // Importa tus constantes
+import 'package:Frutia/services/storage_service.dart'; // Importa tu StorageService
+import 'package:Frutia/utils/constantes.dart'; // Importa tus constantes
 
 class VerificationService {
   final StorageService storage = StorageService();

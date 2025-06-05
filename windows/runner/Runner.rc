@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "user_auth_crudd10" "\0"
+            VALUE "FileDescription", "Frutia" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "user_auth_crudd10" "\0"
+            VALUE "InternalName", "Frutia" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "user_auth_crudd10.exe" "\0"
-            VALUE "ProductName", "user_auth_crudd10" "\0"
+            VALUE "OriginalFilename", "Frutia.exe" "\0"
+            VALUE "ProductName", "Frutia" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

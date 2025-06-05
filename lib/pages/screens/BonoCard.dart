@@ -1,8 +1,8 @@
 // Archivo: lib/widgets/bono_card.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:user_auth_crudd10/model/Bonos.dart';
-import 'package:user_auth_crudd10/model/UserBono.dart';
+import 'package:Frutia/model/Bonos.dart';
+import 'package:Frutia/model/UserBono.dart';
 
 class BonoCard extends StatefulWidget {
   final Bono bono;

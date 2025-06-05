@@ -1,6 +1,6 @@
  
 
-import 'package:user_auth_crudd10/model/Bonos.dart';
+import 'package:Frutia/model/Bonos.dart';
 
 class UserBono {
   final int id;

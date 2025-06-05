@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:user_auth_crudd10/model/ChatMessage.dart';
-import 'package:user_auth_crudd10/pages/screens/chatFrutia/ChatHistoryPage.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/model/ChatMessage.dart';
+import 'package:Frutia/pages/screens/chatFrutia/ChatHistoryPage.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class ChatScreenFrutia extends StatelessWidget {
   final VoidCallback onBack;
@@ -22,17 +22,16 @@ class ChatScreenFrutia extends StatelessWidget {
     return GestureDetector(
       onTap: onBack,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
+         appBar: AppBar(
           title: Text(
             'Chatea con FRUTIA',
             style: GoogleFonts.lato(
               fontSize: 20,
+              color: Colors.black,
               fontWeight: FontWeight.bold,
             ),
           ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
+           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back_ios, color: FrutiaColors.accent),
             onPressed: onBack,
@@ -41,11 +40,11 @@ class ChatScreenFrutia extends StatelessWidget {
             IconButton(
               icon: Icon(Icons.history, color: FrutiaColors.accent),
               onPressed: () {
-                // Navegar a ChatHistoryPage
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const ChatHistoryPage()),
+                    builder: (context) => const ChatHistoryPage(),
+                  ),
                 );
               },
             ),
@@ -117,15 +116,14 @@ class ChatScreenFrutia extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 10.0),
-                  color: FrutiaColors.secondaryBackground,
-                  child: Row(
+                   child: Row(
                     children: [
                       Expanded(
                         child: TextField(
                           decoration: InputDecoration(
                             hintText: 'Escribe tu mensaje...',
                             hintStyle:
-                                TextStyle(color: FrutiaColors.secondaryText),
+                                TextStyle(color: Colors.white),
                             filled: true,
                             fillColor: FrutiaColors.accent,
                             border: OutlineInputBorder(

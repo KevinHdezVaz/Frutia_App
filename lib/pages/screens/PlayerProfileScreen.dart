@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:user_auth_crudd10/auth/auth_service.dart';
+import 'package:Frutia/auth/auth_service.dart';
 
 class PlayerProfileScreen extends StatefulWidget {
   final int userId;

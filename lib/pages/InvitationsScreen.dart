@@ -1,9 +1,9 @@
 
 import 'package:flutter/material.dart';
-import 'package:user_auth_crudd10/model/Notificacion.dart';
-import 'package:user_auth_crudd10/model/Equipo.dart';
-import 'package:user_auth_crudd10/services/NotificationServiceExtension.dart';
-import 'package:user_auth_crudd10/services/equipo_service.dart';
+import 'package:Frutia/model/Notificacion.dart';
+import 'package:Frutia/model/Equipo.dart';
+import 'package:Frutia/services/NotificationServiceExtension.dart';
+import 'package:Frutia/services/equipo_service.dart';
 
 
 class InvitationsScreen extends StatefulWidget {

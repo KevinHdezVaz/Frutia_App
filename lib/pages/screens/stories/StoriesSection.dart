@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:user_auth_crudd10/model/Story.dart';
-import 'package:user_auth_crudd10/services/StoriesService.dart';
+import 'package:Frutia/model/Story.dart';
+import 'package:Frutia/services/StoriesService.dart';
 
 class StoriesSection extends StatefulWidget {
   const StoriesSection({Key? key}) : super(key: key);

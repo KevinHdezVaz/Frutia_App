@@ -1,7 +1,8 @@
+import 'dart:math'; // Added import for sqrt
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:user_auth_crudd10/auth/auth_check.dart';
-import 'package:user_auth_crudd10/onscreen/onboardingWrapper.dart';
+import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/onscreen/onboardingWrapper.dart';
 
 class SplashScreen extends StatefulWidget {
   final int isviewed;
@@ -24,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeVideoPlayer() async {
     try {
-      _controller = VideoPlayerController.asset('assets/images/videoFondo.mp4');
+      _controller = VideoPlayerController.asset('assets/images/videoFondo2.mp4');
       await _controller.initialize();
       if (mounted) {
         setState(() {});
@@ -52,10 +53,23 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => widget.isviewed != 0
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 800), // Duración de la transición
+          pageBuilder: (context, animation, secondaryAnimation) => widget.isviewed != 0
               ? OnboardingWrapper()
               : const AuthCheckMain(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                return ClipPath(
+                  clipper: _CircleRevealClipper(animation.value),
+                  child: child,
+                );
+              },
+              child: child,
+            );
+          },
         ),
       );
     }
@@ -79,21 +93,32 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             )
           : _controller.value.isInitialized
-              ? Stack(
-                  children: [
-                    Positioned.fill(
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: _controller.value.size.width,
-                          height: _controller.value.size.height,
-                          child: VideoPlayer(_controller),
-                        ),
-                      ),
-                    ),
-                  ],
+              ? Center(
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  ),
                 )
               : const Center(child: CircularProgressIndicator()),
     );
   }
+}
+
+// Custom clipper para la animación de círculo expansivo
+class _CircleRevealClipper extends CustomClipper<Path> {
+  final double progress;
+
+  _CircleRevealClipper(this.progress);
+
+  @override
+  Path getClip(Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = sqrt(size.width * size.width + size.height * size.height); // Fixed sqrt usage
+    final radius = maxRadius * progress;
+
+    return Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+  }
+
+  @override
+  bool shouldReclip(_CircleRevealClipper oldClipper) => oldClipper.progress != progress;
 }

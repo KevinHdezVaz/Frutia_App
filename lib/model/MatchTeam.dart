@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:user_auth_crudd10/TeamPlayer.dart';
+import 'package:Frutia/TeamPlayer.dart';
 
 class MatchTeam {
   final int id;

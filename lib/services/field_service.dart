@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:user_auth_crudd10/auth/auth_service.dart';
-import 'package:user_auth_crudd10/model/field.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/model/field.dart';
+import 'package:Frutia/utils/constantes.dart';
 
 class FieldService {
   final _authService = AuthService();

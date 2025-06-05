@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
@@ -63,34 +63,6 @@ class _ProgressPageState extends State<ProgressPage> {
                 height: size.height * 0.5, // Ocupa solo la mitad superior
                 child: Stack(
                   children: [
-                    // Pirámide con escalones
-                    Positioned(
-                      left: size.width / 2 - 100, // Centrado horizontalmente
-                      top: 0,
-                      child: CustomPaint(
-                        size: Size(200, size.height * 0.5), // Más compacta
-                        painter: PyramidStepsPainter(),
-                      ).animate().fadeIn(duration: 800.ms),
-                    ),
-                    // Personaje (Frutia) moviéndose
-                    Positioned(
-                      left: size.width / 2 -
-                          40 +
-                          _characterPositionX, // Ajuste horizontal
-                      top: 50.0 + _characterPositionY, // Ajuste vertical
-                      child: Transform.rotate(
-                        angle: -0.5, // Rotar para alinearse con la pendiente
-                        child: Image.asset(
-                          'assets/images/fruta22.png', // Placeholder para Frutia
-                          height: 60,
-                          width: 60,
-                          fit: BoxFit.contain,
-                        ).animate().fadeIn().move(
-                              duration: 800.ms,
-                              curve: Curves.easeInOut,
-                            ),
-                      ),
-                    ),
                     // Texto de racha
                     Padding(
                       padding: const EdgeInsets.all(16.0),

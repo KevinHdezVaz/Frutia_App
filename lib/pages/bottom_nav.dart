@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:user_auth_crudd10/pages/home_page.dart';
-import 'package:user_auth_crudd10/pages/others/profile_page.dart';
-import 'package:user_auth_crudd10/pages/screens/MyPlanPage.dart';
-import 'package:user_auth_crudd10/pages/screens/chatFrutia/ChatHistoryPage.dart';
-import 'package:user_auth_crudd10/pages/screens/chatFrutia/ChatScreenFrutia.dart';
-import 'package:user_auth_crudd10/pages/screens/planPro/ProgressPage.dart';
-import 'package:user_auth_crudd10/services/BonoService.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
-import 'package:user_auth_crudd10/utils/colors.dart';
+import 'package:Frutia/pages/home_page.dart';
+import 'package:Frutia/pages/others/profile_page.dart';
+import 'package:Frutia/pages/screens/MyPlanPage.dart';
+import 'package:Frutia/pages/screens/chatFrutia/ChatHistoryPage.dart';
+import 'package:Frutia/pages/screens/chatFrutia/ChatScreenFrutia.dart';
+import 'package:Frutia/pages/screens/planPro/ProgressPage.dart';
+import 'package:Frutia/services/BonoService.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/constantes.dart';
+import 'package:Frutia/utils/colors.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int initialIndex;

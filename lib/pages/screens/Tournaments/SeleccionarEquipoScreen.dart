@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:user_auth_crudd10/auth/auth_service.dart';
-import 'package:user_auth_crudd10/model/Equipo.dart';
-import 'package:user_auth_crudd10/model/Miembro.dart';
-import 'package:user_auth_crudd10/services/equipo_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/model/Equipo.dart';
+import 'package:Frutia/model/Miembro.dart';
+import 'package:Frutia/services/equipo_service.dart';
+import 'package:Frutia/utils/constantes.dart';
 
 class SeleccionarEquipoScreen extends StatefulWidget {
   final int torneoId;

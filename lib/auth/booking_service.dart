@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:user_auth_crudd10/auth/auth_service.dart';
-import 'package:user_auth_crudd10/model/booking.dart';
-import 'package:user_auth_crudd10/model/field.dart';
-import 'package:user_auth_crudd10/services/storage_service.dart';
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/model/booking.dart';
+import 'package:Frutia/model/field.dart';
+import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/constantes.dart';
 
 class BookingService {
   final StorageService storage = StorageService();

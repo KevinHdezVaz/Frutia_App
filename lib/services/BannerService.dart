@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:user_auth_crudd10/utils/constantes.dart';
+import 'package:Frutia/utils/constantes.dart';
 
 class BannerService {
   Future<List<String>> getBanners() async {
