@@ -1,17 +1,15 @@
- 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
-
- 
 
 class MyPlanPage extends StatefulWidget {
   @override
   _MyPlanPageState createState() => _MyPlanPageState();
 }
 
-class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateMixin {
+class _MyPlanPageState extends State<MyPlanPage>
+    with SingleTickerProviderStateMixin {
   TabController? _tabController;
   List<String> favoriteMeals = [];
   List<String> favoriteTips = [];
@@ -19,7 +17,8 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this); // Añadida pestaña para Recomendaciones
+    _tabController = TabController(
+        length: 4, vsync: this); // Añadida pestaña para Recomendaciones
   }
 
   @override
@@ -61,6 +60,16 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Mi Plan',
+            style: GoogleFonts.lato(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87)),
+        backgroundColor: Colors
+            .transparent, // Fondo transparente para que se vea el gradiente
+        elevation: 0, // Sin sombra
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -76,22 +85,6 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Mi Plan',
-                  style: GoogleFonts.lato(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: FrutiaColors.primaryText,
-                  ),
-                ).animate().fadeIn(duration: 800.ms).slideX(
-                      begin: -0.2,
-                      end: 0.0,
-                      duration: 800.ms,
-                      curve: Curves.easeOut,
-                    ),
-              ),
               TabBar(
                 controller: _tabController,
                 labelColor: FrutiaColors.accent,
@@ -114,7 +107,8 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                       items: breakfastMeals,
                       notes: [],
                       favoriteItems: favoriteMeals,
-                      onToggleFavorite: (itemName) => _toggleFavorite(itemName, true),
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, true),
                       isMeal: true,
                     ),
                     ListViewSection(
@@ -125,7 +119,8 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                         'Escoge una proteína y un carbohidrato y apóyate con una receta',
                       ],
                       favoriteItems: favoriteMeals,
-                      onToggleFavorite: (itemName) => _toggleFavorite(itemName, true),
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, true),
                       isMeal: true,
                     ),
                     ListViewSection(
@@ -136,15 +131,19 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                         'Escoge una proteína y un carbohidrato y apóyate con una receta',
                       ],
                       favoriteItems: favoriteMeals,
-                      onToggleFavorite: (itemName) => _toggleFavorite(itemName, true),
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, true),
                       isMeal: true,
                     ),
                     ListViewSection(
                       sectionType: 'Recomendaciones',
                       items: recommendations,
-                      notes: ['Sigue estos consejos para mejorar tu plan nutricional'],
+                      notes: [
+                        'Sigue estos consejos para mejorar tu plan nutricional'
+                      ],
                       favoriteItems: favoriteTips,
-                      onToggleFavorite: (itemName) => _toggleFavorite(itemName, false),
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, false),
                       isMeal: false,
                     ),
                   ],
@@ -201,7 +200,9 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                     padding: const EdgeInsets.all(6),
                     child: Icon(
                       Icons.person,
-                      color: 2 == 0 ? FrutiaColors.accent : FrutiaColors.disabledText,
+                      color: 2 == 0
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -212,7 +213,9 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                     padding: const EdgeInsets.all(6),
                     child: Icon(
                       Icons.message,
-                      color: 2 == 1 ? FrutiaColors.accent : FrutiaColors.disabledText,
+                      color: 2 == 1
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -223,7 +226,9 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                     padding: const EdgeInsets.all(6),
                     child: Icon(
                       Icons.food_bank,
-                      color: 2 == 2 ? FrutiaColors.accent : FrutiaColors.disabledText,
+                      color: 2 == 2
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -234,7 +239,9 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                     padding: const EdgeInsets.all(6),
                     child: Icon(
                       Icons.auto_graph_outlined,
-                      color: 2 == 3 ? FrutiaColors.accent : FrutiaColors.disabledText,
+                      color: 2 == 3
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -245,7 +252,9 @@ class _MyPlanPageState extends State<MyPlanPage> with SingleTickerProviderStateM
                     padding: const EdgeInsets.all(6),
                     child: Icon(
                       Icons.book,
-                      color: 2 == 4 ? FrutiaColors.accent : FrutiaColors.disabledText,
+                      color: 2 == 4
+                          ? FrutiaColors.accent
+                          : FrutiaColors.disabledText,
                       size: 22,
                     ),
                   ),
@@ -391,7 +400,8 @@ class ListViewSection extends StatelessWidget {
           if (notes.isNotEmpty)
             Card(
               elevation: 8,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: FrutiaColors.primaryBackground,
               child: ExpansionTile(
                 title: Text(
@@ -404,7 +414,8 @@ class ListViewSection extends StatelessWidget {
                 leading: Icon(Icons.info_outline, color: FrutiaColors.accent),
                 children: notes
                     .map((note) => Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Text(
                             note,
                             style: GoogleFonts.lato(
@@ -426,11 +437,13 @@ class ListViewSection extends StatelessWidget {
             final item = entry.value;
             return Card(
               elevation: 8,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               color: FrutiaColors.primaryBackground,
               child: InkWell(
                 onTap: () {
-                  Navigator.pushNamed(context, isMeal ? item['recipeRoute'] : item['detailsRoute']);
+                  Navigator.pushNamed(context,
+                      isMeal ? item['recipeRoute'] : item['detailsRoute']);
                 },
                 child: Padding(
                   padding: EdgeInsets.all(12),
@@ -443,11 +456,13 @@ class ListViewSection extends StatelessWidget {
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
                             width: 80,
                             height: 80,
                             color: FrutiaColors.secondaryBackground,
-                            child: Icon(Icons.image_not_supported, color: FrutiaColors.disabledText),
+                            child: Icon(Icons.image_not_supported,
+                                color: FrutiaColors.disabledText),
                           ),
                         ),
                       ),
@@ -492,7 +507,10 @@ class ListViewSection extends StatelessWidget {
                   ),
                 ),
               ),
-            ).animate().fadeIn(duration: 800.ms, delay: (200 + entry.key * 200).ms).slideY(
+            )
+                .animate()
+                .fadeIn(duration: 800.ms, delay: (200 + entry.key * 200).ms)
+                .slideY(
                   begin: 0.3,
                   end: 0.0,
                   duration: 800.ms,
@@ -543,7 +561,8 @@ class ModificationsScreen extends StatelessWidget {
                 TextField(
                   decoration: InputDecoration(
                     labelText: 'Ingredientes a evitar',
-                    labelStyle: GoogleFonts.lato(color: FrutiaColors.secondaryText),
+                    labelStyle:
+                        GoogleFonts.lato(color: FrutiaColors.secondaryText),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: FrutiaColors.accent),
@@ -554,10 +573,12 @@ class ModificationsScreen extends StatelessWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: FrutiaColors.accent, width: 2),
+                      borderSide:
+                          BorderSide(color: FrutiaColors.accent, width: 2),
                     ),
                     hintText: 'Ej: Beterraga, zanahoria',
-                    hintStyle: GoogleFonts.lato(color: FrutiaColors.disabledText),
+                    hintStyle:
+                        GoogleFonts.lato(color: FrutiaColors.disabledText),
                   ),
                   style: GoogleFonts.lato(color: FrutiaColors.primaryText),
                 ).animate().fadeIn(duration: 800.ms).slideY(
@@ -601,4 +622,3 @@ class ModificationsScreen extends StatelessWidget {
     );
   }
 }
- 
