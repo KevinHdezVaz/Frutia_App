@@ -25,7 +25,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
         // Ensure it's a full page transition
         Vibration.hasVibrator().then((hasVibrator) {
           if (hasVibrator ?? false) {
-            Vibration.vibrate(duration: 50); // Short vibration
+                  Vibration.vibrate(duration: 10); // Short vibration
           }
         });
       }

@@ -13,7 +13,7 @@ class FrutiaColors {
   static const Color secondaryText =
       Color.fromARGB(255, 7, 7, 7); // Light Gray for secondary text
   static const Color disabledText = Color.fromRGBO(118, 118, 118, 1); // Medium Gray for disabled text
-
+  static const Color accent2 = Color.fromARGB(255, 234, 116, 116); // Strawberry Red for pr
   // Accent and Highlight Colors
   static const Color accent = Color(
       0xFFFF4D4D); // Strawberry Red for primary accent (buttons, highlights)

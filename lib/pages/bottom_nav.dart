@@ -1,3 +1,4 @@
+import 'package:Frutia/pages/screens/PlaceholderScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -43,7 +44,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
     _pages = [
       HomePage(),
       ChatHistoryPage(), // Al tocar "Frutia", irá a ChatHistoryPage
-      MyPlanPage(),
+      PlaceholderScreen(  ),
       ProgressPage(),
       ProfilePage(),
     ];

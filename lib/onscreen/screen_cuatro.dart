@@ -171,7 +171,7 @@ class OnBoardingCuatro extends StatelessWidget {
                   onPressed: () async {
                     // Trigger vibration on button press
                     if (await Vibration.hasVibrator() ?? false) {
-                      Vibration.vibrate(duration: 50); // Short vibration
+                  Vibration.vibrate(duration: 10); // Short vibration
                     }
                     await _storeOnboardInfo();
                     Navigator.push(
