@@ -1,3 +1,4 @@
+import 'package:Frutia/pages/screens/ModificationsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -57,216 +58,115 @@ class _MyPlanPageState extends State<MyPlanPage>
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Mi Plan',
-            style: GoogleFonts.lato(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87)),
-        backgroundColor: Colors
-            .transparent, // Fondo transparente para que se vea el gradiente
-        elevation: 0, // Sin sombra
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FrutiaColors.secondaryBackground, // Off-White
-              FrutiaColors.accent, // Strawberry Red
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TabBar(
-                controller: _tabController,
-                labelColor: FrutiaColors.accent,
-                unselectedLabelColor: FrutiaColors.disabledText,
-                indicatorColor: FrutiaColors.accent,
-                labelStyle: GoogleFonts.lato(fontWeight: FontWeight.bold),
-                tabs: [
-                  Tab(text: 'Desayuno'),
-                  Tab(text: 'Almuerzo'),
-                  Tab(text: 'Cena'),
-                  Tab(text: 'Recomendaciones'), // Nueva pestaña
-                ],
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    ListViewSection(
-                      sectionType: 'Desayuno',
-                      items: breakfastMeals,
-                      notes: [],
-                      favoriteItems: favoriteMeals,
-                      onToggleFavorite: (itemName) =>
-                          _toggleFavorite(itemName, true),
-                      isMeal: true,
-                    ),
-                    ListViewSection(
-                      sectionType: 'Almuerzo',
-                      items: lunchDinnerMeals,
-                      notes: [
-                        'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
-                        'Escoge una proteína y un carbohidrato y apóyate con una receta',
-                      ],
-                      favoriteItems: favoriteMeals,
-                      onToggleFavorite: (itemName) =>
-                          _toggleFavorite(itemName, true),
-                      isMeal: true,
-                    ),
-                    ListViewSection(
-                      sectionType: 'Cena',
-                      items: lunchDinnerMeals,
-                      notes: [
-                        'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
-                        'Escoge una proteína y un carbohidrato y apóyate con una receta',
-                      ],
-                      favoriteItems: favoriteMeals,
-                      onToggleFavorite: (itemName) =>
-                          _toggleFavorite(itemName, true),
-                      isMeal: true,
-                    ),
-                    ListViewSection(
-                      sectionType: 'Recomendaciones',
-                      items: recommendations,
-                      notes: [
-                        'Sigue estos consejos para mejorar tu plan nutricional'
-                      ],
-                      favoriteItems: favoriteTips,
-                      onToggleFavorite: (itemName) =>
-                          _toggleFavorite(itemName, false),
-                      isMeal: false,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Mi Plan',
+          style: GoogleFonts.lato(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87)),
+      backgroundColor: Colors.transparent, // Fondo transparente para que se vea el gradiente
+      elevation: 0, // Sin sombra
+    ),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            FrutiaColors.secondaryBackground, // Off-White
+            FrutiaColors.accent, // Strawberry Red
+          ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ModificationsScreen()),
-          );
-        },
-        child: Icon(Icons.edit, color: Colors.white),
-        backgroundColor: FrutiaColors.accent,
-        tooltip: 'Modificar Preferencias',
-        heroTag: 'modify',
-      ).animate().scale(duration: 800.ms, curve: Curves.easeOut),
-      bottomNavigationBar: Container(
-        color: FrutiaColors.secondaryBackground,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              selectedItemColor: FrutiaColors.accent,
-              unselectedItemColor: FrutiaColors.disabledText,
-              backgroundColor: FrutiaColors.secondaryBackground,
-              currentIndex: 2, // Seleccionado "Mi Plan"
-              onTap: (index) {
-                if (index == 0) {
-                  Navigator.pushNamed(context, '/profile');
-                } else if (index == 1) {
-                  Navigator.pushNamed(context, '/chat');
-                } else if (index == 3) {
-                  Navigator.pushNamed(context, '/progress');
-                } else if (index == 4) {
-                  Navigator.pushNamed(context, '/about');
-                }
-              },
-              elevation: 0,
-              iconSize: 22,
-              selectedFontSize: 12,
-              unselectedFontSize: 12,
-              showSelectedLabels: true,
-              showUnselectedLabels: true,
-              items: [
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.person,
-                      color: 2 == 0
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Perfil",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.message,
-                      color: 2 == 1
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Frutia",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.food_bank,
-                      color: 2 == 2
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Mi Plan",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.auto_graph_outlined,
-                      color: 2 == 3
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Progreso",
-                ),
-                BottomNavigationBarItem(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.book,
-                      color: 2 == 4
-                          ? FrutiaColors.accent
-                          : FrutiaColors.disabledText,
-                      size: 22,
-                    ),
-                  ),
-                  label: "Nosotros",
-                ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TabBar(
+              controller: _tabController,
+              labelColor: FrutiaColors.accent,
+              unselectedLabelColor: FrutiaColors.disabledText,
+              indicatorColor: FrutiaColors.accent,
+              labelStyle: GoogleFonts.lato(fontWeight: FontWeight.bold),
+              tabs: [
+                Tab(text: 'Desayuno'),
+                Tab(text: 'Almuerzo'),
+                Tab(text: 'Cena'),
+                Tab(text: 'Recomendaciones'), // Nueva pestaña
               ],
             ),
-          ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  ListViewSection(
+                    sectionType: 'Desayuno',
+                    items: breakfastMeals,
+                    notes: [],
+                    favoriteItems: favoriteMeals,
+                    onToggleFavorite: (itemName) =>
+                        _toggleFavorite(itemName, true),
+                    isMeal: true,
+                  ),
+                  ListViewSection(
+                    sectionType: 'Almuerzo',
+                    items: lunchDinnerMeals,
+                    notes: [
+                      'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
+                      'Escoge una proteína y un carbohidrato y apóyate con una receta',
+                    ],
+                    favoriteItems: favoriteMeals,
+                    onToggleFavorite: (itemName) =>
+                        _toggleFavorite(itemName, true),
+                    isMeal: true,
+                  ),
+                  ListViewSection(
+                    sectionType: 'Cena',
+                    items: lunchDinnerMeals,
+                    notes: [
+                      'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
+                      'Escoge una proteína y un carbohidrato y apóyate con una receta',
+                    ],
+                    favoriteItems: favoriteMeals,
+                    onToggleFavorite: (itemName) =>
+                        _toggleFavorite(itemName, true),
+                    isMeal: true,
+                  ),
+                  ListViewSection(
+                    sectionType: 'Recomendaciones',
+                    items: recommendations,
+                    notes: [
+                      'Sigue estos consejos para mejorar tu plan nutricional'
+                    ],
+                    favoriteItems: favoriteTips,
+                    onToggleFavorite: (itemName) =>
+                        _toggleFavorite(itemName, false),
+                    isMeal: false,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ModificationsScreen()),
+        );
+      },
+      child: Icon(Icons.edit, color: Colors.white),
+      backgroundColor: FrutiaColors.accent,
+      tooltip: 'Modificar Preferencias',
+      heroTag: 'modify',
+    ).animate().scale(duration: 800.ms, curve: Curves.easeOut),
+  );
+}
 
   // Lista de comidas para Desayuno
   final List<Map<String, dynamic>> breakfastMeals = [
@@ -523,102 +423,4 @@ class ListViewSection extends StatelessWidget {
   }
 }
 
-class ModificationsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FrutiaColors.secondaryBackground,
-              FrutiaColors.accent,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Modificar Preferencias',
-                  style: GoogleFonts.lato(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: FrutiaColors.primaryText,
-                  ),
-                ).animate().fadeIn(duration: 800.ms).slideX(
-                      begin: -0.2,
-                      end: 0.0,
-                      duration: 800.ms,
-                      curve: Curves.easeOut,
-                    ),
-                SizedBox(height: 16),
-                TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Ingredientes a evitar',
-                    labelStyle:
-                        GoogleFonts.lato(color: FrutiaColors.secondaryText),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: FrutiaColors.accent),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: FrutiaColors.disabledText),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: FrutiaColors.accent, width: 2),
-                    ),
-                    hintText: 'Ej: Beterraga, zanahoria',
-                    hintStyle:
-                        GoogleFonts.lato(color: FrutiaColors.disabledText),
-                  ),
-                  style: GoogleFonts.lato(color: FrutiaColors.primaryText),
-                ).animate().fadeIn(duration: 800.ms).slideY(
-                      begin: 0.3,
-                      end: 0.0,
-                      duration: 800.ms,
-                      curve: Curves.easeOut,
-                    ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Preferencias guardadas',
-                          style: GoogleFonts.lato(color: Colors.white),
-                        ),
-                        backgroundColor: FrutiaColors.accent,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Guardar Cambios',
-                    style: GoogleFonts.lato(fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 50),
-                  ),
-                ).animate().fadeIn(duration: 800.ms).slideY(
-                      begin: 0.3,
-                      end: 0.0,
-                      duration: 800.ms,
-                      curve: Curves.easeOut,
-                    ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+ 

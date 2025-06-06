@@ -3,248 +3,287 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
 
-class ProgressPage extends StatefulWidget {
-  const ProgressPage({super.key});
+class ProgressScreen extends StatefulWidget {
+  const ProgressScreen({Key? key}) : super(key: key);
 
   @override
-  State<ProgressPage> createState() => _ProgressPageState();
+  _ProgressScreenState createState() => _ProgressScreenState();
 }
 
-class _ProgressPageState extends State<ProgressPage> {
-  double _characterPositionX = 0.0; // Posición horizontal
-  double _characterPositionY = 0.0; // Posición vertical
+class _ProgressScreenState extends State<ProgressScreen> {
+  int _currentStreak = 0; // Racha actual
+  bool _dailyGoalMet = false; // Si se cumplió el objetivo diario
+  bool _isDayTime = true; // Determina si es día o noche
+  final int _maxSteps = 10; // Máximo número de escalones
 
   @override
   void initState() {
     super.initState();
-    // Simulación de estado inicial (puedes cambiar manualmente para probar)
-    _updatePosition(true); // true para subir, false para bajar
+    // Determinar si es día o noche según la hora actual
+    final hour = DateTime.now().hour;
+    _isDayTime = hour >= 6 && hour < 18; // Día: 6 AM - 6 PM, Noche: 6 PM - 6 AM
   }
 
-  void _updatePosition(bool streakAchieved) {
+  // Método para mostrar un SnackBar con mensaje
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.lato(color: Colors.white),
+        ),
+        backgroundColor: FrutiaColors.accent,
+      ),
+    );
+  }
+
+  // Método para avanzar o retroceder en la racha
+  void _updateStreak(bool goalMet) {
     setState(() {
-      if (streakAchieved) {
-        // Subir: Mover hacia arriba y a la derecha (pendiente de la pirámide)
-        _characterPositionX += 20.0;
-        _characterPositionY -= 20.0;
+      if (goalMet) {
+        _currentStreak = (_currentStreak + 1).clamp(0, _maxSteps - 1);
+        _showSnackBar('¡Objetivo cumplido! Avanzas un escalón.');
       } else {
-        // Bajar: Mover hacia abajo y a la izquierda
-        _characterPositionX -= 20.0;
-        _characterPositionY += 20.0;
+        _currentStreak = (_currentStreak - 1).clamp(0, _maxSteps - 1);
+        _showSnackBar('Objetivo no cumplido. Retrocedes un escalón.');
       }
-      // Limitar la posición para que no salga de los escalones visibles
-      _characterPositionX = _characterPositionX.clamp(0.0, 150.0);
-      _characterPositionY = _characterPositionY.clamp(0.0, 150.0);
+      _dailyGoalMet = goalMet;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
-            ],
+      // AppBar con título y botón de retroceso
+      appBar: AppBar(
+        title: Text(
+          'PROGRESO',
+          style: GoogleFonts.lato(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Mitad superior: Pirámide y animación
-              SizedBox(
-                height: size.height * 0.5, // Ocupa solo la mitad superior
-                child: Stack(
-                  children: [
-                    // Texto de racha
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Racha de Progreso',
-                            style: GoogleFonts.lato(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: FrutiaColors.primaryText,
-                            ),
-                          ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sube la pirámide cumpliendo tu racha diaria.',
-                            style: GoogleFonts.lato(
-                              fontSize: 14,
-                              color: FrutiaColors.secondaryText,
-                            ),
-                          ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
-                        ],
-                      ),
-                    ),
-                  ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: FrutiaColors.accent),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      // Cuerpo con gradiente e imagen de fondo
+      body: Stack(
+        children: [
+          // Fondo con gradiente
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  FrutiaColors.secondaryBackground,
+                  FrutiaColors.accent,
+                ],
+              ),
+            ),
+          ),
+          // Imagen de fondo según la hora
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(_isDayTime ? 'assets/day_background.jpg' : 'assets/night_background.jpg'),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.3),
+                  BlendMode.dstATop,
                 ),
               ),
+            ),
+          ),
+          // Contenido principal
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Texto descriptivo
+                  Text(
+                    '¡Sigue tu racha y alcanza la cima con tu mono!',
+                    style: GoogleFonts.lato(
+                      fontSize: 16,
+                      color: FrutiaColors.primaryText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(duration: 800.ms).slideY(
+                        begin: 0.3,
+                        end: 0.0,
+                        duration: 800.ms,
+                        curve: Curves.easeOut,
+                      ),
+                  const SizedBox(height: 16),
+                  // Escalones de progreso
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        // Líneas que conectan los escalones
+                        CustomPaint(
+                          size: Size(screenWidth, screenHeight),
+                          painter: StaircasePainter(
+                            steps: _maxSteps,
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                          ),
+                        ),
+                        // Escalones como cards en diagonal
+                        ...List.generate(_maxSteps, (index) {
+                          final stepNumber = index + 1;
+                          final isCurrentStep = stepNumber == (_currentStreak + 1);
 
-              // Mitad inferior: Estadísticas
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Card(
-                    elevation: 10,
+                          // Calcular posición en diagonal
+                          final stepHeight = screenHeight * 0.5 / (_maxSteps - 1);
+                          final stepWidth = screenWidth * 0.6 / (_maxSteps - 1);
+                          final top = screenHeight * 0.3 - (index * stepHeight);
+                          final left = (index * stepWidth) + 16;
+
+                          return Positioned(
+                            top: top,
+                            left: left,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Escalón como Card
+                                Card(
+                                  elevation: 4,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  color: isCurrentStep ? FrutiaColors.accent : Colors.white,
+                                  child: Container(
+                                    width: 60,
+                                    height: 30,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Escalón $stepNumber',
+                                      style: GoogleFonts.lato(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isCurrentStep ? Colors.white : FrutiaColors.primaryText,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ).animate().fadeIn(duration: 800.ms, delay: (index * 200).ms),
+                                const SizedBox(height: 4),
+                                // Día de racha debajo del escalón
+                                Text(
+                                  'Día $index',
+                                  style: GoogleFonts.lato(
+                                    fontSize: 12,
+                                    color: FrutiaColors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        // Mono en el escalón actual
+                        if (_currentStreak < _maxSteps)
+                          Positioned(
+                            top: screenHeight * 0.3 - (_currentStreak * (screenHeight * 0.5 / (_maxSteps - 1))) - 50,
+                            left: (_currentStreak * (screenWidth * 0.6 / (_maxSteps - 1))) + 16,
+                            child: Image.asset(
+                              'assets/monkey_mascot.png',
+                              width: 40,
+                              height: 40,
+                            ).animate().slide(
+                                  begin: const Offset(0.5, 0.5),
+                                  end: Offset.zero,
+                                  duration: 800.ms,
+                                  curve: Curves.easeOut,
+                                ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Checkbox para objetivo diario
+                  Card(
+                    elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    color: FrutiaColors.secondaryBackground,
+                    color: Colors.white,
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            'Estadísticas',
-                            style: GoogleFonts.lato(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: FrutiaColors.primaryText,
+                          Checkbox(
+                            value: _dailyGoalMet,
+                            onChanged: (bool? value) {
+                              _updateStreak(value ?? false);
+                            },
+                            activeColor: FrutiaColors.accent,
+                          ),
+                          Expanded(
+                            child: Text(
+                              '¿Cumpliste tu objetivo diario?',
+                              style: GoogleFonts.lato(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: FrutiaColors.primaryText,
+                              ),
                             ),
-                          ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
-                          const SizedBox(height: 16),
-                          _buildStatRow(
-                            icon: Icons.local_fire_department,
-                            label: 'Días de Racha',
-                            value: '7 días',
-                            delay: 800,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildStatRow(
-                            icon: Icons.fitness_center,
-                            label: 'Calorías Quemadas',
-                            value: '1850 kcal',
-                            delay: 1000,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildStatRow(
-                            icon: Icons.fastfood,
-                            label: 'Comidas Saludables',
-                            value: '12 esta semana',
-                            delay: 1200,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildStatRow(
-                            icon: Icons.water_drop,
-                            label: 'Hidratación',
-                            value: '2.5 L hoy',
-                            delay: 1400,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
+                  ).animate().fadeIn(duration: 800.ms).slideY(
+                        begin: 0.3,
+                        end: 0.0,
+                        duration: 800.ms,
+                        curve: Curves.easeOut,
+                      ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
-
-  Widget _buildStatRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required double delay,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: FrutiaColors.accent,
-          size: 24,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.lato(
-                  fontSize: 14,
-                  color: FrutiaColors.secondaryText,
-                ),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: FrutiaColors.primaryText,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    )
-        .animate()
-        .fadeIn(delay: 1000.ms, duration: 800.ms)
-        .slideX(begin: -0.2, end: 0.0, duration: 800.ms, curve: Curves.easeOut);
-  }
 }
 
-// Pintor personalizado para dibujar la mitad de la pirámide con escalones
-class PyramidStepsPainter extends CustomPainter {
+// Pintor personalizado para dibujar las líneas que conectan los escalones
+class StaircasePainter extends CustomPainter {
+  final int steps;
+  final double screenWidth;
+  final double screenHeight;
+
+  StaircasePainter({
+    required this.steps,
+    required this.screenWidth,
+    required this.screenHeight,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final basePaint = Paint()
-      ..color = FrutiaColors.accent.withOpacity(0.8)
-      ..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = Colors.grey[400]!
+      ..strokeWidth = 2;
 
-    final stepPaint = Paint()
-      ..color = FrutiaColors.primaryBackground
-      ..style = PaintingStyle.fill;
+    final stepHeight = screenHeight * 0.5 / (steps - 1);
+    final stepWidth = screenWidth * 0.6 / (steps - 1);
 
-    // Dibujar el triángulo base (mitad de la pirámide)
-    final path = Path()
-      ..moveTo(0, size.height) // Base izquierda
-      ..lineTo(size.width, size.height) // Base derecha
-      ..lineTo(
-          size.width / 2, -size.height) // Vértice superior (fuera de pantalla)
-      ..close();
+    for (int i = 0; i < steps - 1; i++) {
+      final startX = (i * stepWidth) + 46; // Ajuste según la posición del centro del card
+      final startY = screenHeight * 0.3 - (i * stepHeight) + 15;
+      final endX = ((i + 1) * stepWidth) + 46;
+      final endY = screenHeight * 0.3 - ((i + 1) * stepHeight) + 15;
 
-    canvas.drawPath(path, basePaint);
-
-    // Dibujar escalones
-    const stepHeight = 20.0; // Altura de cada escalón
-    const stepCount = 20; // Más escalones para efecto "infinito"
-    for (int i = 0; i < stepCount; i++) {
-      double t = i / stepCount;
-      double y =
-          size.height - (i * stepHeight); // Posición vertical del escalón
-      if (y < -size.height) break; // Para no dibujar más allá del vértice
-
-      // Calcular los puntos del escalón
-      double x1 = size.width * t; // Punto en la base
-      double x2 = size.width / 2 +
-          (size.width / 2 - size.width / 2 * t); // Punto en la pendiente
-
-      // Dibujar el escalón (rectángulo)
-      final stepPath = Path()
-        ..moveTo(x1, y)
-        ..lineTo(x2, y - stepHeight)
-        ..lineTo(x2, y)
-        ..lineTo(x1, y)
-        ..close();
-
-      canvas.drawPath(stepPath, stepPaint);
+      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
     }
   }
 

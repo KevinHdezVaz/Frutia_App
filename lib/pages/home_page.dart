@@ -1,52 +1,24 @@
+import 'package:Frutia/pages/screens/createplan/CreatePlanScreen.dart';
+import 'package:Frutia/pages/screens/datosPersonales/PersonalDataScreen.dart';
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
 
 class HomePage extends StatelessWidget {
-  // Sample data for the carousel
-  final List<Map<String, String>> carouselItems = [
-    {
-      'title': '¡Mantente hidratado!',
-      'subtitle': 'Bebe 8 vasos de agua hoy.',
-      'image': 'assets/carousel1.jpg',
-    },
-    {
-      'title': '¡Prueba una nueva receta!',
-      'subtitle': 'Explora sabores mediterráneos.',
-      'image': 'assets/carousel2.jpg',
-    },
-    {
-      'title': '¡Sigue tus metas!',
-      'subtitle': '¡Estás a mitad de camino!',
-      'image': 'assets/carousel3.jpg',
-    },
-  ];
+  // Datos del usuario (simulados)
+  final String userName = 'John';
+  final int streakDays = 5;
+  final double currentWeight = 70.0;
+  final String mainGoal = 'Pérdida de peso';
+  final bool hasPlan = false; // Cambiar a true para simular un plan existente
 
-  // Quick Access data with Flutter icons
-  final List<Map<String, dynamic>> quickAccessItems = [
-    {
-      'title': 'Recetas',
-      'subtitle': 'Descubre nuevas comidas',
-      'icon': Icons.restaurant_menu,
-    },
-    {
-      'title': 'Progreso',
-      'subtitle': 'Sigue tu viaje',
-      'icon': Icons.show_chart,
-    },
-    {
-      'title': 'Chat IA',
-      'subtitle': 'Tu guía de chat IA',
-      'icon': Icons.chat,
-    },
-    {
-      'title': 'Lista de compras',
-      'subtitle': 'Planifica tus compras',
-      'icon': Icons.list,
-    },
-  ];
+  // Datos del plan actual (simulados, solo si hasPlan es true)
+  final Map<String, dynamic> currentPlan = {
+    'goal': 'Pérdida de peso',
+    'dailyCalories': 2000,
+    'dietPreferences': ['Sin gluten', 'Sin lácteos'],
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -70,166 +42,29 @@ class HomePage extends StatelessWidget {
               children: [
                 // AppBar personalizado
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.notifications,
-                            color: FrutiaColors.primaryText),
-                        onPressed: () {},
-                      ),
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: FrutiaColors.secondaryBackground,
-                        child: Icon(
-                          Icons.person,
+                      Text(
+                        'Perfil',
+                        style: GoogleFonts.lato(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                           color: FrutiaColors.primaryText,
-                          size: 20,
                         ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.settings, color: FrutiaColors.primaryText),
+                        onPressed: () {
+                          // Navegar a pantalla de configuración
+                        },
                       ),
                     ],
                   ),
                 ).animate().fadeIn(duration: 800.ms),
 
-                // Carousel Section
-                CarouselSlider(
-                  options: CarouselOptions(
-                    height: 200.0,
-                    autoPlay: true,
-                    autoPlayInterval: const Duration(seconds: 3),
-                    enlargeCenterPage: true,
-                    viewportFraction: 0.9,
-                  ),
-                  items: carouselItems.map((item) {
-                    return Builder(
-                      builder: (BuildContext context) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: FrutiaColors.shadow,
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Stack(
-                              children: [
-                                Image.asset(
-                                  item['image']!,
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    width: double.infinity,
-                                    height: 200,
-                                    color: FrutiaColors.nutrition,
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: FrutiaColors.primaryBackground,
-                                      size: 50,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: double.infinity,
-                                  height: 200,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        Colors.black.withOpacity(0.6),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item['title']!,
-                                          style: GoogleFonts.lato(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                FrutiaColors.primaryBackground,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          item['subtitle']!,
-                                          style: GoogleFonts.lato(
-                                            fontSize: 14,
-                                            color:
-                                                FrutiaColors.primaryBackground,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }).toList(),
-                ).animate().fadeIn(delay: 200.ms, duration: 800.ms).slideY(
-                    begin: 0.3,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
-
-                const SizedBox(height: 24),
-
-                // Greeting Section
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    '¡Buenas noches, John!', // Ajustado para el horario (05:45 PM CST)
-                    style: GoogleFonts.lato(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: FrutiaColors.primaryText,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 400.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    '¿Listo para alcanzar tus metas hoy?',
-                    style: GoogleFonts.lato(
-                      fontSize: 16,
-                      color: FrutiaColors.secondaryText,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 400.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
-
-                const SizedBox(height: 16),
-
-                // Daily Intake Section
+                // Sección de Perfil
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16.0),
                   padding: const EdgeInsets.all(20.0),
@@ -244,102 +79,95 @@ class HomePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        'Ingesta diaria de calorías',
-                        style: GoogleFonts.lato(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: FrutiaColors.primaryText,
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: FrutiaColors.accent,
+                        child: Icon(
+                          Icons.person,
+                          color: FrutiaColors.primaryBackground,
+                          size: 40,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Text(
-                            '1850',
-                            style: GoogleFonts.inter(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: FrutiaColors.accent,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '/ 2200 kcal',
-                            style: GoogleFonts.lato(
-                              fontSize: 16,
-                              color: FrutiaColors.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      LinearProgressIndicator(
-                        value: 1850 / 2200,
-                        backgroundColor: FrutiaColors.primaryBackground,
-                        color: FrutiaColors.accent,
-                        minHeight: 8,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '¡Estás en camino hacia tus metas!',
-                        style: GoogleFonts.lato(
-                          fontSize: 14,
-                          color: FrutiaColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              '+ Agregar comida',
-                              style: GoogleFonts.inter(
-                                color: FrutiaColors.accent,
-                                fontWeight: FontWeight.w600,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '¡Hola, $userName!',
+                              style: GoogleFonts.lato(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: FrutiaColors.primaryText,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              'Racha: $streakDays días',
+                              style: GoogleFonts.lato(
+                                fontSize: 14,
+                                color: FrutiaColors.secondaryText,
+                              ),
+                            ),
+                            Text(
+                              'Peso actual: $currentWeight kg',
+                              style: GoogleFonts.lato(
+                                fontSize: 14,
+                                color: FrutiaColors.secondaryText,
+                              ),
+                            ),
+                            Text(
+                              'Objetivo: $mainGoal',
+                              style: GoogleFonts.lato(
+                                fontSize: 14,
+                                color: FrutiaColors.secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.edit, color: FrutiaColors.accent),
+                        onPressed: () {
+                          // Navegar a pantalla de edición de perfil
+                        },
                       ),
                     ],
                   ),
-                ).animate().fadeIn(delay: 600.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
+                ).animate().fadeIn(delay: 200.ms, duration: 800.ms).slideY(
+                      begin: 0.3,
+                      end: 0.0,
+                      duration: 800.ms,
+                      curve: Curves.easeOut,
+                    ),
 
                 const SizedBox(height: 24),
 
-                // Today's Meals Section
+                // Sección de Plan
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    'Comidas de hoy',
+                    hasPlan ? 'Tu plan actual' : 'Crea tu plan',
                     style: GoogleFonts.lato(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: FrutiaColors.primaryText,
                     ),
                   ),
-                ).animate().fadeIn(delay: 800.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
+                ).animate().fadeIn(delay: 400.ms, duration: 800.ms).slideX(
+                      begin: -0.2,
+                      end: 0.0,
+                      duration: 800.ms,
+                      curve: Curves.easeOut,
+                    ),
 
                 const SizedBox(height: 8),
 
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   decoration: BoxDecoration(
                     color: FrutiaColors.secondaryBackground,
                     borderRadius: BorderRadius.circular(12),
@@ -351,42 +179,12 @@ class HomePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'assets/meal_image.jpg',
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            width: 60,
-                            height: 60,
-                            color: FrutiaColors.nutrition,
-                            child: Icon(
-                              Icons.restaurant_menu,
-                              color: FrutiaColors.primaryBackground,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
+                  child: hasPlan
+                      ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Almuerzo',
-                              style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: FrutiaColors.secondaryText,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Ensalada de garbanzos mediterránea',
+                              'Objetivo: ${currentPlan['goal']}',
                               style: GoogleFonts.lato(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -395,191 +193,217 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '✓ Garbanzos',
+                              'Calorías diarias: ${currentPlan['dailyCalories']} kcal',
                               style: GoogleFonts.lato(
                                 fontSize: 14,
                                 color: FrutiaColors.secondaryText,
                               ),
                             ),
+                            const SizedBox(height: 8),
                             Text(
-                              '✓ Pepino',
+                              'Preferencias: ${currentPlan['dietPreferences'].join(', ')}',
                               style: GoogleFonts.lato(
                                 fontSize: 14,
                                 color: FrutiaColors.secondaryText,
                               ),
                             ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => CreatePlanScreen()),
+  );
+},
+                                  child: Text(
+                                    'Editar plan',
+                                    style: GoogleFonts.lato(
+                                      color: FrutiaColors.accent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                 onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => CreatePlanScreen()),
+  );
+},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: FrutiaColors.accent,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Crear nuevo plan',
+                                    style: GoogleFonts.lato(
+                                      fontSize: 14,
+                                      color: FrutiaColors.primaryBackground,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              '✓ Tomates',
+                              '¡No tienes un plan activo!',
+                              style: GoogleFonts.lato(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: FrutiaColors.primaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Crea un plan personalizado para alcanzar tus metas de manera efectiva.',
                               style: GoogleFonts.lato(
                                 fontSize: 14,
                                 color: FrutiaColors.secondaryText,
                               ),
                             ),
-                            Text(
-                              '✓ 2 más...',
-                              style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: FrutiaColors.secondaryText,
+                            const SizedBox(height: 16),
+                            Center(
+                              child: ElevatedButton(
+                           onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => PersonalDataScreen()),
+  );
+},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: FrutiaColors.accent,
+                                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 8,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Crea tu plan ahora',
+                                      style: GoogleFonts.lato(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: FrutiaColors.primaryBackground,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      size: 16,
+                                      color: FrutiaColors.primaryBackground,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 800.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
+                ).animate().fadeIn(delay: 600.ms, duration: 800.ms).slideX(
+                      begin: -0.2,
+                      end: 0.0,
+                      duration: 800.ms,
+                      curve: Curves.easeOut,
+                    ),
 
                 const SizedBox(height: 24),
 
-                // Explore Full Plan Button
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: FrutiaColors.accent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 8,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Explorar plan completo',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: FrutiaColors.primaryBackground,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: FrutiaColors.primaryBackground,
-                        ),
-                      ],
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 1000.ms, duration: 800.ms).scale(
-                    begin: const Offset(0.8, 0.8),
-                    end: const Offset(1.0, 1.0),
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
-
-                const SizedBox(height: 24),
-
-                // Quick Access Section
+                // Sección de Logros
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    'Acceso rápido',
+                    'Tus logros',
                     style: GoogleFonts.lato(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: FrutiaColors.primaryText,
                     ),
                   ),
-                ).animate().fadeIn(delay: 1200.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
+                ).animate().fadeIn(delay: 800.ms, duration: 800.ms).slideX(
+                      begin: -0.2,
+                      end: 0.0,
+                      duration: 800.ms,
+                      curve: Curves.easeOut,
+                    ),
 
                 const SizedBox(height: 8),
 
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: GridView.count(
-                    crossAxisCount: 2,
+                    crossAxisCount: 3,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    children: quickAccessItems.map((item) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: FrutiaColors.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: FrutiaColors.shadow,
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.transparent,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Color(0xFFFFA726),
-                                      Color(0xFFFF6F61),
-                                    ],
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    item['icon'],
-                                    size: 40,
-                                    color: FrutiaColors.primaryBackground,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              item['title']!,
-                              style: GoogleFonts.lato(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: FrutiaColors.primaryText,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item['subtitle']!,
-                              style: GoogleFonts.lato(
-                                fontSize: 12,
-                                color: FrutiaColors.secondaryText,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                    children: [
+                      _buildAchievementCard('Racha de 5 días', Icons.local_fire_department),
+                      _buildAchievementCard('Primera semana', Icons.check_circle),
+                      _buildAchievementCard('Explorador', Icons.explore),
+                    ],
                   ),
-                ).animate().fadeIn(delay: 1200.ms, duration: 800.ms).slideX(
-                    begin: -0.2,
-                    end: 0.0,
-                    duration: 800.ms,
-                    curve: Curves.easeOut),
+                ).animate().fadeIn(delay: 1000.ms, duration: 800.ms).slideX(
+                      begin: -0.2,
+                      end: 0.0,
+                      duration: 800.ms,
+                      curve: Curves.easeOut,
+                    ),
 
                 const SizedBox(height: 24),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAchievementCard(String title, IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        color: FrutiaColors.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: FrutiaColors.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 40,
+            color: FrutiaColors.accent,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: GoogleFonts.lato(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: FrutiaColors.primaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

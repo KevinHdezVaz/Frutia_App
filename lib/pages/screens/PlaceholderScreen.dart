@@ -1,45 +1,15 @@
+import 'package:Frutia/pages/screens/CompraDetailScreen.dart';
+import 'package:Frutia/pages/screens/ModificationsScreen.dart';
 import 'package:Frutia/pages/screens/MyPlanPage.dart';
+import 'package:Frutia/pages/screens/RecipeDetailScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
 
-// Pantalla placeholder para Recetas
-class RecetasScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Recetas')),
-      body: Center(
-          child: Text('Contenido de Recetas', style: TextStyle(fontSize: 24))),
-    );
-  }
-}
-
-// Pantalla placeholder para Compras
-class ComprasScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Compras')),
-      body: Center(
-          child: Text('Contenido de Compras', style: TextStyle(fontSize: 24))),
-    );
-  }
-}
-
-// Pantalla placeholder para Modificaciones
-class ModificacionesScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Modificaciones')),
-      body: Center(
-          child: Text('Contenido de Modificaciones',
-              style: TextStyle(fontSize: 24))),
-    );
-  }
-}
+ 
+ 
+ 
 
 class PlaceholderScreen extends StatefulWidget {
   const PlaceholderScreen({Key? key}) : super(key: key);
@@ -279,19 +249,18 @@ class _InteractiveCardState extends State<_InteractiveCard>
             case 'Recetas':
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => RecetasScreen()),
+MaterialPageRoute(builder: (context) => RecetasScreen()),
               );
               break;
             case 'Compras':
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ComprasScreen()),
-              );
+MaterialPageRoute(builder: (context) => ComprasScreen()),              );
               break;
             case 'Modificaciones':
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ModificacionesScreen()),
+                MaterialPageRoute(builder: (context) => ModificationsScreen()),
               );
               break;
           }
