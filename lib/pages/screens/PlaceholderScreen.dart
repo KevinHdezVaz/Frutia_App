@@ -7,10 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
 
- 
- 
- 
-
 class PlaceholderScreen extends StatefulWidget {
   const PlaceholderScreen({Key? key}) : super(key: key);
 
@@ -28,16 +24,6 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
-            ],
-          ),
-        ),
         child: _screens[_currentIndex],
       ),
       bottomNavigationBar: Container(
@@ -249,13 +235,14 @@ class _InteractiveCardState extends State<_InteractiveCard>
             case 'Recetas':
               Navigator.push(
                 context,
-MaterialPageRoute(builder: (context) => RecetasScreen()),
+                MaterialPageRoute(builder: (context) => RecetasScreen()),
               );
               break;
             case 'Compras':
               Navigator.push(
                 context,
-MaterialPageRoute(builder: (context) => ComprasScreen()),              );
+                MaterialPageRoute(builder: (context) => ComprasScreen()),
+              );
               break;
             case 'Modificaciones':
               Navigator.push(

@@ -22,7 +22,7 @@ class ChatScreenFrutia extends StatelessWidget {
     return GestureDetector(
       onTap: onBack,
       child: Scaffold(
-         appBar: AppBar(
+        appBar: AppBar(
           title: Text(
             'Chatea con FRUTIA',
             style: GoogleFonts.lato(
@@ -31,7 +31,7 @@ class ChatScreenFrutia extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-           elevation: 0,
+          elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back_ios, color: FrutiaColors.accent),
             onPressed: onBack,
@@ -51,16 +51,6 @@ class ChatScreenFrutia extends StatelessWidget {
           ],
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFFFFD1B3), // Naranja suave
-                Color(0xFFFF6F61), // Rojo cálido
-              ],
-            ),
-          ),
           child: SafeArea(
             child: Column(
               children: [
@@ -116,14 +106,13 @@ class ChatScreenFrutia extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 10.0),
-                   child: Row(
+                  child: Row(
                     children: [
                       Expanded(
                         child: TextField(
                           decoration: InputDecoration(
                             hintText: 'Escribe tu mensaje...',
-                            hintStyle:
-                                TextStyle(color: Colors.white),
+                            hintStyle: TextStyle(color: Colors.white),
                             filled: true,
                             fillColor: FrutiaColors.accent,
                             border: OutlineInputBorder(

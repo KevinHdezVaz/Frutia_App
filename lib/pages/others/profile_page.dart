@@ -11,16 +11,6 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
-            ],
-          ),
-        ),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Column(

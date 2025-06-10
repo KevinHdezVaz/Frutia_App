@@ -62,6 +62,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     }
   }
 
+/*
   Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text;
@@ -93,6 +94,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       }
     }
   }
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +232,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               Padding(
                 padding: const EdgeInsets.all(18.0),
                 child: ElevatedButton(
-                  onPressed: _updateProfile,
+                  onPressed: () => {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         Colors.green, // Cambia esto al color que desees

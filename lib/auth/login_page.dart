@@ -61,60 +61,52 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // Google Sign-In Logic
-  Future<bool> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return false;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final response = await _authService.loginWithGoogle(googleAuth.idToken);
-
-      if (response) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AuthCheckMain()),
-        );
-      }
-      return response;
-    } catch (e) {
-      showErrorSnackBar('Error durante el login con Google: $e');
-      return false;
-    }
-  }
-
   // Email/Password Sign-In Logic
-  Future signIn() async {
-    if (!validateLogin()) return;
+  Future<void> signIn() async {
+    // if (!validateLogin()) return; // Se asume que la validación se hace antes.
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE63946)),
+        ),
+      ),
+    );
 
     try {
-      showDialog(
-        context: context,
-        builder: (context) => Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE63946)),
-          ),
-        ),
-      );
-
-      final success = await _authService.login(
+      final response = await _authService.login(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
-      Navigator.pop(context); // Close loader
+      Navigator.of(context).pop(); // Cierra el diálogo de carga
 
-      if (success) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AuthCheckMain()),
-        );
-      } else {
-        showErrorSnackBar('Credenciales inválidas');
-      }
+      // Navega a la pantalla principal si el login es exitoso
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => AuthCheckMain()),
+      );
+    } on AuthException catch (e) {
+      // Maneja errores específicos de la API (ej. credenciales inválidas)
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     } catch (e) {
-      showErrorSnackBar(e.toString());
+      // Maneja otros errores (ej. sin conexión a internet)
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ocurrió un error inesperado. Inténtalo de nuevo.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -424,7 +416,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 child: Container(
                                   width: size.width * 0.8,
                                   child: OutlinedButton(
-                                    onPressed: signInWithGoogle,
+                                    onPressed: () => {},
                                     style: OutlinedButton.styleFrom(
                                       padding:
                                           EdgeInsets.symmetric(vertical: 16),

@@ -58,115 +58,105 @@ class _MyPlanPageState extends State<MyPlanPage>
     });
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Text('Mi Plan',
-          style: GoogleFonts.lato(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87)),
-      backgroundColor: Colors.transparent, // Fondo transparente para que se vea el gradiente
-      elevation: 0, // Sin sombra
-    ),
-    body: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            FrutiaColors.secondaryBackground, // Off-White
-            FrutiaColors.accent, // Strawberry Red
-          ],
-        ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Mi Plan',
+            style: GoogleFonts.lato(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87)),
+        backgroundColor: Colors.transparent,
+        elevation: 0, // Sin sombra
       ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: FrutiaColors.accent,
-              unselectedLabelColor: FrutiaColors.disabledText,
-              indicatorColor: FrutiaColors.accent,
-              labelStyle: GoogleFonts.lato(fontWeight: FontWeight.bold),
-              tabs: [
-                Tab(text: 'Desayuno'),
-                Tab(text: 'Almuerzo'),
-                Tab(text: 'Cena'),
-                Tab(text: 'Recomendaciones'), // Nueva pestaña
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
+      body: Container(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TabBar(
                 controller: _tabController,
-                children: [
-                  ListViewSection(
-                    sectionType: 'Desayuno',
-                    items: breakfastMeals,
-                    notes: [],
-                    favoriteItems: favoriteMeals,
-                    onToggleFavorite: (itemName) =>
-                        _toggleFavorite(itemName, true),
-                    isMeal: true,
-                  ),
-                  ListViewSection(
-                    sectionType: 'Almuerzo',
-                    items: lunchDinnerMeals,
-                    notes: [
-                      'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
-                      'Escoge una proteína y un carbohidrato y apóyate con una receta',
-                    ],
-                    favoriteItems: favoriteMeals,
-                    onToggleFavorite: (itemName) =>
-                        _toggleFavorite(itemName, true),
-                    isMeal: true,
-                  ),
-                  ListViewSection(
-                    sectionType: 'Cena',
-                    items: lunchDinnerMeals,
-                    notes: [
-                      'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
-                      'Escoge una proteína y un carbohidrato y apóyate con una receta',
-                    ],
-                    favoriteItems: favoriteMeals,
-                    onToggleFavorite: (itemName) =>
-                        _toggleFavorite(itemName, true),
-                    isMeal: true,
-                  ),
-                  ListViewSection(
-                    sectionType: 'Recomendaciones',
-                    items: recommendations,
-                    notes: [
-                      'Sigue estos consejos para mejorar tu plan nutricional'
-                    ],
-                    favoriteItems: favoriteTips,
-                    onToggleFavorite: (itemName) =>
-                        _toggleFavorite(itemName, false),
-                    isMeal: false,
-                  ),
+                labelColor: FrutiaColors.accent,
+                unselectedLabelColor: FrutiaColors.disabledText,
+                indicatorColor: FrutiaColors.accent,
+                labelStyle: GoogleFonts.lato(fontWeight: FontWeight.bold),
+                tabs: [
+                  Tab(text: 'Desayuno'),
+                  Tab(text: 'Almuerzo'),
+                  Tab(text: 'Cena'),
+                  Tab(text: 'Recomendaciones'), // Nueva pestaña
                 ],
               ),
-            ),
-          ],
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    ListViewSection(
+                      sectionType: 'Desayuno',
+                      items: breakfastMeals,
+                      notes: [],
+                      favoriteItems: favoriteMeals,
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, true),
+                      isMeal: true,
+                    ),
+                    ListViewSection(
+                      sectionType: 'Almuerzo',
+                      items: lunchDinnerMeals,
+                      notes: [
+                        'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
+                        'Escoge una proteína y un carbohidrato y apóyate con una receta',
+                      ],
+                      favoriteItems: favoriteMeals,
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, true),
+                      isMeal: true,
+                    ),
+                    ListViewSection(
+                      sectionType: 'Cena',
+                      items: lunchDinnerMeals,
+                      notes: [
+                        'Ensalada LIBRE (NO beterraga, NO zanahoria, ½ palta SOLO con atún o pollo)',
+                        'Escoge una proteína y un carbohidrato y apóyate con una receta',
+                      ],
+                      favoriteItems: favoriteMeals,
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, true),
+                      isMeal: true,
+                    ),
+                    ListViewSection(
+                      sectionType: 'Recomendaciones',
+                      items: recommendations,
+                      notes: [
+                        'Sigue estos consejos para mejorar tu plan nutricional'
+                      ],
+                      favoriteItems: favoriteTips,
+                      onToggleFavorite: (itemName) =>
+                          _toggleFavorite(itemName, false),
+                      isMeal: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-    floatingActionButton: FloatingActionButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ModificationsScreen()),
-        );
-      },
-      child: Icon(Icons.edit, color: Colors.white),
-      backgroundColor: FrutiaColors.accent,
-      tooltip: 'Modificar Preferencias',
-      heroTag: 'modify',
-    ).animate().scale(duration: 800.ms, curve: Curves.easeOut),
-  );
-}
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ModificationsScreen()),
+          );
+        },
+        child: Icon(Icons.edit, color: Colors.white),
+        backgroundColor: FrutiaColors.accent,
+        tooltip: 'Modificar Preferencias',
+        heroTag: 'modify',
+      ).animate().scale(duration: 800.ms, curve: Curves.easeOut),
+    );
+  }
 
   // Lista de comidas para Desayuno
   final List<Map<String, dynamic>> breakfastMeals = [
@@ -422,5 +412,3 @@ class ListViewSection extends StatelessWidget {
     );
   }
 }
-
- 

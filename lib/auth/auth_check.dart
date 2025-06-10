@@ -1,48 +1,34 @@
+// lib/auth/auth_check_main.dart
+
 import 'package:flutter/material.dart';
 import 'package:Frutia/auth/auth_page_check.dart';
-import 'package:Frutia/onscreen/QuestionnairePage.dart';
-import 'package:Frutia/pages/bottom_nav.dart';
+import 'package:Frutia/pages/bottom_nav.dart'; // O directamente HomePage si prefieres
 import 'package:Frutia/services/storage_service.dart';
 
 class AuthCheckMain extends StatelessWidget {
   const AuthCheckMain({super.key});
 
-  // Bandera estática para controlar si el modal ya se mostró
-  static bool _hasShownModal = false;
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String?>(
+      // 1. Revisa si existe un token guardado
       future: StorageService().getToken(),
       builder: (context, snapshot) {
+        // Mientras espera, muestra un indicador de carga
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
+
+        // 2. Si HAY un token, el usuario está logueado
         if (snapshot.hasData && snapshot.data != null) {
-          // Mostrar el modal solo si no se ha mostrado antes
-          if (!_hasShownModal) {
-            _hasShownModal = true; // Marcar que el modal ya se mostró
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => PersonalDataPage(
-                  showLoginPage: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => AuthPageCheck()),
-                    );
-                  },
-                ),
-              ).then((_) {
-                // No recargamos AuthCheckMain, ya que BottomNavBar ya está debajo
-              });
-            });
-          }
-          return const BottomNavBar();
+          // Lo mandamos a la app principal (que contiene la HomePage)
+          return const BottomNavBar(); // O la HomePage directamente
         }
-        return AuthPageCheck();
+
+        // 3. Si NO hay token, lo mandamos a la página de autenticación
+        return const AuthPageCheck();
       },
     );
   }

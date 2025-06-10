@@ -7,7 +7,8 @@ import 'package:Frutia/utils/colors.dart';
 class RecipeDetailScreen extends StatelessWidget {
   final String recipeName;
 
-  const RecipeDetailScreen({required this.recipeName, Key? key}) : super(key: key);
+  const RecipeDetailScreen({required this.recipeName, Key? key})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,21 +30,12 @@ class RecipeDetailScreen extends StatelessWidget {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FrutiaColors.secondaryBackground,
-              FrutiaColors.accent,
-            ],
-          ),
-        ),
         child: SafeArea(
           child: Center(
             child: Text(
               'Detalles de la receta: $recipeName',
-              style: GoogleFonts.lato(fontSize: 24, color: FrutiaColors.primaryText),
+              style: GoogleFonts.lato(
+                  fontSize: 24, color: FrutiaColors.primaryText),
             ),
           ),
         ),
@@ -153,16 +145,6 @@ class _RecetasScreenState extends State<RecetasScreen> {
       ),
       // Cuerpo con gradiente y lista de recetas
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FrutiaColors.secondaryBackground,
-              FrutiaColors.accent,
-            ],
-          ),
-        ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -200,7 +182,8 @@ class _RecetasScreenState extends State<RecetasScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RecipeDetailScreen(recipeName: recipe['name']),
+              builder: (context) =>
+                  RecipeDetailScreen(recipeName: recipe['name']),
             ),
           );
         },

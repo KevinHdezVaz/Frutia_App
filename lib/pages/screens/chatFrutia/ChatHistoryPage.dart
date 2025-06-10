@@ -11,17 +11,7 @@ class ChatHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
-            ],
-          ),
-        ),
+      body: Container(
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

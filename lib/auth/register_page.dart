@@ -70,72 +70,64 @@ class _RegisterPageState extends State<RegisterPage>
     super.dispose();
   }
 
-  // Google Sign-Up Logic
-  Future<bool> signUpWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return false;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final response = await _authService.loginWithGoogle(googleAuth.idToken);
-
-      if (response) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AuthCheckMain()),
-        );
-      }
-      return response;
-    } catch (e) {
-      showErrorSnackBar('Error durante el registro con Google: $e');
-      return false;
-    }
-  }
-
-  Future signUp() async {
-    if (!validateRegister()) return;
-    try {
-      showDialog(
-        context: context,
-        builder: (_) => Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
-          ),
+  Future<void> signUp() async {
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // El usuario no puede cerrar el diálogo tocando fuera
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
         ),
-      );
+      ),
+    );
 
-      final emailExists =
-          await _authService.checkEmailExists(_emailController.text);
-      if (emailExists) {
-        Navigator.pop(context);
-        showErrorSnackBar(
-            "Este correo electrónico ya está registrado, agrega otro.");
-        _emailController.clear();
-        return;
-      }
-
-      final success = await _authService.register(
-        name: _nameController.text,
-        email: _emailController.text,
+    try {
+      final response = await _authService.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      Navigator.pop(context);
+      Navigator.of(context).pop();
 
-      if (success) {
-        final token = await StorageService().getToken();
-        print("Token after registration: $token");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => AuthCheckMain()),
-        );
-      } else {
-        print("Registration failed");
-      }
+      // 3. Manejar la respuesta exitosa.
+      final userName = response['user']['name'];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('¡Bienvenido, $userName! Registro exitoso.'),
+          backgroundColor: FrutiaColors.success,
+        ),
+      );
+
+      // Navegar a la siguiente pantalla (por ejemplo, la de verificación o la home).
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+            builder: (_) => AuthCheckMain()), // O tu página de inicio
+      );
+    } on AuthException catch (e) {
+      // 4. Manejar errores de autenticación específicos (ej. email ya existe).
+      // El mensaje 'e.message' viene directamente de nuestro backend.
+      Navigator.of(context)
+          .pop(); // Asegúrate de cerrar el diálogo también en caso de error.
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     } catch (e) {
-      Navigator.pop(context);
-      showErrorSnackBar(e.toString());
+      // 5. Manejar cualquier otro error inesperado (ej. no hay internet).
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -507,7 +499,7 @@ class _RegisterPageState extends State<RegisterPage>
                                       child: Container(
                                         width: size.width * 0.8,
                                         child: OutlinedButton(
-                                          onPressed: signUpWithGoogle,
+                                          onPressed: () => {},
                                           style: OutlinedButton.styleFrom(
                                             padding: EdgeInsets.symmetric(
                                                 vertical: 16),

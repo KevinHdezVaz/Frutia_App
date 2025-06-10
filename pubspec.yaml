@@ -67,6 +67,9 @@ dependencies:
   syncfusion_flutter_sliders: ^26.2.14
   video_player: ^2.8.6
   vibration: ^1.8.1
+  percent_indicator: ^4.2.3 # Para la barra de progreso
+  flutter_svg: ^2.0.10+1 # O la versión más reciente
+ 
 
 dev_dependencies:
   flutter_test:

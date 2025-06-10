@@ -8,7 +8,7 @@ import 'package:Frutia/pages/others/profile_page.dart';
 import 'package:Frutia/pages/screens/MyPlanPage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatHistoryPage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatScreenFrutia.dart';
-import 'package:Frutia/pages/screens/planPro/ProgressPage.dart';
+import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
 import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/constantes.dart';
@@ -44,7 +44,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
     _pages = [
       HomePage(),
       ChatHistoryPage(), // Al tocar "Frutia", irá a ChatHistoryPage
-      PlaceholderScreen(  ),
+      PlaceholderScreen(),
       ProgressScreen(),
       ProfilePage(),
     ];
@@ -53,18 +53,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
-            ],
-          ),
-        ),
         child: Stack(
           children: [
             _pages[_selectedIndex],

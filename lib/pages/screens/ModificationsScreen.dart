@@ -57,16 +57,6 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
       ),
       // Cuerpo con gradiente y formulario
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FrutiaColors.secondaryBackground,
-              FrutiaColors.accent,
-            ],
-          ),
-        ),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
@@ -102,7 +92,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.local_florist, color: Colors.green, size: 24),
+                              Icon(Icons.local_florist,
+                                  color: Colors.green, size: 24),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -126,15 +117,19 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                                 _objective = newValue!;
                               });
                             },
-                            items: <String>['Mantenimiento', 'Pérdida de peso', 'Ganancia muscular']
-                                .map<DropdownMenuItem<String>>((String value) {
+                            items: <String>[
+                              'Mantenimiento',
+                              'Pérdida de peso',
+                              'Ganancia muscular'
+                            ].map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value, style: GoogleFonts.lato()),
                               );
                             }).toList(),
                             underline: const SizedBox(),
-                            style: GoogleFonts.lato(color: FrutiaColors.primaryText),
+                            style: GoogleFonts.lato(
+                                color: FrutiaColors.primaryText),
                             dropdownColor: Colors.white,
                           ),
                           const SizedBox(height: 16),
@@ -148,7 +143,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                             ),
                           ),
                           CheckboxListTile(
-                            title: Text('Sin gluten', style: GoogleFonts.lato()),
+                            title:
+                                Text('Sin gluten', style: GoogleFonts.lato()),
                             value: _glutenFree,
                             onChanged: (bool? value) {
                               setState(() {
@@ -158,7 +154,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                             activeColor: FrutiaColors.accent,
                           ),
                           CheckboxListTile(
-                            title: Text('Sin lácteos', style: GoogleFonts.lato()),
+                            title:
+                                Text('Sin lácteos', style: GoogleFonts.lato()),
                             value: _dairyFree,
                             onChanged: (bool? value) {
                               setState(() {
@@ -195,21 +192,26 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                             },
                             decoration: InputDecoration(
                               hintText: 'No quiero huevo, mayonesa, etc.',
-                              hintStyle: GoogleFonts.lato(color: FrutiaColors.disabledText),
+                              hintStyle: GoogleFonts.lato(
+                                  color: FrutiaColors.disabledText),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: FrutiaColors.accent),
+                                borderSide: const BorderSide(
+                                    color: FrutiaColors.accent),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: FrutiaColors.disabledText),
+                                borderSide: const BorderSide(
+                                    color: FrutiaColors.disabledText),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: FrutiaColors.accent, width: 2),
+                                borderSide: const BorderSide(
+                                    color: FrutiaColors.accent, width: 2),
                               ),
                             ),
-                            style: GoogleFonts.lato(color: FrutiaColors.primaryText),
+                            style: GoogleFonts.lato(
+                                color: FrutiaColors.primaryText),
                           ),
                         ],
                       ),
@@ -235,7 +237,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.fitness_center, color: Colors.blueGrey, size: 24),
+                              Icon(Icons.fitness_center,
+                                  color: Colors.blueGrey, size: 24),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -269,7 +272,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                                 child: TextField(
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
-                                  controller: TextEditingController(text: _weight.toStringAsFixed(1)),
+                                  controller: TextEditingController(
+                                      text: _weight.toStringAsFixed(1)),
                                   onChanged: (value) {
                                     setState(() {
                                       _weight = double.tryParse(value) ?? 70.0;
@@ -279,7 +283,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                                     hintText: '70',
                                     suffixText: 'kg',
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                    contentPadding:
+                                        EdgeInsets.symmetric(horizontal: 8),
                                   ),
                                   style: GoogleFonts.lato(fontSize: 14),
                                 ),
@@ -305,17 +310,20 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                                 child: TextField(
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
-                                  controller: TextEditingController(text: _measureMin.toStringAsFixed(0)),
+                                  controller: TextEditingController(
+                                      text: _measureMin.toStringAsFixed(0)),
                                   onChanged: (value) {
                                     setState(() {
-                                      _measureMin = double.tryParse(value) ?? 90.0;
+                                      _measureMin =
+                                          double.tryParse(value) ?? 90.0;
                                     });
                                   },
                                   decoration: const InputDecoration(
                                     hintText: '90',
                                     suffixText: 'cm',
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 4),
+                                    contentPadding:
+                                        EdgeInsets.symmetric(horizontal: 4),
                                   ),
                                   style: GoogleFonts.lato(fontSize: 14),
                                 ),
@@ -334,17 +342,20 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                                 child: TextField(
                                   keyboardType: TextInputType.number,
                                   textAlign: TextAlign.center,
-                                  controller: TextEditingController(text: _measureMax.toStringAsFixed(0)),
+                                  controller: TextEditingController(
+                                      text: _measureMax.toStringAsFixed(0)),
                                   onChanged: (value) {
                                     setState(() {
-                                      _measureMax = double.tryParse(value) ?? 100.0;
+                                      _measureMax =
+                                          double.tryParse(value) ?? 100.0;
                                     });
                                   },
                                   decoration: const InputDecoration(
                                     hintText: "100",
                                     suffixText: 'cm',
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 4),
+                                    contentPadding:
+                                        EdgeInsets.symmetric(horizontal: 4),
                                   ),
                                   style: GoogleFonts.lato(fontSize: 14),
                                 ),
@@ -372,15 +383,20 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                                     _updateFrequency = newValue!;
                                   });
                                 },
-                                items: <String>['Semanal', 'Quincenal', 'Mensual']
-                                    .map<DropdownMenuItem<String>>((String value) {
+                                items: <String>[
+                                  'Semanal',
+                                  'Quincenal',
+                                  'Mensual'
+                                ].map<DropdownMenuItem<String>>((String value) {
                                   return DropdownMenuItem<String>(
                                     value: value,
-                                    child: Text(value, style: GoogleFonts.lato()),
+                                    child:
+                                        Text(value, style: GoogleFonts.lato()),
                                   );
                                 }).toList(),
                                 underline: const SizedBox(),
-                                style: GoogleFonts.lato(color: FrutiaColors.primaryText),
+                                style: GoogleFonts.lato(
+                                    color: FrutiaColors.primaryText),
                                 dropdownColor: Colors.white,
                               ),
                             ],
@@ -426,7 +442,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                           },
                           child: Text(
                             'Restablecer valores',
-                            style: GoogleFonts.lato(fontWeight: FontWeight.bold),
+                            style:
+                                GoogleFonts.lato(fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey[300],
@@ -447,7 +464,8 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                           },
                           child: Text(
                             'Guardar cambios',
-                            style: GoogleFonts.lato(fontWeight: FontWeight.bold),
+                            style:
+                                GoogleFonts.lato(fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: FrutiaColors.accent,
