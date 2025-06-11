@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:Frutia/pages/home_page.dart';
 import 'package:Frutia/pages/others/profile_page.dart';
-import 'package:Frutia/pages/screens/MyPlanPage.dart';
+import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatHistoryPage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatScreenFrutia.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';

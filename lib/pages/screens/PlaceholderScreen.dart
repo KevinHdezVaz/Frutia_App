@@ -1,6 +1,6 @@
 import 'package:Frutia/pages/screens/CompraDetailScreen.dart';
 import 'package:Frutia/pages/screens/ModificationsScreen.dart';
-import 'package:Frutia/pages/screens/MyPlanPage.dart';
+import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
 import 'package:Frutia/pages/screens/RecipeDetailScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

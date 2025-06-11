@@ -280,7 +280,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
             Expanded(
               child: SfSlider(
                 min: 16.0,
-                max: 90.0,
+                max: 60.0,
                 value: _age,
                 interval: 20,
                 showTicks: true,

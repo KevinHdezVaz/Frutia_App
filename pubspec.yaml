@@ -69,6 +69,8 @@ dependencies:
   vibration: ^1.8.1
   percent_indicator: ^4.2.3 # Para la barra de progreso
   flutter_svg: ^2.0.10+1 # O la versión más reciente
+  flutter_tex: ^4.0.7  # Check for the latest version
+
  
 
 dev_dependencies:

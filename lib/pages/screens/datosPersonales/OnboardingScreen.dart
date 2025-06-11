@@ -1,4 +1,5 @@
 import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/pages/screens/datosPersonales/PlanSummaryScreen.dart';
 import 'package:Frutia/pages/screens/datosPersonales/SuccessScreen.dart';
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/services/plan_service.dart';
@@ -157,125 +158,97 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     return isValid;
   }
 // En _QuestionnaireFlowState dentro de questionnaire_flow.dart
+  
+
 
   void _handleNextOrFinish() async {
-    if (!_validateCurrentPage()) {
-      return; // No avanza si la validación de la página actual falla
-    }
+  if (!_validateCurrentPage()) {
+    return; // No avanza si la validación de la página actual falla
+  }
 
-    // Si no es la última página, solo avanza
-    if (_pageController.page! < _numPages - 1) {
-      _pageController.nextPage(duration: 400.ms, curve: Curves.easeOut);
-      return;
-    }
+  // Si no es la última página, solo avanza
+  if (_pageController.page! < _numPages - 1) {
+    _pageController.nextPage(duration: 400.ms, curve: Curves.easeOut);
+    return;
+  }
 
-    // --- LÓGICA DE GUARDADO FINAL (SOLO PARA LA ÚLTIMA PÁGINA) ---
-    print('--- INICIANDO PROCESO DE GUARDADO DE PERFIL ---');
-    print('1. Botón Finalizar presionado.');
+  // --- LÓGICA FINAL DE GUARDADO Y GENERACIÓN DE PLAN ---
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      print('2. Accediendo al QuestionnaireProvider.');
-      final questionnaireProvider = context.read<QuestionnaireProvider>();
-
-      String? formatTimeOfDay(TimeOfDay? time) {
-        if (time == null) return null;
-        final hour = time.hour.toString().padLeft(2, '0');
-        final minute = time.minute.toString().padLeft(2, '0');
-        return '$hour:$minute';
-      }
-
-      String removeEmojis(String text) {
-        final emojiRegex = RegExp(
-            r'[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]',
-            unicode: true);
-        return text.replaceAll(emojiRegex, '').trim();
-      }
-
-      // Preparamos el mapa de datos completo
-      final profileData = {
-        'goal': questionnaireProvider.mainGoal != null
-            ? removeEmojis(questionnaireProvider.mainGoal!)
-            : '',
-        'activity_level': questionnaireProvider.dailyActivityLevel != null
-            ? removeEmojis(questionnaireProvider.dailyActivityLevel!)
-            : '',
-        'dietary_style': questionnaireProvider.dietStyle != null
-            ? removeEmojis(questionnaireProvider.dietStyle!)
-            : '',
-        'budget': questionnaireProvider.weeklyBudget != null
-            ? removeEmojis(questionnaireProvider.weeklyBudget!)
-            : '',
-        'cooking_habit': questionnaireProvider.whoCooks != null
-            ? removeEmojis(questionnaireProvider.whoCooks!)
-            : '',
-        'eats_out': questionnaireProvider.eatsOut != null
-            ? removeEmojis(questionnaireProvider.eatsOut!)
-            : '',
-        'disliked_foods': questionnaireProvider.dislikedFoods,
-        'allergies': questionnaireProvider.allergyDetails,
-        'medical_condition': questionnaireProvider.medicalConditionDetails,
-        'communication_style': questionnaireProvider.communicationTone != null
-            ? removeEmojis(questionnaireProvider.communicationTone!)
-            : '',
-        'motivation_style': questionnaireProvider.preferredMessageTypes
-            .map((type) => removeEmojis(type))
-            .join(','),
-        'preferred_name': questionnaireProvider.preferredName ?? '',
-        'things_to_avoid': questionnaireProvider.thingsToAvoid,
-        'sport': questionnaireProvider.sport,
-        'training_frequency': questionnaireProvider.trainingFrequency != null
-            ? removeEmojis(questionnaireProvider.trainingFrequency!)
-            : '',
-        'meal_count': questionnaireProvider.mealCount != null
-            ? removeEmojis(questionnaireProvider.mealCount!)
-            : '',
-        'breakfast_time': formatTimeOfDay(questionnaireProvider.breakfastTime),
-        'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
-        'dinner_time': formatTimeOfDay(questionnaireProvider.dinnerTime),
-
-        // --- LÍNEA CLAVE AÑADIDA ---
-        // Le decimos al backend que este es el paso final del onboarding.
-        'plan_setup_complete': true,
-      };
-
-      print('3. Datos del perfil empaquetados: $profileData');
-
-      final profileService = ProfileService();
-      print('4. Llamando a profileService.saveProfile()...');
-      await profileService.saveProfile(profileData);
-
-      await PlanService().generatePlan();
-
-      print('5. ¡ÉXITO! Perfil guardado correctamente.');
-
-      if (mounted) {
-        Navigator.of(context).pop(); // Cierra el diálogo
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SuccessScreen()),
-        );
-      }
-    } catch (e, stackTrace) {
-      print('--- ¡ERROR ATRAPADO! ---');
-      print('Error: $e');
-      print('Stack trace: $stackTrace');
-
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: ${e.toString()}'),
-            backgroundColor: Colors.red,
+  try {
+    // 1. Guardar el perfil del usuario con los datos del cuestionario
+    final questionnaireProvider = context.read<QuestionnaireProvider>();
+    final profileData = {
+      'goal': questionnaireProvider.mainGoal != null ? removeEmojis(questionnaireProvider.mainGoal!) : '',
+      'activity_level': questionnaireProvider.dailyActivityLevel != null ? removeEmojis(questionnaireProvider.dailyActivityLevel!) : '',
+      'dietary_style': questionnaireProvider.dietStyle != null ? removeEmojis(questionnaireProvider.dietStyle!) : '',
+      'budget': questionnaireProvider.weeklyBudget != null ? removeEmojis(questionnaireProvider.weeklyBudget!) : '',
+      'cooking_habit': questionnaireProvider.whoCooks != null ? removeEmojis(questionnaireProvider.whoCooks!) : '',
+      'eats_out': questionnaireProvider.eatsOut != null ? removeEmojis(questionnaireProvider.eatsOut!) : '',
+      'disliked_foods': questionnaireProvider.dislikedFoods,
+      'allergies': questionnaireProvider.allergyDetails,
+      'medical_condition': questionnaireProvider.medicalConditionDetails,
+      'communication_style': questionnaireProvider.communicationTone != null ? removeEmojis(questionnaireProvider.communicationTone!) : '',
+      'motivation_style': questionnaireProvider.preferredMessageTypes.map((type) => removeEmojis(type)).join(','),
+      'preferred_name': questionnaireProvider.preferredName ?? '',
+      'things_to_avoid': questionnaireProvider.thingsToAvoid,
+      'sport': questionnaireProvider.sport,
+      'training_frequency': questionnaireProvider.trainingFrequency != null ? removeEmojis(questionnaireProvider.trainingFrequency!) : '',
+      'meal_count': questionnaireProvider.mealCount != null ? removeEmojis(questionnaireProvider.mealCount!) : '',
+      'breakfast_time': formatTimeOfDay(questionnaireProvider.breakfastTime),
+      'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
+      'dinner_time': formatTimeOfDay(questionnaireProvider.dinnerTime),
+      'plan_setup_complete': true,
+    };
+    
+    await ProfileService().saveProfile(profileData);
+      
+      // 1. CAPTURAMOS LA RESPUESTA QUE CONTIENE EL PLAN
+      final newPlanData = await PlanService().generatePlan();
+ 
+    // 3. Si todo fue exitoso, cerramos el diálogo y navegamos a la pantalla de éxito.
+    if (mounted) {
+      Navigator.of(context).pop(); // Cierra el diálogo de carga
+      
+      // Usamos pushAndRemoveUntil para limpiar el stack de navegación y que el usuario no pueda volver al cuestionario.
+     Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => PlanSummaryScreen(planData: newPlanData['data']['plan_data']),
           ),
+          (route) => false,
         );
-      }
+    }
+  } catch (e, stackTrace) {
+    print('--- ¡ERROR ATRAPADO DURANTE LA GENERACIÓN DEL PLAN! ---');
+    print('Error: $e');
+    print('Stack trace: $stackTrace');
+
+    if (mounted) {
+      Navigator.of(context).pop(); // Cierra el diálogo de carga
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          // Muestra un mensaje de error claro al usuario
+          content: Text('Error al generar tu plan: ${e.toString().replaceFirst("Exception: ", "")}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+}
+
+// Función auxiliar para formatear TimeOfDay (si no la tienes ya en este scope)
+String? formatTimeOfDay(TimeOfDay? time) {
+  if (time == null) return null;
+  final hour = time.hour.toString().padLeft(2, '0');
+  final minute = time.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+ 
+
 
   @override
   Widget build(BuildContext context) {

@@ -20,7 +20,7 @@ class SportSelection extends StatelessWidget {
   Widget build(BuildContext context) {
     // Definimos los deportes con sus emojis correspondientes
     final Map<String, String> sportsWithEmojis = {
-      '🏋️ Ninguno': 'Ninguno',
+      '❌ Ninguno': 'Ninguno',
       '💪 Gym': 'Gym',
       '⚽ Fútbol': 'Fútbol',
       '🏃 Running': 'Running',
