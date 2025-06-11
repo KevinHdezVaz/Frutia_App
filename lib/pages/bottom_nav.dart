@@ -7,7 +7,7 @@ import 'package:Frutia/pages/home_page.dart';
 import 'package:Frutia/pages/others/profile_page.dart';
 import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatHistoryPage.dart';
-import 'package:Frutia/pages/screens/chatFrutia/ChatScreenFrutia.dart';
+import 'package:Frutia/pages/screens/chatFrutia/ChatScreen.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
 import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/storage_service.dart';
@@ -43,7 +43,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
     // Lista fija de páginas
     _pages = [
       HomePage(),
-      ChatHistoryPage(), // Al tocar "Frutia", irá a ChatHistoryPage
+      ChatHistoryScreen(), // Al tocar "Frutia", irá a ChatHistoryPage
       PlaceholderScreen(),
       ProgressScreen(),
       ProfilePage(),

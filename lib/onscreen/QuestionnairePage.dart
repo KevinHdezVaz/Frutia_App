@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class PersonalDataPage extends StatefulWidget {
-  // 1. AÑADIMOS EL CALLBACK REQUERIDO AL CONSTRUCTOR
   final VoidCallback onSuccess;
 
   const PersonalDataPage({
@@ -51,8 +50,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 backgroundColor: Colors.green),
           );
 
-          Navigator.pop(context);
-          // 2. EN LUGAR DE Navigator.pop(), LLAMAMOS AL CALLBACK DE ÉXITO
+          // Eliminamos Navigator.pop(context) y solo llamamos al callback
           widget.onSuccess();
         }
       } catch (e) {
@@ -73,7 +71,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Tu método build original está bien, solo lo he pegado aquí para completitud.
     return Scaffold(
       backgroundColor: Colors.black.withOpacity(0.6),
       body: Center(
@@ -158,7 +155,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
     );
   }
 
-  // TU DISEÑO ORIGINAL PARA LOS SLIDERS Y SELECTOR DE SEXO
   Widget _buildHeightSlider() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -29,7 +29,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchAndCheckProfile() async {
-    if (mounted) setState(() => _pageState = PageState.loading);
+    if (!mounted) return;
+    setState(() => _pageState = PageState.loading);
 
     try {
       final userData = await _authService.getProfile();
@@ -56,7 +57,12 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _pageState = PageState.error);
+      if (mounted) {
+        setState(() {
+          _pageState = PageState.error;
+          _userData = null;
+        });
+      }
     }
   }
 
@@ -68,7 +74,9 @@ class _HomePageState extends State<HomePage> {
         return PersonalDataPage(
           onSuccess: () {
             Navigator.of(dialogContext).pop();
-            _fetchAndCheckProfile();
+            if (mounted) {
+              _fetchAndCheckProfile();
+            }
           },
         );
       },
@@ -89,7 +97,11 @@ class _HomePageState extends State<HomePage> {
   Widget _buildUIForState() {
     switch (_pageState) {
       case PageState.loading:
+        return const Center(
+            key: ValueKey('loader'),
+            child: CircularProgressIndicator(color: FrutiaColors.accent));
       case PageState.needsOnboarding:
+        // Evitar pantalla negra mostrando un loader mientras se muestra el modal
         return const Center(
             key: ValueKey('loader'),
             child: CircularProgressIndicator(color: FrutiaColors.accent));
@@ -125,6 +137,7 @@ class _HomePageState extends State<HomePage> {
 class _DashboardView extends StatelessWidget {
   final Map<String, dynamic> userData;
   const _DashboardView({super.key, required this.userData});
+
   @override
   Widget build(BuildContext context) {
     final String userName = userData['name'] ?? 'Usuario';
