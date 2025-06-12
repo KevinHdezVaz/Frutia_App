@@ -6,6 +6,7 @@ import 'package:Frutia/pages/screens/chatFrutia/VoiceChatScreen.dart';
 import 'package:Frutia/pages/screens/chatFrutia/WaveVisualizer.dart';
 import 'package:Frutia/services/ChatServiceApi.dart';
 import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 import 'package:flutter/material.dart';
@@ -58,10 +59,21 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final StorageService _storageService = StorageService();
   final ChatServiceApi _chatService = ChatServiceApi();
 
-  // Color palette
-  final Color tiffanyColor = Color(0xFF88D5C2);
-  final Color ivoryColor = Color(0xFFFDF8F2);
-  final Color micButtonColor = Color(0xFF4ECDC4);
+  final Color frutia_background = Colors.white; // Un crema suave y cálido
+  final Color frutia_accent = Color(0xFFFF8A65);     // Durazno/Coral como acento principal
+  final Color frutia_primary_text = Color(0xFF5D4037); // Marrón oscuro para texto
+ 
+
+// Colores mejorados para los bubbles
+final Color user_bubble_color = const Color.fromARGB(255, 236, 112, 67); // Color principal para el usuario
+ 
+ final Color bot_bubble_color = FrutiaColors.accent;    // Gris oscuro elegante para el bot
+
+
+final Color user_text_color = Colors.white;         // Texto blanco para mejor contraste
+final Color bot_text_color = Colors.white;          // Texto blanco también para el bot
+final Color time_text_color = Colors.white70;       // Color más suave para la hora
+
 
   List<ChatMessage> _messages = [];
   int? _currentSessionId;
@@ -239,101 +251,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _totalTokens += tokens;
     });
     if (_totalTokens > _tokenLimit) {
-      _summarizeConversation();
-    }
+     }
   }
 
-  Future<void> _summarizeConversation() async {
-    try {
-      setState(() {
-        _isTyping = true;
-        _typingIndex = 0;
-        _typingTimer = Timer.periodic(Duration(milliseconds: 500), (timer) {
-          if (mounted) setState(() => _typingIndex = (_typingIndex + 1) % 3);
-        });
-      });
+   
 
-      final response = await _chatService.summarizeConversation(
-        messages: _messages.reversed
-            .map((m) => {
-                  'text': m.text,
-                  'is_user': m.isUser,
-                  'created_at': m.createdAt.toIso8601String(),
-                })
-            .toList(),
-        sessionId: _currentSessionId,
-      );
-
-      if (!mounted) return;
-
-      final summary = response['summary'];
-
-      setState(() {
-        _isTyping = false;
-        _typingTimer.cancel();
-      });
-
-      _showSummaryModal(summary);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _typingTimer.cancel();
-      });
-      _showErrorSnackBar(
-          'errorSummarizingConversation'.tr(args: [e.toString()]));
-    }
-  }
-
-  void _showSummaryModal(String summary) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('conversationTooLong'.tr()),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'conversationSummary'.tr(),
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Text(summary, textAlign: TextAlign.justify),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('close'.tr()),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4BB6A8)),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: summary));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('summaryCopied'.tr()),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              Navigator.pop(context);
-            },
-            child: Text('copy'.tr(), style: TextStyle(color: Colors.white)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4BB6A8)),
-            onPressed: () {
-              Navigator.pop(context);
-              _startNewChatWithSummary(summary);
-            },
-            child: Text('newChat'.tr(), style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+ 
 
   void _startNewChatWithSummary(String summary) {
     Navigator.pushReplacement(
@@ -352,33 +275,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return token != null && token.isNotEmpty;
   }
 
-  Future<void> _playThinkingSound() async {
-    try {
-      bool soundEnabled =
-          await _storageService.getString('sound_enabled') == 'true' ||
-              await _storageService.getString('sound_enabled') == null;
-      if (soundEnabled) {
-        await _audioPlayer.setVolume(0.1);
-
-        await _audioPlayer.play(AssetSource('sounds/pensandoIA.mp3'));
-        _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('errorPlayingSound'.tr(args: [e.toString()]));
-      }
-    }
-  }
-
-  Future<void> _stopThinkingSound() async {
-    try {
-      await _audioPlayer.stop();
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('errorStoppingSound'.tr(args: [e.toString()]));
-      }
-    }
-  }
+ 
+ 
 
   Future<void> _startNewSession() async {
     setState(() {
@@ -412,8 +310,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         id: -1,
         chatSessionId: response['session_id'] ?? -1,
         userId: 0,
-        text: response['ai_message']['text'],
-        isUser: false,
+text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta válida.',        isUser: false,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -472,8 +369,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     });
     _controller.clear();
 
-    await _playThinkingSound();
-
+ 
     try {
       print('Sending message with session_id: $_currentSessionId');
       final response = isTemporary
@@ -489,8 +385,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             );
 
       if (!mounted) {
-        await _stopThinkingSound();
-        return;
+         return;
       }
 
       print('Received response: $response');
@@ -514,19 +409,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _updateTokenCount(aiMessage.text);
       });
 
-      await _stopThinkingSound();
-      Vibration.vibrate(duration: 200);
+       Vibration.vibrate(duration: 200);
     } catch (e) {
       if (!mounted) {
-        await _stopThinkingSound();
-        return;
+         return;
       }
       setState(() {
         _isTyping = false;
         _typingTimer.cancel();
       });
-      await _stopThinkingSound();
-      print('Error sending message: $e');
+       print('Error sending message: $e');
       _showErrorSnackBar('Error al enviar el mensaje: $e');
     }
   }
@@ -541,15 +433,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('saveConversation'.tr(),
+        title: Text("Guardar Conversacion para despues",
             style: TextStyle(color: Colors.black)),
         content: TextField(
           controller: titleController,
           autofocus: true,
           style: TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            labelText: 'title'.tr(),
-            hintText: 'exampleTitle'.tr(),
+            labelText: "Titulo",
+            hintText: "Escribe titulo...",
             hintStyle: TextStyle(color: Colors.grey),
             filled: true,
             fillColor: Color(0xFFF6F6F6),
@@ -566,7 +458,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('cancel'.tr(), style: TextStyle(color: Colors.black)),
+            child: Text("Cancelar", style: TextStyle(color: Colors.black)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4BB6A8)),
@@ -575,7 +467,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 Navigator.pop(context, titleController.text.trim());
               }
             },
-            child: Text('save'.tr(), style: TextStyle(color: Colors.white)),
+            child: Text("Guardar", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -605,7 +497,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('chatSavedSuccessfully'.tr()),
+          content: Text("Chat guardado corrrectamente"),
           backgroundColor: Colors.green,
         ),
       );
@@ -715,65 +607,105 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       ),
     );
   }
+ 
+Widget _buildMessageBubble(ChatMessage message) {
+  final time = DateFormat('HH:mm').format(message.createdAt); // Formato más limpio
 
-  Widget _buildMessageBubble(ChatMessage message) {
-    final time =
-        "${message.createdAt.hour}:${message.createdAt.minute.toString().padLeft(2, '0')}";
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      child: Column(
-        crossAxisAlignment:
-            message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          ChatBubble(
-            clipper: ChatBubbleClipper1(
-              type: message.isUser
-                  ? BubbleType.sendBubble
-                  : BubbleType.receiverBubble,
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    child: Column(
+      crossAxisAlignment:
+          message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          child: PhysicalModel(
+            color: Colors.transparent,
+            elevation: 2,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(message.isUser ? 16 : 4),
+              topRight: Radius.circular(message.isUser ? 4 : 16),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
             ),
-            alignment: message.isUser ? Alignment.topRight : Alignment.topLeft,
-            margin: EdgeInsets.only(top: 5),
-            backGroundColor: message.isUser
-                ? Color(0xFFFFE0B2).withOpacity(0.9)
-                : Colors.white.withOpacity(0.8),
             child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
-                minWidth:
-                    0, // Permitir que el contenedor se ajuste al contenido
+              decoration: BoxDecoration(
+                color: message.isUser ? user_bubble_color : bot_bubble_color,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(message.isUser ? 16 : 4),
+                  topRight: Radius.circular(message.isUser ? 4 : 16),
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 2,
+                    offset: Offset(0, 2),
+                  )
+                ],
               ),
-              padding: EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8), // Más espacio interno
+              padding: EdgeInsets.all(12),
               child: Column(
-                crossAxisAlignment: message.isUser
-                    ? CrossAxisAlignment.end
+                crossAxisAlignment: message.isUser 
+                    ? CrossAxisAlignment.end 
                     : CrossAxisAlignment.start,
                 children: [
+                  if (message.imageUrl != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          message.imageUrl!,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  
                   RichText(
                     text: TextSpan(
-                      children: _parseTextToSpans(message.text),
+                      style: TextStyle(
+                        color: message.isUser ? user_text_color : bot_text_color,
+                        fontSize: 16,
+                        height: 1.4,
+                      ),
+                      children: _parseTextToSpans(message.text).map((span) {
+                        return TextSpan(
+                          text: span.text,
+                          style: span.style?.copyWith(
+                            color: message.isUser ? user_text_color : bot_text_color,
+                          ) ?? TextStyle(
+                            color: message.isUser ? user_text_color : bot_text_color,
+                          ),
+                        );
+                      }).toList(),
                     ),
                     textAlign: message.isUser ? TextAlign.end : TextAlign.start,
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
                   ),
-                  if (message.imageUrl != null)
-                    Image.network(message.imageUrl!),
-                  SizedBox(height: 5),
+                  
+                  SizedBox(height: 4),
                   Text(
                     time,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    semanticsLabel: 'Enviado a las $time',
+                    style: TextStyle(
+                      color: time_text_color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w300,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   String _getEmotionalStateText(String? state) {
     switch (state) {
@@ -816,7 +748,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 margin: EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: index == _typingIndex ? Colors.blue : Colors.grey,
+                  color: index == _typingIndex ? Colors.red : Colors.grey,
                 ),
               );
             }),
@@ -826,71 +758,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Hola",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black.withOpacity(0.95),
-                  fontFamily: 'Lora',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 10),
-              Text(
-                "Que tranza",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.black.withOpacity(0.85),
-                  fontStyle: FontStyle.italic,
-                  fontFamily: 'Lora',
-                ),
-              ),
-            ],
-          ),
-          _buildAnimatedCircle(), // Sun moved to the right
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimatedCircle() {
-    return AnimatedBuilder(
-      animation: _sunAnimation,
-      builder: (context, child) {
-        return Container(
-          width: _sunAnimation.value,
-          height: _sunAnimation.value,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                Color(0xFFFFE5B4).withOpacity(0.7),
-                Color(0xFFFFE5B4).withOpacity(0.5),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFFFFF3E0).withOpacity(0.3),
-                blurRadius: 30,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
+   
+ 
   Widget _buildInput() {
     switch (widget.inputMode) {
       case 'keyboard':
@@ -962,7 +831,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
                     hintText: "Escribe tu mensaje...",
-                    hintStyle: const TextStyle(color: Colors.grey),
+                    hintStyle: const TextStyle(color: Colors.black),
                     filled: true,
                     fillColor: Colors.grey.shade200,
                     border: OutlineInputBorder(
@@ -975,7 +844,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         IconButton(
                           icon: Icon(
                             _isListening ? Icons.stop_circle : Icons.mic_none,
-                            color: _isListening ? Colors.red : micButtonColor,
+                            color: _isListening ? Colors.red : FrutiaColors.accent,
                             size: _isListening ? 30 : 24,
                           ),
                           tooltip: _isListening
@@ -991,7 +860,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                         if (_controller.text.isNotEmpty)
                           IconButton(
-                            icon: Icon(Icons.send, color: micButtonColor),
+                            icon: Icon(Icons.send, color: FrutiaColors.accent),
                             onPressed: () {
                               _sendMessage(_controller.text);
                               _controller.clear();
@@ -1016,7 +885,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             child: IconButton(
                               icon: Icon(
                                 Icons.record_voice_over,
-                                color: micButtonColor,
+                                color: FrutiaColors.accent,
                                 size: 22,
                               ),
                               tooltip: 'Chat de voz avanzado',
@@ -1025,7 +894,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => VoiceChatScreen(
-                                      language: context.locale.languageCode,
+                                      language:"es"
                                     ),
                                   ),
                                 );
@@ -1109,15 +978,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         return false;
       },
       child: Scaffold(
-        backgroundColor: tiffanyColor,
+        backgroundColor: frutia_background,
         body: Stack(
           children: [
             _FloatingParticles(),
             if (_isLoading)
               Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      ivoryColor), // Color is here
+                  valueColor: AlwaysStoppedAnimation<Color>(   FrutiaColors.accent), // Color is here
                   strokeWidth: 6.0,
                   backgroundColor: Colors.white.withOpacity(0.3),
                 ),
@@ -1126,7 +994,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               Column(
                 children: [
                   AppBar(
-                    backgroundColor: Color(0xFF88D5C2),
+                    backgroundColor:FrutiaColors.accent,
                     elevation: 0,
                     leading: IconButton(
                       icon: Icon(Icons.arrow_back, color: Colors.black),
@@ -1138,11 +1006,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           padding: EdgeInsets.only(right: 10),
                           child: TextButton.icon(
                             icon:
-                                Icon(Icons.save, color: Colors.black, size: 22),
+                                Icon(Icons.save, color: Colors.white, size: 22),
                             label: Text(
-                              'save'.tr(),
+                              "Guardar Chat",
                               style:
-                                  TextStyle(color: Colors.black, fontSize: 14),
+                                  TextStyle(color: Colors.white, fontSize: 14),
                             ),
                             onPressed: _saveChat,
                             style: TextButton.styleFrom(
@@ -1157,10 +1025,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: _buildHeader(),
-                  ),
+                  
                   Expanded(
                     child: Stack(
                       children: [
@@ -1268,7 +1133,7 @@ class _ParticlesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = FrutiaColors.accent
           .withOpacity(0.2) // Aumentar opacidad para mejor visibilidad
       ..style = PaintingStyle.fill;
 

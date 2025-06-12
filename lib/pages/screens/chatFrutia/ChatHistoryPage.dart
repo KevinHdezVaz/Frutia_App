@@ -1,6 +1,8 @@
 import 'package:Frutia/model/ChatSession.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatScreen.dart';
+import 'package:Frutia/pages/screens/chatFrutia/VoiceChatScreen.dart';
 import 'package:Frutia/services/ChatServiceApi.dart';
+import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,7 +19,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
   List<ChatSession> _sessions = [];
   bool _isLoading = true;
   String _searchQuery = '';
-  final Color tiffanyColor = Color(0xFF88D5C2);
+  final Color tiffanyColor = Colors.white;
   final Color ivoryColor = Color(0xFFFDF8F2);
   final Color darkTextColor = Colors.black87;
   late AnimationController _pulseController;
@@ -50,14 +52,14 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('Error loading conversations: $e');
+      _showError('Error al cargar las conversaciones: $e');
     }
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.lora(color: Colors.white)),
+        content: Text(message, style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.red[700],
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -86,22 +88,22 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Conversation deleted'),
+          content: Text('Conversación eliminada'),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
-      _showError('Error deleting conversation: $e');
+      _showError('Error al eliminar la conversación: $e');
     }
   }
 
-  void _startNewConversation() {
+  void _startNewConversation({required String inputMode}) {
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => ChatScreen(
           initialMessages: [],
-          inputMode: 'keyboard',
+          inputMode: inputMode,
           sessionId: null,
         ),
         transitionsBuilder: (_, animation, __, child) {
@@ -123,16 +125,16 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [tiffanyColor, tiffanyColor.withOpacity(0.8)],
+              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
         title: Text(
-          'Your Conversations',
-          style: GoogleFonts.lora(
-            color: darkTextColor,
+          'Tus chats con Frutia',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 24,
           ),
@@ -144,6 +146,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
           IconButton(
             icon: Icon(Icons.refresh, color: darkTextColor, size: 28),
             onPressed: _fetchSessions,
+            tooltip: 'Recargar',
           ),
           SizedBox(width: 16),
         ],
@@ -153,64 +156,69 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
           CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
         ),
         child: FloatingActionButton(
-          onPressed: _startNewConversation,
-          backgroundColor: ivoryColor,
-          child: Icon(Icons.add, color: darkTextColor),
-          tooltip: 'New Conversation',
+          onPressed: () => _startNewConversation(inputMode: 'keyboard'),
+          backgroundColor: FrutiaColors.accent,
+          child: Icon(Icons.add, color: Colors.white),
+          tooltip: 'Nueva Conversación',
         ),
       ),
       body: Stack(
         children: [
           Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Card(
-                      color: ivoryColor.withOpacity(0.9),
-                      elevation: 3,
-                      shadowColor: Colors.white.withOpacity(0.1),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24)),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search conversations',
-                          hintStyle: GoogleFonts.lora(
-                              color: darkTextColor.withOpacity(0.6)),
-                          prefixIcon: Icon(Icons.search, color: tiffanyColor),
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                        ),
-                        style: GoogleFonts.lora(
-                            color: darkTextColor, fontSize: 16),
-                        onChanged: (value) =>
-                            setState(() => _searchQuery = value),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
+         Padding(
+  padding: const EdgeInsets.all(20.0), // Aumenté el padding externo a 20 para mejor espaciado
+  child: Column(
+    children: [
+      Card(
+        color: Colors.white,
+        elevation: 6, // Aumenté la elevation a 6 para una sombra más pronunciada
+        shadowColor: Colors.black.withOpacity(0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: FrutiaColors.accent.withOpacity(0.3), width: 1), // Añadí un borde sutil
+        ),
+        margin: const EdgeInsets.all(8.0), // Añadí padding interno al Card
+        child: TextField(
+          decoration: InputDecoration(
+            hintText: 'Buscar conversaciones...',
+            hintStyle: GoogleFonts.poppins(
+                color: darkTextColor.withOpacity(0.5)),
+            prefixIcon: Icon(Icons.search, color: FrutiaColors.accent),
+            filled: true,
+            fillColor: Colors.white,
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          style: GoogleFonts.poppins(
+              color: darkTextColor, fontSize: 16),
+          onChanged: (value) => setState(() => _searchQuery = value),
+        ),
+      ),
+      if (_filteredSessions.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 20.0), // Aumenté el padding superior a 20
+          child: _buildNewChatButtons(),
+        ),
+    ],
+  ),
+),
               Expanded(
                 child: _isLoading
                     ? Center(
                         child: CircularProgressIndicator(
-                          color: ivoryColor,
+                          color: FrutiaColors.accent,
                           strokeWidth: 3,
                         ),
                       )
                     : _filteredSessions.isEmpty
                         ? _buildEmptyState()
                         : RefreshIndicator(
-                            color: ivoryColor,
+                            color: FrutiaColors.accent,
                             onRefresh: _fetchSessions,
                             child: ListView.builder(
                               padding: EdgeInsets.only(
-                                  bottom: 24, left: 16, right: 16),
+                                  bottom: 80, left: 16, right: 16),
                               itemCount: _filteredSessions.length,
                               itemBuilder: (context, index) {
                                 final session = _filteredSessions[index];
@@ -228,32 +236,32 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
 
   Widget _buildSessionCard(ChatSession session) {
     return Card(
-      color: ivoryColor.withOpacity(0.9),
+      color: Colors.white,
       elevation: 3,
-      shadowColor: Colors.white.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [ivoryColor.withOpacity(0.8), ivoryColor.withOpacity(0.9)],
+            colors: [Colors.white, ivoryColor.withOpacity(0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: ListTile(
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           leading: CircleAvatar(
-            backgroundColor: tiffanyColor.withOpacity(0.2),
+            backgroundColor: FrutiaColors.accent.withOpacity(0.2),
             child: Icon(
-              Icons.bookmark,
-              color: tiffanyColor,
+              Icons.chat_bubble_outline,
+              color: FrutiaColors.accent,
               size: 24,
             ),
           ),
           title: Text(
             session.title,
-            style: GoogleFonts.lora(
+            style: GoogleFonts.poppins(
               color: darkTextColor,
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -263,13 +271,14 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
           ),
           subtitle: Text(
             _formatDate(session.createdAt),
-            style: GoogleFonts.lora(
+            style: GoogleFonts.poppins(
               color: darkTextColor.withOpacity(0.6),
               fontSize: 14,
             ),
           ),
           trailing: IconButton(
-            icon: Icon(Icons.delete_outline, color: tiffanyColor, size: 24),
+            icon:
+                Icon(Icons.delete_outline, color: FrutiaColors.accent, size: 24),
             onPressed: () => _showDeleteDialog(session.id),
           ),
           onTap: () => _openChat(session),
@@ -284,17 +293,24 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: ivoryColor,
+        backgroundColor: Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning_amber_rounded, color: tiffanyColor, size: 48),
+              ScaleTransition(
+                scale: Tween(begin: 1.0, end: 1.2).animate(
+                  CurvedAnimation(
+                      parent: _pulseController, curve: Curves.easeInOut),
+                ),
+                child: Icon(Icons.warning_amber_rounded,
+                    color: FrutiaColors.accent, size: 48),
+              ),
               SizedBox(height: 16),
               Text(
-                'Delete Conversation',
-                style: GoogleFonts.lora(
+                'Eliminar Conversación',
+                style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: darkTextColor,
@@ -303,8 +319,8 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
               ),
               SizedBox(height: 12),
               Text(
-                'Are you sure you want to delete this conversation?',
-                style: GoogleFonts.lora(
+                '¿Estás seguro de que quieres eliminar esta conversación?',
+                style: GoogleFonts.poppins(
                   fontSize: 16,
                   color: darkTextColor.withOpacity(0.7),
                 ),
@@ -324,8 +340,8 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
                           EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
                     child: Text(
-                      'Cancel',
-                      style: GoogleFonts.lora(
+                      'Cancelar',
+                      style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         color: darkTextColor,
                         fontSize: 16,
@@ -338,18 +354,18 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
                       _deleteSession(sessionId);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: tiffanyColor,
+                      backgroundColor: FrutiaColors.accent,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       padding:
                           EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
                     child: Text(
-                      'Delete',
-                      style: GoogleFonts.lora(
+                      'Eliminar',
+                      style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
-                        color: ivoryColor,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -385,8 +401,80 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      _showError('Error opening conversation: $e');
+      _showError('Error al abrir la conversación: $e');
     }
+  }
+
+  Widget _buildNewChatButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ElevatedButton(
+          onPressed: () => _startNewConversation(inputMode: 'keyboard'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: FrutiaColors.accent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            elevation: 2,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.message, size: 20, color: Colors.white,),
+              SizedBox(width: 8),
+              Text(
+                'Chat Normal',
+                style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        ElevatedButton(
+       onPressed: () async {
+  try {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const VoiceChatScreen(language: "es-ES"), // Pasa el idioma estático
+      ),
+    );
+  } catch (e) {
+    print("Error al navegar a VoiceChatScreen: $e");
+    // Opcional: muestra un SnackBar o alerta al usuario
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al iniciar el chat de voz: $e')),
+    );
+  }
+},
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: FrutiaColors.accent,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            elevation: 2,
+            side: BorderSide(color: FrutiaColors.accent, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.mic, size: 20, color: Colors.black,),
+              SizedBox(width: 8),
+              Text(
+                'Chat de Voz',
+                style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: FrutiaColors.accent),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState() {
@@ -396,48 +484,38 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.forum_outlined,
-              size: 80,
-              color: ivoryColor.withOpacity(0.7),
+            ScaleTransition(
+              scale: Tween(begin: 1.0, end: 1.1).animate(
+                CurvedAnimation(
+                    parent: _pulseController, curve: Curves.easeInOut),
+              ),
+              child: Icon(
+                Icons.chat_bubble_outline,
+                size: 80,
+                color: FrutiaColors.accent.withOpacity(0.7),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No Conversations',
-              style: GoogleFonts.lora(
+              '¡No hay conversaciones aún!',
+              style: GoogleFonts.poppins(
                 color: darkTextColor,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
-              'Start a new conversation to get started!',
-              style: GoogleFonts.lora(
+              'Empieza una nueva conversación con Frutia, ya sea por texto o voz.',
+              style: GoogleFonts.poppins(
                 color: darkTextColor.withOpacity(0.7),
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _startNewConversation,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ivoryColor,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: Text(
-                'New Conversation',
-                style: GoogleFonts.lora(
-                  color: darkTextColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            _buildNewChatButtons(),
           ],
         ),
       ),
@@ -453,9 +531,9 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
     final formattedTime = _formatTime(date);
 
     if (dateOnly == today) {
-      return 'Today at $formattedTime';
+      return 'Hoy a las $formattedTime';
     } else if (dateOnly == yesterday) {
-      return 'Yesterday at $formattedTime';
+      return 'Ayer a las $formattedTime';
     } else {
       return '${date.day}/${date.month}/${date.year} $formattedTime';
     }

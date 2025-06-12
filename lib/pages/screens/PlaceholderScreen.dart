@@ -23,6 +23,31 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
+  appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Text(
+          'Frutia',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.black),
+        
+      ),
+      
       body: Container(
         child: _screens[_currentIndex],
       ),
@@ -126,15 +151,7 @@ class _HomeContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Frutia',
-              style: GoogleFonts.lato(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ).animate().fadeIn(duration: 800.ms).slideX(
-                begin: -0.2, end: 0.0, duration: 800.ms, curve: Curves.easeOut),
+      
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(

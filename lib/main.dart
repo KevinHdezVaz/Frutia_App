@@ -1,27 +1,24 @@
 // lib/main.dart
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/providers/ShoppingProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:provider/provider.dart'; // Asegúrate que esta importación esté
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/onscreen/SplashScreen.dart';
-import 'package:Frutia/onscreen/onboardingWrapper.dart';
-import 'package:Frutia/pages/bottom_nav.dart';
 import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/settings/theme_data.dart';
 import 'package:Frutia/services/settings/theme_provider.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'firebase_options.dart';
-import 'package:http/http.dart' as http;
 
-// IMPORTA TU QUESTIONNAIRE PROVIDER
-// La ruta puede variar según donde lo hayas guardado.
+// --- AÑADE ESTA IMPORTACIÓN ---
+import 'package:flutter_localizations/flutter_localizations.dart';
+
 
 // Llaves globales
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -41,8 +38,11 @@ Future<void> main() async {
 
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // --- LÍNEA ELIMINADA ---
+  // Ya no necesitas la llamada manual a initializeDateFormatting.
+  // await initializeDateFormatting('es_ES', null);
 
-  // USA MULTIPROVIDER PARA REGISTRAR TODOS TUS PROVEEDORES
   runApp(
     MultiProvider(
       providers: [
@@ -58,14 +58,7 @@ Future<void> main() async {
 // ... El resto de tu código de main.dart permanece igual ...
 
 void _showPaymentMessage(String message, Color color) {
-  scaffoldMessengerKey.currentState?.showSnackBar(
-    SnackBar(
-      content: Text(message, style: const TextStyle(color: Colors.white)),
-      backgroundColor: color,
-      duration: const Duration(seconds: 4),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
+  // ...
 }
 
 class MyApp extends StatelessWidget {
@@ -75,17 +68,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ya no necesitas esta línea aquí si no la usas en este build.
-    // Provider.of lo usarás dentro de los widgets que lo necesiten.
-    // final themeProvider = Provider.of<ThemeProvider>(context);
-
     return Consumer<ThemeProvider>(
-      // Es mejor usar Consumer para reconstruir solo lo necesario
       builder: (context, themeProvider, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
           scaffoldMessengerKey: scaffoldMessengerKey,
+          
+          // --- AÑADE ESTAS LÍNEAS PARA LA LOCALIZACIÓN ---
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('es', 'ES'), // Español
+            Locale('en', 'US'), // Inglés (opcional)
+          ],
+          locale: const Locale('es', 'ES'), // Establece el idioma por defecto
+          // ---------------------------------------------
+          
           themeMode: themeProvider.currentTheme,
           theme: lightTheme,
           darkTheme: darkTheme,

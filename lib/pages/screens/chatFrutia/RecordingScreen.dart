@@ -39,7 +39,7 @@ class _RecordingScreenState extends State<RecordingScreen>
   bool _isProcessing = false;
   String _partialTranscription = '';
   String _aiResponse = '';
-  String _statusMessage = '';
+  String _statusMessage = 'Preparando chat de voz...';
   String _emotionalState = 'neutral';
   String _conversationLevel = 'basic';
   bool _hasVibrator = false;
@@ -57,6 +57,11 @@ class _RecordingScreenState extends State<RecordingScreen>
 
   StreamSubscription<AudioInterruptionEvent>? _audioSessionSubscription;
 
+  int _countdown = 5; // Contador regresivo inicial
+  bool _isCountingDown = true; // Estado del contador
+  bool _isPaused = false; // Estado de pausa
+  Timer? _countdownTimer; // Timer para el contador
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +71,6 @@ class _RecordingScreenState extends State<RecordingScreen>
     _elevenLabsService = ElevenLabsService(
       apiKey: "sk_5c7014c450eb767dbc8cd3ca2cdadadaceb4dbc52708cac9",
     );
-    _statusMessage = 'listening'.tr();
 
     _pulseAnimationController = AnimationController(
       vsync: this,
@@ -165,8 +169,9 @@ class _RecordingScreenState extends State<RecordingScreen>
     }
 
     if (mounted && micStatus.isGranted) {
-      Future.delayed(Duration(milliseconds: 800), () {
-        if (mounted) _startRecording();
+      setState(() {
+        _statusMessage = 'El chat de voz empezará en $_countdown segundos';
+        _startCountdown();
       });
     }
   }
@@ -202,9 +207,7 @@ class _RecordingScreenState extends State<RecordingScreen>
 
       if (_hasVibrator) Vibration.cancel();
 
-      Future.delayed(Duration(milliseconds: 500), () {
-        if (mounted) _startRecording();
-      });
+      // No iniciar automáticamente, esperar al usuario
     });
   }
 
@@ -319,7 +322,7 @@ class _RecordingScreenState extends State<RecordingScreen>
   }
 
   void _startSilenceTimer() {
-    _silenceTimer?.cancel(); // Cancelar cualquier timer existente
+    _silenceTimer?.cancel();
     _silenceTimer = Timer(Duration(milliseconds: _silenceTimeout), () {
       if (_isRecording && mounted) {
         setState(() => _showListeningIndicator = false);
@@ -365,7 +368,7 @@ class _RecordingScreenState extends State<RecordingScreen>
       setState(() {
         _statusMessage = 'no_speech_detected'.tr();
         _isProcessing = false;
-        _startRecording();
+        _startRecording(); // Reiniciar solo si el usuario lo activa manualmente
       });
     }
   }
@@ -409,7 +412,7 @@ class _RecordingScreenState extends State<RecordingScreen>
       }
     } catch (e) {
       _handleRecordingError(e.toString());
-      _startRecording();
+      // No reiniciar automáticamente, esperar al usuario
     }
   }
 
@@ -417,8 +420,7 @@ class _RecordingScreenState extends State<RecordingScreen>
     _silenceTimer?.cancel();
     _speech.stop();
     _flutterTts.stop();
-    _elevenLabsService
-        .stop(); // Asegúrate de que ElevenLabsService tenga un método stop
+    _elevenLabsService.stop();
     _pulseAnimationController.stop();
     _thinkingAnimationController.stop();
     _rhythmAnimationController.stop();
@@ -432,6 +434,38 @@ class _RecordingScreenState extends State<RecordingScreen>
     });
   }
 
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        if (!_isPaused && _countdown > 0) {
+          setState(() {
+            _countdown--;
+            _statusMessage = 'El chat de voz empezará en $_countdown segundos';
+          });
+        } else if (_countdown == 0) {
+          _countdownTimer?.cancel();
+          _startRecording();
+        }
+      }
+    });
+  }
+
+  void _togglePause() {
+    setState(() {
+      _isPaused = !_isPaused;
+      _statusMessage =
+          _isPaused ? 'Pausado. Toca "Iniciar" para continuar' : 'Reanudando...';
+    });
+    if (!_isPaused && _countdown > 0) {
+      _startCountdown(); // Reanudar el conteo si se despausa
+    }
+  }
+
+  void _startRecordingManually() {
+    _countdownTimer?.cancel();
+    _startRecording();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
@@ -443,7 +477,7 @@ class _RecordingScreenState extends State<RecordingScreen>
       if (Platform.isIOS) {
         AudioSession.instance.then((session) => session.setActive(true));
       }
-      _startRecording();
+      // No reiniciar automáticamente, esperar al usuario
     }
   }
 
@@ -522,52 +556,64 @@ class _RecordingScreenState extends State<RecordingScreen>
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor:
-                            _isRecording ? Colors.red : Colors.blueGrey,
-                        child: Stack(
-                          alignment: Alignment.center,
+                      if (_isCountingDown)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              _isRecording ? Icons.mic : Icons.mic_none,
-                              size: 35,
-                              color: Colors.white,
+                            Text(
+                              '$_countdown',
+                              style: TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                            if (_isRecording)
-                              Positioned(
-                                bottom: 5,
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.red,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.red.withOpacity(0.5),
-                                        blurRadius: 5,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
+                            const SizedBox(width: 16),
+                            ElevatedButton(
+                              onPressed: _togglePause,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    _isPaused ? Colors.green : Colors.red,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                              ),
+                              child: Text(
+                                _isPaused ? 'Reanudar' : 'Pausar',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
                                 ),
                               ),
+                            ),
                           ],
                         ),
-                      ),
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.blueGrey,
-                        child: IconButton(
-                          icon:
-                              Icon(Icons.close, color: Colors.white, size: 35),
-                          onPressed: _closeScreen,
+                      if (!_isCountingDown)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.blueGrey,
+                              child: IconButton(
+                                icon: Icon(Icons.mic, color: Colors.white, size: 35),
+                                onPressed: _startRecordingManually,
+                              ),
+                            ),
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.blueGrey,
+                              child: IconButton(
+                                icon: Icon(Icons.close, color: Colors.white, size: 35),
+                                onPressed: _closeScreen,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -582,9 +628,8 @@ class _RecordingScreenState extends State<RecordingScreen>
   @override
   void dispose() {
     _silenceTimer?.cancel();
+    _countdownTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-
-    // Cancelar el stream de interrupciones de audio
     _audioSessionSubscription?.cancel();
 
     if (Platform.isIOS) {

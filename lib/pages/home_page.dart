@@ -1,10 +1,13 @@
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/onscreen/QuestionnairePage.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
+import 'package:Frutia/utils/PlanCarousel.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 
 enum PageState { loading, error, needsOnboarding, needsPlan, hasPlan }
 
@@ -37,15 +40,13 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       final profile = userData['profile'];
-
+      
       if (profile == null || profile['height'] == null) {
         setState(() {
           _userData = userData;
           _pageState = PageState.needsOnboarding;
         });
-        _showPersonalDataModal();
-      } else if (profile['plan_setup_complete'] != true &&
-          profile['plan_setup_complete'] != 1) {
+      } else if (profile['plan_setup_complete'] != true && profile['plan_setup_complete'] != 1) {
         setState(() {
           _userData = userData;
           _pageState = PageState.needsPlan;
@@ -66,29 +67,33 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _showPersonalDataModal() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return PersonalDataPage(
-          onSuccess: () {
-            Navigator.of(dialogContext).pop();
-            if (mounted) {
-              _fetchAndCheckProfile();
-            }
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
+      appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [FrutiaColors.accent, FrutiaColors.accent2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Text(
+          'Perfil',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.2),
+      ),
       body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 400),
         child: _buildUIForState(),
       ),
     );
@@ -101,147 +106,362 @@ class _HomePageState extends State<HomePage> {
             key: ValueKey('loader'),
             child: CircularProgressIndicator(color: FrutiaColors.accent));
       case PageState.needsOnboarding:
-        // Evitar pantalla negra mostrando un loader mientras se muestra el modal
-        return const Center(
-            key: ValueKey('loader'),
-            child: CircularProgressIndicator(color: FrutiaColors.accent));
+        return _buildNeedsInfoUI(
+          key: const ValueKey('onboarding'),
+          title: "¡Bienvenido a Frutia!",
+          subtitle: "Necesitamos algunos datos básicos para poder continuar y crear un perfil para ti.",
+          buttonText: "Completar mis datos",
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalDataPage(onSuccess: _fetchAndCheckProfile)));
+          },
+        );
+      case PageState.needsPlan:
+        return _DashboardView(key: const ValueKey('dashboard'), userData: _userData!);
       case PageState.error:
         return _buildErrorUI(key: const ValueKey('error'));
-      case PageState.needsPlan:
       case PageState.hasPlan:
-        return _DashboardView(
-            key: const ValueKey('dashboard'), userData: _userData!);
+        return _DashboardView(key: const ValueKey('dashboard'), userData: _userData!);
     }
   }
 
-  Widget _buildErrorUI({Key? key}) {
+  Widget _buildNeedsInfoUI({required Key key, required String title, required String subtitle, required String buttonText, required VoidCallback onPressed}) {
     return Center(
       key: key,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.cloud_off,
-              size: 60, color: FrutiaColors.secondaryText),
-          const SizedBox(height: 16),
-          const Text('No se pudieron cargar tus datos.'),
-          const SizedBox(height: 16),
-          ElevatedButton(
-              onPressed: _fetchAndCheckProfile,
-              child: const Text('Reintentar')),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_search, size: 80, color: FrutiaColors.accent.withOpacity(0.7)),
+            const SizedBox(height: 24),
+            Text(title, style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            Text(subtitle, style: GoogleFonts.lato(fontSize: 16, color: FrutiaColors.secondaryText), textAlign: TextAlign.center),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(backgroundColor: FrutiaColors.accent, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              child: Text(buttonText),
+            ),
+          ],
+        ),
       ),
-    );
+    ).animate().fadeIn();
+  }
+
+  Widget _buildErrorUI({Key? key}) {
+    return Center(/*...*/);
   }
 }
+
+// --- DASHBOARD VIEW ACTUALIZADO ---
 
 class _DashboardView extends StatelessWidget {
   final Map<String, dynamic> userData;
   const _DashboardView({super.key, required this.userData});
 
+ 
+String _getUpcomingMeal() {
+  final hour = DateTime.now().hour;
+  
+  // Lógica mejorada para determinar la próxima comida
+  if (hour < 10) {
+    return 'Desayuno';
+  } else if (hour < 14) { // Hasta las 2 PM
+    return 'Almuerzo';
+  } else if (hour < 20) { // Hasta las 8 PM
+    return 'Cena';
+  } else { // Después de las 8 PM
+    return 'Desayuno'; // El desayuno del día siguiente
+  }
+}
   @override
   Widget build(BuildContext context) {
     final String userName = userData['name'] ?? 'Usuario';
     final profileData = userData['profile'];
-    final bool hasPlan = profileData != null &&
-        (profileData['plan_setup_complete'] == true ||
-            profileData['plan_setup_complete'] == 1);
+    final bool hasPlan = profileData != null && (profileData['plan_setup_complete'] == true || profileData['plan_setup_complete'] == 1);
     final String currentWeight = profileData?['weight']?.toString() ?? '--';
     final String mainGoal = profileData?['goal'] ?? 'No definido';
-    const int streakDays = 5; // Este dato aún es simulado
+    const int streakDays = 5;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Perfil',
-                      style: GoogleFonts.lato(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: FrutiaColors.primaryText)),
-                  IconButton(
-                      icon: const Icon(Icons.settings,
-                          color: FrutiaColors.primaryText),
-                      onPressed: () {}),
-                ],
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0),
-              padding: const EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: FrutiaColors.secondaryBackground,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4))
-                ],
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: FrutiaColors.accent,
-                      child: Icon(Icons.person, color: Colors.white, size: 40)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('¡Hola, $userName!',
-                            style: GoogleFonts.lato(
-                                fontSize: 20, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text('Racha: $streakDays días',
-                            style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: FrutiaColors.secondaryText)),
-                        Text('Peso actual: $currentWeight kg',
-                            style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: FrutiaColors.secondaryText)),
-                        Text('Objetivo: $mainGoal',
-                            style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: FrutiaColors.secondaryText)),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                      icon: const Icon(Icons.edit, color: FrutiaColors.accent),
-                      onPressed: () {}),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                hasPlan ? 'Tu plan actual' : 'Crea tu plan',
-                style:
-                    GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: hasPlan
-                  ? _buildPlanSection(userData['active_plan'])
-                  : _buildCreatePlanCard(context),
-            ),
-            const SizedBox(height: 24),
-            _buildAchievementsSection(),
-            const SizedBox(height: 24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileHeader(userName, context),
+          const SizedBox(height: 16),
+          _buildWeekCalendar(),
+          const SizedBox(height: 24),
+          _buildStatsRow(streakDays, currentWeight, mainGoal),
+          const SizedBox(height: 24),
+          _buildUpcomingMealCard(),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(hasPlan ? 'Tu plan de hoy' : 'Crea tu plan', style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: hasPlan
+                ? PlanCarousel(   )
+                : _buildCreatePlanCard(context),
+          ),
+          if (hasPlan) ...[
+            const SizedBox(height: 16),
+         
           ],
-        ).animate().fadeIn(duration: 800.ms),
+          const SizedBox(height: 24),
+          _buildAchievementsSection(),
+          const SizedBox(height: 24),
+        ],
+      ).animate().fadeIn(duration: 500.ms),
+    );
+  }
+
+  Widget _buildProfileHeader(String userName, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          const CircleAvatar(
+              radius: 30,
+              backgroundColor: FrutiaColors.accent,
+              child: Icon(Icons.person, color: Colors.white, size: 30)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('¡Hola de nuevo,', style: GoogleFonts.lato(fontSize: 16, color: FrutiaColors.secondaryText)),
+                Text(userName, style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: FrutiaColors.secondaryText),
+            onPressed: () { /* Navegar a editar perfil */ },
+          ),
+        ],
+      ),
+    );
+  }
+
+Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    child: Column(
+      children: [
+        // Primera fila con 2 tarjetas
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                icon: Icons.local_fire_department_rounded,
+                value: '$streakDays días',
+                label: 'Racha',
+                color: Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.monitor_weight_rounded,
+                value: '$currentWeight kg',
+                label: 'Peso actual',
+                color: Colors.blue,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12), // Espacio entre filas
+        
+        // Segunda fila con 1 tarjeta centrada
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                icon: Icons.flag_rounded,
+                value: mainGoal,
+                label: 'Objetivo',
+                color: Colors.green,
+              ),
+            ),
+            // Este SizedBox ocupa espacio equivalente al de la primera fila
+            const Expanded(child: SizedBox(width: 12)),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildWeekCalendar() {
+    final today = DateTime.now();
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    final Map<int, bool> complianceData = {1: true, 2: true, 3: false, 4: true, 5: true};
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text('Tu semana', style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 80,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 7,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemBuilder: (context, index) {
+              final day = startOfWeek.add(Duration(days: index));
+              final isToday = day.day == today.day && day.month == today.month;
+              final didComply = complianceData[day.weekday] ?? false;
+
+              return Container(
+                width: 60,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: isToday ? FrutiaColors.accent : FrutiaColors.secondaryBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: isToday ? Border.all(color: Colors.white, width: 2) : null,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(DateFormat('E', 'es_ES').format(day), style: TextStyle(fontWeight: FontWeight.w600, color: isToday ? Colors.white : FrutiaColors.secondaryText)),
+                    const SizedBox(height: 4),
+                    Text(day.day.toString(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isToday ? Colors.white : FrutiaColors.primaryText)),
+                    if (didComply) ...[
+                      const SizedBox(height: 4),
+                      Icon(Icons.check_circle, size: 16, color: isToday ? Colors.white : Colors.green),
+                    ]
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+                const SizedBox(height: 20),
+
+      ],
+    ).animate().slideX(begin: 0.2, duration: 400.ms, curve: Curves.easeOut);
+  }
+
+ Widget _buildUpcomingMealCard() {
+  final upcomingMeal = _getUpcomingMeal();
+  final now = DateTime.now();
+  final hour = now.hour;
+  
+  // Mensaje personalizado según la hora
+  String message;
+  if (hour < 10) {
+    message = 'Tu desayuno está por comenzar';
+  } else if (hour < 12) {
+    message = 'Pronto será hora de almorzar';
+  } else if (hour < 14) {
+    message = '¡Es hora de almorzar!';
+  } else if (hour < 17) {
+    message = 'Tu cena se acerca';
+  } else if (hour < 20) {
+    message = '¡Es hora de cenar!';
+  } else {
+    message = 'Tu próxima comida será el desayuno';
+  }
+
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16.0),
+    padding: const EdgeInsets.all(16.0),
+    decoration: BoxDecoration(
+      color: FrutiaColors.accent2.withOpacity(0.15),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: FrutiaColors.accent.withOpacity(0.2),
+        width: 1,
+      ),
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: FrutiaColors.accent.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.restaurant_menu_rounded, 
+            color: FrutiaColors.accent, 
+            size: 28
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message,
+                style: GoogleFonts.lato(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 16,
+                  color: FrutiaColors.primaryText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Próxima comida: ${upcomingMeal.toLowerCase()}',
+                style: GoogleFonts.lato(
+                  color: FrutiaColors.secondaryText,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  ).animate().fadeIn(delay: 200.ms);
+}
+ 
+
+   
+
+  Widget _buildMealCard(String title, List<dynamic>? options) {
+    if (options == null || options.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.only(right: 16.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: FrutiaColors.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold, color: FrutiaColors.accent)),
+          const SizedBox(height: 8),
+          ...options.map((e) {
+            final optionName = e['opcion'] as String? ?? 'Opción no definida';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.arrow_right_rounded, size: 20, color: FrutiaColors.secondaryText),
+                  Expanded(child: Text(optionName, style: GoogleFonts.lato(fontSize: 14))),
+                ],
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -296,33 +516,6 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildPlanSection(Map<String, dynamic>? plan) {
-    final planData = plan?['plan_data'];
-    if (planData == null) {
-      return const Card(child: ListTile(title: Text('Cargando plan...')));
-    }
-
-    final desayuno = (planData['desayuno'] as List?)
-            ?.map((e) => e['opcion'] as String)
-            .join(' / ') ??
-        'No definido';
-
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: FrutiaColors.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Text("Plan del día: $desayuno"),
-    );
-  }
-
   Widget _buildAchievementsSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -374,6 +567,40 @@ class _DashboardView extends StatelessWidget {
             style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- WIDGET AUXILIAR: Tarjeta para Estadísticas ---
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _StatCard({required this.icon, required this.value, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: FrutiaColors.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(label, style: GoogleFonts.lato(fontSize: 12, color: FrutiaColors.secondaryText)),
+            ],
+          )
         ],
       ),
     );

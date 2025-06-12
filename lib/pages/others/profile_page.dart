@@ -9,13 +9,38 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
+        appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Text(
+          ' Nosotros',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.black),
+        
+      ),
       backgroundColor: Colors.transparent,
       body: Container(
         child: SafeArea(
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // Imagen de Frutia
+                             const SizedBox(height: 24),
+
                 Center(
                   child: Image.asset(
                     'assets/images/fruta22.png', // Placeholder para la imagen de Frutia
@@ -43,14 +68,7 @@ class ProfilePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Nosotros',
-                            style: GoogleFonts.lato(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: FrutiaColors.primaryText,
-                            ),
-                          ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
+                    
                           const SizedBox(height: 16),
                           Text(
                             'Creamos esta app con una idea clara: la nutrición no debería sentirse como una carga, ni depender de planes genéricos que no se adaptan a tu vida. Por eso combinamos ciencia, tecnología e inteligencia artificial para ofrecerte un acompañamiento real, sin fórmulas mágicas, sin promesas vacías, y sin complicarte el día a día.',
