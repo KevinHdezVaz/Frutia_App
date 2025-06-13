@@ -40,13 +40,14 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       final profile = userData['profile'];
-      
+
       if (profile == null || profile['height'] == null) {
         setState(() {
           _userData = userData;
           _pageState = PageState.needsOnboarding;
         });
-      } else if (profile['plan_setup_complete'] != true && profile['plan_setup_complete'] != 1) {
+      } else if (profile['plan_setup_complete'] != true &&
+          profile['plan_setup_complete'] != 1) {
         setState(() {
           _userData = userData;
           _pageState = PageState.needsPlan;
@@ -109,22 +110,34 @@ class _HomePageState extends State<HomePage> {
         return _buildNeedsInfoUI(
           key: const ValueKey('onboarding'),
           title: "¡Bienvenido a Frutia!",
-          subtitle: "Necesitamos algunos datos básicos para poder continuar y crear un perfil para ti.",
+          subtitle:
+              "Necesitamos algunos datos básicos para poder continuar y crear un perfil para ti.",
           buttonText: "Completar mis datos",
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalDataPage(onSuccess: _fetchAndCheckProfile)));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        PersonalDataPage(onSuccess: _fetchAndCheckProfile)));
           },
         );
       case PageState.needsPlan:
-        return _DashboardView(key: const ValueKey('dashboard'), userData: _userData!);
+        return _DashboardView(
+            key: const ValueKey('dashboard'), userData: _userData!);
       case PageState.error:
         return _buildErrorUI(key: const ValueKey('error'));
       case PageState.hasPlan:
-        return _DashboardView(key: const ValueKey('dashboard'), userData: _userData!);
+        return _DashboardView(
+            key: const ValueKey('dashboard'), userData: _userData!);
     }
   }
 
-  Widget _buildNeedsInfoUI({required Key key, required String title, required String subtitle, required String buttonText, required VoidCallback onPressed}) {
+  Widget _buildNeedsInfoUI(
+      {required Key key,
+      required String title,
+      required String subtitle,
+      required String buttonText,
+      required VoidCallback onPressed}) {
     return Center(
       key: key,
       child: Padding(
@@ -132,15 +145,26 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_search, size: 80, color: FrutiaColors.accent.withOpacity(0.7)),
+            Icon(Icons.person_search,
+                size: 80, color: FrutiaColors.accent.withOpacity(0.7)),
             const SizedBox(height: 24),
-            Text(title, style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            Text(title,
+                style:
+                    GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            Text(subtitle, style: GoogleFonts.lato(fontSize: 16, color: FrutiaColors.secondaryText), textAlign: TextAlign.center),
+            Text(subtitle,
+                style: GoogleFonts.lato(
+                    fontSize: 16, color: FrutiaColors.secondaryText),
+                textAlign: TextAlign.center),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: onPressed,
-              style: ElevatedButton.styleFrom(backgroundColor: FrutiaColors.accent, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: FrutiaColors.accent,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
               child: Text(buttonText),
             ),
           ],
@@ -160,26 +184,31 @@ class _DashboardView extends StatelessWidget {
   final Map<String, dynamic> userData;
   const _DashboardView({super.key, required this.userData});
 
- 
-String _getUpcomingMeal() {
-  final hour = DateTime.now().hour;
-  
-  // Lógica mejorada para determinar la próxima comida
-  if (hour < 10) {
-    return 'Desayuno';
-  } else if (hour < 14) { // Hasta las 2 PM
-    return 'Almuerzo';
-  } else if (hour < 20) { // Hasta las 8 PM
-    return 'Cena';
-  } else { // Después de las 8 PM
-    return 'Desayuno'; // El desayuno del día siguiente
+  String _getUpcomingMeal() {
+    final hour = DateTime.now().hour;
+
+    // Lógica mejorada para determinar la próxima comida
+    if (hour < 10) {
+      return 'Desayuno';
+    } else if (hour < 14) {
+      // Hasta las 2 PM
+      return 'Almuerzo';
+    } else if (hour < 20) {
+      // Hasta las 8 PM
+      return 'Cena';
+    } else {
+      // Después de las 8 PM
+      return 'Desayuno'; // El desayuno del día siguiente
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     final String userName = userData['name'] ?? 'Usuario';
     final profileData = userData['profile'];
-    final bool hasPlan = profileData != null && (profileData['plan_setup_complete'] == true || profileData['plan_setup_complete'] == 1);
+    final bool hasPlan = profileData != null &&
+        (profileData['plan_setup_complete'] == true ||
+            profileData['plan_setup_complete'] == 1);
     final String currentWeight = profileData?['weight']?.toString() ?? '--';
     final String mainGoal = profileData?['goal'] ?? 'No definido';
     const int streakDays = 5;
@@ -199,18 +228,17 @@ String _getUpcomingMeal() {
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(hasPlan ? 'Tu plan de hoy' : 'Crea tu plan', style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold)),
+            child: Text(hasPlan ? 'Tu plan de hoy' : 'Crea tu plan',
+                style: GoogleFonts.lato(
+                    fontSize: 20, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: hasPlan
-                ? PlanCarousel(   )
-                : _buildCreatePlanCard(context),
+            child: hasPlan ? PlanCarousel() : _buildCreatePlanCard(context),
           ),
           if (hasPlan) ...[
             const SizedBox(height: 16),
-         
           ],
           const SizedBox(height: 24),
           _buildAchievementsSection(),
@@ -234,80 +262,93 @@ String _getUpcomingMeal() {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('¡Hola de nuevo,', style: GoogleFonts.lato(fontSize: 16, color: FrutiaColors.secondaryText)),
-                Text(userName, style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text('¡Hola de nuevo,',
+                    style: GoogleFonts.lato(
+                        fontSize: 16, color: FrutiaColors.secondaryText)),
+                Text(userName,
+                    style: GoogleFonts.lato(
+                        fontSize: 22, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: FrutiaColors.secondaryText),
-            onPressed: () { /* Navegar a editar perfil */ },
+            icon: const Icon(Icons.edit_outlined,
+                color: FrutiaColors.secondaryText),
+            onPressed: () {/* Navegar a editar perfil */},
           ),
         ],
       ),
     );
   }
 
-Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-    child: Column(
-      children: [
-        // Primera fila con 2 tarjetas
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.local_fire_department_rounded,
-                value: '$streakDays días',
-                label: 'Racha',
-                color: Colors.orange,
+  Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        children: [
+          // Primera fila con 2 tarjetas
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.local_fire_department_rounded,
+                  value: '$streakDays días',
+                  label: 'Racha',
+                  color: Colors.orange,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.monitor_weight_rounded,
-                value: '$currentWeight kg',
-                label: 'Peso actual',
-                color: Colors.blue,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.monitor_weight_rounded,
+                  value: '$currentWeight kg',
+                  label: 'Peso actual',
+                  color: Colors.blue,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12), // Espacio entre filas
-        
-        // Segunda fila con 1 tarjeta centrada
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.flag_rounded,
-                value: mainGoal,
-                label: 'Objetivo',
-                color: Colors.green,
+            ],
+          ),
+          const SizedBox(height: 12), // Espacio entre filas
+
+          // Segunda fila con 1 tarjeta centrada
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.flag_rounded,
+                  value: mainGoal,
+                  label: 'Objetivo',
+                  color: Colors.green,
+                ),
               ),
-            ),
-            // Este SizedBox ocupa espacio equivalente al de la primera fila
-            const Expanded(child: SizedBox(width: 12)),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+              // Este SizedBox ocupa espacio equivalente al de la primera fila
+              const Expanded(child: SizedBox(width: 12)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildWeekCalendar() {
     final today = DateTime.now();
     final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
-    final Map<int, bool> complianceData = {1: true, 2: true, 3: false, 4: true, 5: true};
+    final Map<int, bool> complianceData = {
+      1: true,
+      2: true,
+      3: false,
+      4: true,
+      5: true
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text('Tu semana', style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text('Tu semana',
+              style:
+                  GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 20),
         SizedBox(
@@ -325,20 +366,42 @@ Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
                 width: 60,
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  color: isToday ? FrutiaColors.accent : FrutiaColors.secondaryBackground,
+                  color: isToday
+                      ? FrutiaColors.accent
+                      : FrutiaColors.secondaryBackground,
                   borderRadius: BorderRadius.circular(12),
-                  border: isToday ? Border.all(color: Colors.white, width: 2) : null,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+                  border: isToday
+                      ? Border.all(color: Colors.white, width: 2)
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 5,
+                        offset: const Offset(0, 2))
+                  ],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(DateFormat('E', 'es_ES').format(day), style: TextStyle(fontWeight: FontWeight.w600, color: isToday ? Colors.white : FrutiaColors.secondaryText)),
+                    Text(DateFormat('E', 'es_ES').format(day),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: isToday
+                                ? Colors.white
+                                : FrutiaColors.secondaryText)),
                     const SizedBox(height: 4),
-                    Text(day.day.toString(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isToday ? Colors.white : FrutiaColors.primaryText)),
+                    Text(day.day.toString(),
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isToday
+                                ? Colors.white
+                                : FrutiaColors.primaryText)),
                     if (didComply) ...[
                       const SizedBox(height: 4),
-                      Icon(Icons.check_circle, size: 16, color: isToday ? Colors.white : Colors.green),
+                      Icon(Icons.check_circle,
+                          size: 16,
+                          color: isToday ? Colors.white : Colors.green),
                     ]
                   ],
                 ),
@@ -346,95 +409,88 @@ Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
             },
           ),
         ),
-                const SizedBox(height: 20),
-
+        const SizedBox(height: 20),
       ],
     ).animate().slideX(begin: 0.2, duration: 400.ms, curve: Curves.easeOut);
   }
 
- Widget _buildUpcomingMealCard() {
-  final upcomingMeal = _getUpcomingMeal();
-  final now = DateTime.now();
-  final hour = now.hour;
-  
-  // Mensaje personalizado según la hora
-  String message;
-  if (hour < 10) {
-    message = 'Tu desayuno está por comenzar';
-  } else if (hour < 12) {
-    message = 'Pronto será hora de almorzar';
-  } else if (hour < 14) {
-    message = '¡Es hora de almorzar!';
-  } else if (hour < 17) {
-    message = 'Tu cena se acerca';
-  } else if (hour < 20) {
-    message = '¡Es hora de cenar!';
-  } else {
-    message = 'Tu próxima comida será el desayuno';
-  }
+  Widget _buildUpcomingMealCard() {
+    final upcomingMeal = _getUpcomingMeal();
+    final now = DateTime.now();
+    final hour = now.hour;
 
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 16.0),
-    padding: const EdgeInsets.all(16.0),
-    decoration: BoxDecoration(
-      color: FrutiaColors.accent2.withOpacity(0.15),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(
-        color: FrutiaColors.accent.withOpacity(0.2),
-        width: 1,
+    // Mensaje personalizado según la hora
+    String message;
+    if (hour < 10) {
+      message = 'Tu desayuno está por comenzar';
+    } else if (hour < 12) {
+      message = 'Pronto será hora de almorzar';
+    } else if (hour < 14) {
+      message = '¡Es hora de almorzar!';
+    } else if (hour < 17) {
+      message = 'Tu cena se acerca';
+    } else if (hour < 20) {
+      message = '¡Es hora de cenar!';
+    } else {
+      message = 'Tu próxima comida será el desayuno';
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: FrutiaColors.accent2.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: FrutiaColors.accent.withOpacity(0.2),
+          width: 1,
+        ),
       ),
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: FrutiaColors.accent.withOpacity(0.1),
-            shape: BoxShape.circle,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: FrutiaColors.accent.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.restaurant_menu_rounded,
+                color: FrutiaColors.accent, size: 28),
           ),
-          child: Icon(
-            Icons.restaurant_menu_rounded, 
-            color: FrutiaColors.accent, 
-            size: 28
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                message,
-                style: GoogleFonts.lato(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 16,
-                  color: FrutiaColors.primaryText,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: GoogleFonts.lato(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: FrutiaColors.primaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Próxima comida: ${upcomingMeal.toLowerCase()}',
-                style: GoogleFonts.lato(
-                  color: FrutiaColors.secondaryText,
-                  fontSize: 14,
+                const SizedBox(height: 4),
+                Text(
+                  'Próxima comida: ${upcomingMeal.toLowerCase()}',
+                  style: GoogleFonts.lato(
+                    color: FrutiaColors.secondaryText,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  ).animate().fadeIn(delay: 200.ms);
-}
- 
-
-   
+        ],
+      ),
+    ).animate().fadeIn(delay: 200.ms);
+  }
 
   Widget _buildMealCard(String title, List<dynamic>? options) {
     if (options == null || options.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       width: 300,
       margin: const EdgeInsets.only(right: 16.0),
@@ -442,12 +498,21 @@ Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
       decoration: BoxDecoration(
         color: FrutiaColors.secondaryBackground,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold, color: FrutiaColors.accent)),
+          Text(title,
+              style: GoogleFonts.lato(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.accent)),
           const SizedBox(height: 8),
           ...options.map((e) {
             final optionName = e['opcion'] as String? ?? 'Opción no definida';
@@ -455,8 +520,11 @@ Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
               padding: const EdgeInsets.only(bottom: 4.0),
               child: Row(
                 children: [
-                  const Icon(Icons.arrow_right_rounded, size: 20, color: FrutiaColors.secondaryText),
-                  Expanded(child: Text(optionName, style: GoogleFonts.lato(fontSize: 14))),
+                  const Icon(Icons.arrow_right_rounded,
+                      size: 20, color: FrutiaColors.secondaryText),
+                  Expanded(
+                      child: Text(optionName,
+                          style: GoogleFonts.lato(fontSize: 14))),
                 ],
               ),
             );
@@ -580,7 +648,11 @@ class _StatCard extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatCard({required this.icon, required this.value, required this.label, required this.color});
+  const _StatCard(
+      {required this.icon,
+      required this.value,
+      required this.label,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -597,8 +669,12 @@ class _StatCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text(label, style: GoogleFonts.lato(fontSize: 12, color: FrutiaColors.secondaryText)),
+              Text(value,
+                  style: GoogleFonts.lato(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(label,
+                  style: GoogleFonts.lato(
+                      fontSize: 12, color: FrutiaColors.secondaryText)),
             ],
           )
         ],
