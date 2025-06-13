@@ -73,6 +73,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -95,6 +96,10 @@ class _HomePageState extends State<HomePage> {
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
         child: _buildUIForState(),
       ),
     );
@@ -132,12 +137,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _buildNeedsInfoUI(
-      {required Key key,
-      required String title,
-      required String subtitle,
-      required String buttonText,
-      required VoidCallback onPressed}) {
+  Widget _buildNeedsInfoUI({
+    required Key key,
+    required String title,
+    required String subtitle,
+    required String buttonText,
+    required VoidCallback onPressed,
+  }) {
     return Center(
       key: key,
       child: Padding(
@@ -170,15 +176,48 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    ).animate().fadeIn();
+    ).animate().fadeIn(delay: const Duration(milliseconds: 400));
   }
 
   Widget _buildErrorUI({Key? key}) {
-    return Center(/*...*/);
+    return Center(
+      key: key,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline,
+                size: 80, color: Colors.red.withOpacity(0.7)),
+            const SizedBox(height: 24),
+            Text(
+              '¡Algo salió mal!',
+              style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No pudimos cargar tu perfil. Por favor, intenta de nuevo.',
+              style: GoogleFonts.lato(
+                  fontSize: 16, color: FrutiaColors.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _fetchAndCheckProfile,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: FrutiaColors.accent,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: const Duration(milliseconds: 400));
   }
 }
-
-// --- DASHBOARD VIEW ACTUALIZADO ---
 
 class _DashboardView extends StatelessWidget {
   final Map<String, dynamic> userData;
@@ -187,18 +226,14 @@ class _DashboardView extends StatelessWidget {
   String _getUpcomingMeal() {
     final hour = DateTime.now().hour;
 
-    // Lógica mejorada para determinar la próxima comida
     if (hour < 10) {
       return 'Desayuno';
     } else if (hour < 14) {
-      // Hasta las 2 PM
       return 'Almuerzo';
     } else if (hour < 20) {
-      // Hasta las 8 PM
       return 'Cena';
     } else {
-      // Después de las 8 PM
-      return 'Desayuno'; // El desayuno del día siguiente
+      return 'Desayuno';
     }
   }
 
@@ -232,19 +267,25 @@ class _DashboardView extends StatelessWidget {
                 style: GoogleFonts.lato(
                     fontSize: 20, fontWeight: FontWeight.bold)),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 30),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: hasPlan ? PlanCarousel() : _buildCreatePlanCard(context),
+            child: hasPlan ? const PlanCarousel() : _buildCreatePlanCard(context),
           ),
           if (hasPlan) ...[
             const SizedBox(height: 16),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: 40),
+          MembershipStatusWidget(
+            isPremium: false,
+            onUpgradePressed: () {},
+          ),
+          const SizedBox(height: 40),
           _buildAchievementsSection(),
           const SizedBox(height: 24),
         ],
-      ).animate().fadeIn(duration: 500.ms),
+      ).animate().fadeIn(
+          delay: const Duration(milliseconds: 400), duration: 500.ms),
     );
   }
 
@@ -274,11 +315,12 @@ class _DashboardView extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined,
                 color: FrutiaColors.secondaryText),
-            onPressed: () {/* Navegar a editar perfil */},
+            onPressed: () {},
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(
+        delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
@@ -286,7 +328,6 @@ class _DashboardView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         children: [
-          // Primera fila con 2 tarjetas
           Row(
             children: [
               Expanded(
@@ -308,9 +349,7 @@ class _DashboardView extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12), // Espacio entre filas
-
-          // Segunda fila con 1 tarjeta centrada
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -321,13 +360,13 @@ class _DashboardView extends StatelessWidget {
                   color: Colors.green,
                 ),
               ),
-              // Este SizedBox ocupa espacio equivalente al de la primera fila
               const Expanded(child: SizedBox(width: 12)),
             ],
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(
+        delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildWeekCalendar() {
@@ -411,7 +450,11 @@ class _DashboardView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
       ],
-    ).animate().slideX(begin: 0.2, duration: 400.ms, curve: Curves.easeOut);
+    ).animate().slideX(
+        begin: 0.2,
+        delay: const Duration(milliseconds: 400),
+        duration: 400.ms,
+        curve: Curves.easeOut);
   }
 
   Widget _buildUpcomingMealCard() {
@@ -419,30 +462,31 @@ class _DashboardView extends StatelessWidget {
     final now = DateTime.now();
     final hour = now.hour;
 
-    // Mensaje personalizado según la hora
     String message;
-    if (hour < 10) {
-      message = 'Tu desayuno está por comenzar';
+    if (hour >= 0 && hour < 5) {
+      message = "Hora de dormir";
+    } else if (hour < 10) {
+      message = "Tu desayuno está por comenzar";
     } else if (hour < 12) {
-      message = 'Pronto será hora de almorzar';
+      message = "Pronto será hora de almorzar";
     } else if (hour < 14) {
-      message = '¡Es hora de almorzar!';
+      message = "¡Es hora de almorzar!";
     } else if (hour < 17) {
-      message = 'Tu cena se acerca';
+      message = "Tu cena se acerca";
     } else if (hour < 20) {
-      message = '¡Es hora de cenar!';
+      message = "¡Es hora de cenar!";
     } else {
-      message = 'Tu próxima comida será el desayuno';
+      message = "Tu próxima comida será el desayuno";
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: FrutiaColors.accent2.withOpacity(0.15),
+        color: FrutiaColors.progress.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: FrutiaColors.accent.withOpacity(0.2),
+          color: FrutiaColors.progress.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -451,11 +495,11 @@ class _DashboardView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: FrutiaColors.accent.withOpacity(0.1),
+              color: FrutiaColors.progress.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.restaurant_menu_rounded,
-                color: FrutiaColors.accent, size: 28),
+                color: FrutiaColors.progress, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -483,7 +527,8 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms);
+    ).animate().fadeIn(
+        delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildMealCard(String title, List<dynamic>? options) {
@@ -581,7 +626,8 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(
+        delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildAchievementsSection() {
@@ -610,7 +656,8 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(
+        delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildAchievementCard(String title, IconData icon, Color color) {
@@ -641,18 +688,18 @@ class _DashboardView extends StatelessWidget {
   }
 }
 
-// --- WIDGET AUXILIAR: Tarjeta para Estadísticas ---
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
   final Color color;
 
-  const _StatCard(
-      {required this.icon,
-      required this.value,
-      required this.label,
-      required this.color});
+  const _StatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -678,6 +725,77 @@ class _StatCard extends StatelessWidget {
             ],
           )
         ],
+      ),
+    );
+  }
+}
+
+class MembershipStatusWidget extends StatelessWidget {
+  final bool isPremium;
+  final VoidCallback? onUpgradePressed;
+
+  const MembershipStatusWidget({
+    super.key,
+    required this.isPremium,
+    this.onUpgradePressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: !isPremium ? onUpgradePressed : null,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isPremium ? Colors.green[50] : Colors.red[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isPremium ? Colors.green : Colors.red,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isPremium ? Icons.verified_user : Icons.card_membership,
+              color: isPremium ? Colors.green : Colors.red,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPremium ? "Membresía Premium" : "Actualiza tu membresía",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isPremium ? Colors.green : Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPremium
+                        ? "Estás disfrutando de todos los beneficios premium"
+                        : "Desbloquea todas las funciones premium",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!isPremium)
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.red,
+                size: 16,
+              ),
+          ],
+        ),
       ),
     );
   }

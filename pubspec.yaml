@@ -117,6 +117,7 @@ flutter:
     - assets/grid/
     - assets/map_style.json
     - assets/logos/
+    - assets/sonidos/
     - .env
 
 

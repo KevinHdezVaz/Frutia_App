@@ -122,6 +122,9 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
     return Scaffold(
       backgroundColor: tiffanyColor,
       appBar: AppBar(
+                automaticallyImplyLeading: false,
+
+
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

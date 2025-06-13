@@ -11,6 +11,8 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
 
         appBar: AppBar(
+                          automaticallyImplyLeading: false,
+
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

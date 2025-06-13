@@ -4,6 +4,7 @@ import 'package:Frutia/onscreen/OnboardingScreenThree.dart';
 import 'package:Frutia/onscreen/OnboardingScreenTwo.dart';
 import 'package:Frutia/onscreen/screen_cuatro.dart';
 import 'package:vibration/vibration.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({Key? key}) : super(key: key);
@@ -14,27 +15,55 @@ class OnboardingWrapper extends StatefulWidget {
 
 class _OnboardingWrapperState extends State<OnboardingWrapper> {
   final PageController _pageController = PageController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  int? _lastPage; // Para rastrear la última página
 
   @override
   void initState() {
     super.initState();
-    // Add listener for page changes
-    _pageController.addListener(() {
-      // Trigger vibration on page change
-      if (_pageController.page != null && _pageController.page! % 1 == 0) {
-        // Ensure it's a full page transition
-        Vibration.hasVibrator().then((hasVibrator) {
-          if (hasVibrator ?? false) {
-                  Vibration.vibrate(duration: 10); // Short vibration
-          }
-        });
+    _audioPlayer.setSource(AssetSource('sonidos/sonido3.mp3'));
+    
+    _pageController.addListener(_handlePageChange);
+  }
+
+  void _handlePageChange() {
+    if (_pageController.page == null) return;
+    
+    final currentPage = _pageController.page!.round();
+    
+    // Solo activar si la página cambió y la animación está completa
+    if (currentPage != _lastPage && _pageController.position.pixels == _pageController.position.maxScrollExtent * (currentPage / 3)) {
+      _lastPage = currentPage;
+      _playSwipeSound();
+      _triggerVibration();
+    }
+  }
+
+  Future<void> _playSwipeSound() async {
+    try {
+      await _audioPlayer.stop(); // Detener cualquier reproducción previa
+      await _audioPlayer.seek(Duration.zero); // Reiniciar el audio
+      await _audioPlayer.resume();
+    } catch (e) {
+      print('Error al reproducir sonido: $e');
+    }
+  }
+
+  Future<void> _triggerVibration() async {
+    if (await Vibration.hasVibrator() ?? false) {
+      if (Theme.of(context).platform == TargetPlatform.iOS) {
+        Vibration.vibrate(duration: 5, amplitude: 50);
+      } else {
+        Vibration.vibrate(duration: 5, amplitude: 50);
       }
-    });
+    }
   }
 
   @override
   void dispose() {
+    _pageController.removeListener(_handlePageChange);
     _pageController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 

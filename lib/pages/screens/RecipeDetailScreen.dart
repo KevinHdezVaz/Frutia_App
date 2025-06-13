@@ -1,264 +1,278 @@
+import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/pages/screens/ModificationsScreen.dart';
+import 'package:Frutia/pages/screens/miplan/MyPlanDetailsScreen.dart';
+import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:Frutia/utils/colors.dart';
+import 'package:flutter_animate/flutter_animate.dart'; 
 
-// Pantalla de detalles de una receta (placeholder)
-class RecipeDetailScreen extends StatelessWidget {
-  final String recipeName;
-
-  const RecipeDetailScreen({required this.recipeName, Key? key})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          recipeName,
-          style: GoogleFonts.lato(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: FrutiaColors.accent),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Container(
-        child: SafeArea(
-          child: Center(
-            child: Text(
-              'Detalles de la receta: $recipeName',
-              style: GoogleFonts.lato(
-                  fontSize: 24, color: FrutiaColors.primaryText),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Pantalla principal de recetas
 class RecetasScreen extends StatefulWidget {
-  const RecetasScreen({Key? key}) : super(key: key);
+  const RecetasScreen({super.key});
 
   @override
-  _RecetasScreenState createState() => _RecetasScreenState();
+  State<RecetasScreen> createState() => _RecetasScreenState();
 }
 
-class _RecetasScreenState extends State<RecetasScreen> {
-  // Lista de recetas favoritas
-  late List<String> favoriteRecipes;
+class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProviderStateMixin {
+  TabController? _tabController;
+  bool _isLoading = true;
+  String _errorMessage = '';
 
-  // Lista de recetas disponibles
-  final List<Map<String, dynamic>> recipes = const [
-    {
-      'name': 'Huevos con Tostada',
-      'calories': '200 kcal',
-      'image': 'assets/eggs_toast.jpg',
-      'route': '/recipe/eggs_toast',
-    },
-    {
-      'name': 'Proteína con Plátano',
-      'calories': '250 kcal',
-      'image': 'assets/protein_banana.jpg',
-      'route': '/recipe/protein_banana',
-    },
-    {
-      'name': 'Pancakes Proteicos',
-      'calories': '300 kcal',
-      'image': 'assets/protein_pancakes.jpg',
-      'route': '/recipe/protein_pancakes',
-    },
-    {
-      'name': 'Pollo con Camote',
-      'calories': '500 kcal',
-      'image': 'assets/chicken_sweetpotato.jpg',
-      'route': '/recipe/chicken_sweetpotato',
-    },
-    {
-      'name': 'Atún con Aguacate',
-      'calories': '400 kcal',
-      'image': 'assets/tuna_avocado.jpg',
-      'route': '/recipe/tuna_avocado',
-    },
-  ];
+  List<Map<String, dynamic>> _breakfastOptions = [];
+  List<Map<String, dynamic>> _lunchOptions = [];
+  List<Map<String, dynamic>> _dinnerOptions = [];
+  List<String> _recommendations = [];
 
   @override
   void initState() {
     super.initState();
-    // Inicializar lista de favoritos
-    favoriteRecipes = [];
+    print('MyPlanPage: Inicializando estado');
+    _tabController = TabController(length: 4, vsync: this);
+    _loadPlanData();
   }
 
-  // Método para agregar o quitar una receta de favoritos
-  void _toggleFavorite(String recipeName) {
-    setState(() {
-      if (favoriteRecipes.contains(recipeName)) {
-        favoriteRecipes.remove(recipeName);
-        _showSnackBar('$recipeName eliminada de favoritos');
-      } else {
-        favoriteRecipes.add(recipeName);
-        _showSnackBar('$recipeName añadida a favoritos');
+  Future<void> _loadPlanData() async {
+    print('MyPlanPage: Iniciando carga de datos del plan');
+    try {
+      final userData = await AuthService().getProfile();
+      print('MyPlanPage: Datos del usuario obtenidos: ${userData.keys}');
+      if (!mounted) {
+        print('MyPlanPage: Widget no montado, abortando');
+        return;
       }
-    });
+
+      final activePlan = userData['active_plan'];
+      print('MyPlanPage: Plan activo: $activePlan');
+
+      if (activePlan != null && activePlan['plan_data'] != null) {
+        final planData = activePlan['plan_data'];
+        print('MyPlanPage: Datos del plan: $planData');
+        if (planData['meal_plan'] is Map<String, dynamic>) {
+          _parsePlanData(planData['meal_plan']);
+        } else {
+          print('MyPlanPage: Error - Formato del plan incorrecto');
+          throw Exception('El formato del plan es incorrecto.');
+        }
+      } else {
+        print('MyPlanPage: Error - No se encontró un plan activo');
+        throw Exception('No se encontró un plan activo.');
+      }
+    } catch (e) {
+      print('MyPlanPage: Error al cargar datos del plan: $e');
+      if (mounted) setState(() => _errorMessage = "Error: ${e.toString()}");
+    } finally {
+      if (mounted) {
+        print('MyPlanPage: Finalizando carga de datos, isLoading=false');
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
-  // Método para mostrar un SnackBar con mensaje
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.lato(color: Colors.white),
-        ),
-        backgroundColor: FrutiaColors.accent,
-      ),
-    );
+  void _parsePlanData(Map<String, dynamic> mealPlanData) {
+    print('MyPlanPage: Parseando datos del plan');
+    List<Map<String, dynamic>> processCategory(String category) {
+      final List<Map<String, dynamic>> options = [];
+      if (mealPlanData[category] is List) {
+        print('MyPlanPage: Procesando categoría $category con ${mealPlanData[category].length} elementos');
+        for (var item in (mealPlanData[category] as List)) {
+          if (item is Map) {
+            options.add({
+              'name': item['opcion'] as String? ?? 'Opción inválida',
+              'image_url': item['details']?['image_url'], // Puede ser null inicialmente
+              'details': item['details'],
+            });
+          }
+        }
+      } else {
+        print('MyPlanPage: Advertencia - $category no es una lista');
+      }
+      return options;
+    }
+
+    setState(() {
+      _breakfastOptions = processCategory('desayuno');
+      _lunchOptions = processCategory('almuerzo');
+      _dinnerOptions = processCategory('cena');
+      _recommendations = List<String>.from(mealPlanData['recomendaciones'] ?? []);
+      print('MyPlanPage: Opciones parseadas - Desayuno: ${_breakfastOptions.length}, Almuerzo: ${_lunchOptions.length}, Cena: ${_dinnerOptions.length}, Recomendaciones: ${_recommendations.length}');
+    });
+
+    // Asignar imagen estática genérica
+    _fetchImagesForPlan();
+  }
+
+  Future<void> _fetchImagesForPlan() async {
+    print('MyPlanPage: Asignando imagen estática genérica');
+    const genericImageUrl = 'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+Generica';
+    final allOptions = [..._breakfastOptions, ..._lunchOptions, ..._dinnerOptions];
+
+    for (var option in allOptions) {
+      if (option['image_url'] == null) {
+        print('MyPlanPage: Asignando imagen genérica para ${option['name']}');
+        if (mounted) {
+          setState(() {
+            option['image_url'] = genericImageUrl;
+          });
+        }
+      }
+    }
+    print('MyPlanPage: Finalizada asignación de imágenes');
+  }
+
+  @override
+  void dispose() {
+    print('MyPlanPage: Disposing TabController');
+    _tabController?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    print('MyPlanPage: Construyendo UI, isLoading=$_isLoading, errorMessage=$_errorMessage');
     return Scaffold(
-      // AppBar con título y botón de retroceso
       appBar: AppBar(
-        title: Text(
-          'Recetas',
-          style: GoogleFonts.lato(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
+        title: Text('Recetas (aun en contruccion)', style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
+        backgroundColor: FrutiaColors.primaryBackground,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: FrutiaColors.accent),
-          onPressed: () => Navigator.pop(context),
+        foregroundColor: FrutiaColors.primaryText,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: FrutiaColors.accent,
+          indicatorColor: FrutiaColors.accent,
+          tabs: const [
+            Tab(text: 'Desayuno'),
+            Tab(text: 'Almuerzo'),
+            Tab(text: 'Cena'),
+            Tab(text: 'Consejos'),
+          ],
         ),
       ),
-      // Cuerpo con gradiente y lista de recetas
-      body: Container(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: FrutiaColors.accent))
+          : _errorMessage.isNotEmpty
+              ? Center(child: Text(_errorMessage, style: const TextStyle(color: Colors.red)))
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    MealListView(items: _breakfastOptions),
+                    MealListView(items: _lunchOptions),
+                    MealListView(items: _dinnerOptions),
+                    RecommendationsListView(items: _recommendations),
+                  ],
+                ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          print('MyPlanPage: Navegando a ModificationsScreen');
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ModificationsScreen()));
+        },
+        label: const Text('Modificar'),
+        icon: const Icon(Icons.edit),
+        backgroundColor: FrutiaColors.accent,
+      ),
+    );
+  }
+}
+
+class MealListView extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  const MealListView({super.key, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    print('MealListView: Construyendo lista con ${items.length} elementos');
+    if (items.isEmpty) {
+      print('MealListView: Lista vacía, mostrando mensaje');
+      return const Center(child: Text("No hay opciones de comida."));
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final title = item['name'] ?? 'Sin nombre';
+        final imageUrl = item['image_url'] as String?;
+
+        print('MealListView: Renderizando elemento $index: $title, imageUrl=$imageUrl');
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 3,
+          child: InkWell(
+            onTap: () {
+              final recipeDetails = item['details'];
+              print('MealListView: onTap para $title, details=$recipeDetails');
+              if (recipeDetails != null && recipeDetails is Map<String, dynamic>) {
+                print('MealListView: Navegando a MyPlanDetailsScreen para $title');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => MyPlanDetailsScreen(recipeData: item)),
+                );
+              } else {
+                print('MealListView: No se navega, details no válido');
+              }
+            },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Lista de recetas
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: recipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = recipes[index];
-                      return _buildRecipeCard(recipe, index);
-                    },
-                  ),
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  color: Colors.grey[200],
+                  child: (imageUrl != null)
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            return progress == null
+                                ? child
+                                : const Center(child: CircularProgressIndicator());
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            print('MealListView: Error cargando imagen para $title: $error');
+                            return const Icon(Icons.no_photography_outlined, color: Colors.grey, size: 40);
+                          },
+                        )
+                      : const Center(child: CircularProgressIndicator(strokeWidth: 2, color: FrutiaColors.accent)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
           ),
-        ),
-      ),
+        ).animate().fadeIn(delay: (100 * index).ms).slideY(begin: 0.5, curve: Curves.easeOut);
+      },
     );
   }
+}
 
-  // Método para construir una card de receta
-  Widget _buildRecipeCard(Map<String, dynamic> recipe, int index) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      color: Colors.white,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  RecipeDetailScreen(recipeName: recipe['name']),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
+class RecommendationsListView extends StatelessWidget {
+  final List<String> items;
+  const RecommendationsListView({super.key, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    print('RecommendationsListView: Construyendo lista con ${items.length} recomendaciones');
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: FrutiaColors.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Imagen de la receta
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  recipe['image'],
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 80,
-                    height: 80,
-                    color: FrutiaColors.secondaryBackground,
-                    child: const Icon(
-                      Icons.image_not_supported,
-                      color: FrutiaColors.disabledText,
-                    ),
-                  ),
-                ),
-              ),
+              const Icon(Icons.check_circle, color: FrutiaColors.accent, size: 22),
               const SizedBox(width: 12),
-              // Nombre y calorías de la receta
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      recipe['name'],
-                      style: GoogleFonts.lato(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: FrutiaColors.primaryText,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      recipe['calories'],
-                      style: GoogleFonts.lato(
-                        fontSize: 14,
-                        color: FrutiaColors.secondaryText,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              // Botón de favorito
-              IconButton(
-                icon: Icon(
-                  favoriteRecipes.contains(recipe['name'])
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: favoriteRecipes.contains(recipe['name'])
-                      ? FrutiaColors.accent
-                      : FrutiaColors.disabledText,
-                ),
-                onPressed: () => _toggleFavorite(recipe['name']),
-              ),
+              Expanded(child: Text(items[index], style: const TextStyle(fontSize: 15, height: 1.4))),
             ],
           ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 800.ms, delay: (200 + index * 200).ms).slideY(
-          begin: 0.3,
-          end: 0.0,
-          duration: 800.ms,
-          curve: Curves.easeOut,
         );
+      },
+    );
   }
 }

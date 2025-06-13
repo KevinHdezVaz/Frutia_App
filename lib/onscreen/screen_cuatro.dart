@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
@@ -17,9 +18,23 @@ class OnBoardingCuatro extends StatelessWidget {
       return Theme.of(context).brightness == Brightness.dark;
     }
 
+
+
     Color fondo = isDarkMode(context) ? Colors.white : Colors.black;
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Añade esta línea
 
     Size size = MediaQuery.of(context).size;
+
+
+   Future<void> _playButtonSound() async {
+    try {
+      await _audioPlayer.stop();  
+      await _audioPlayer.play(AssetSource('sonidos/sonido2.mp3')); // Asegúrate de tener este archivo en assets/sonidos/
+    } catch (e) {
+      print('Error al reproducir sonido: $e');
+    }
+  }
+
 
     Widget FeatureItem(String text) {
       return Padding(
@@ -164,31 +179,34 @@ class OnBoardingCuatro extends StatelessWidget {
               ),
 
               // Botón de acción
-              Positioned(
-                bottom: 30,
-                right: 30,
-                child: FloatingActionButton(
-                  onPressed: () async {
-                    // Trigger vibration on button press
-                    if (await Vibration.hasVibrator() ?? false) {
-                  Vibration.vibrate(duration: 10); // Short vibration
-                    }
-                    await _storeOnboardInfo();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AuthCheckMain(),
-                      ),
-                    );
-                  },
-                  backgroundColor: Colors.white,
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.black,
-                    size: 30,
+             Positioned(
+            bottom: 30,
+            right: 30,
+            child: FloatingActionButton(
+              onPressed: () async {
+                // Reproducir sonido y vibrar
+                await _playButtonSound();
+                if (await Vibration.hasVibrator() ?? false) {
+                  Vibration.vibrate(duration: 5, amplitude: 50);
+                }
+                
+                await _storeOnboardInfo();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AuthCheckMain(),
                   ),
-                ),
+                );
+              },
+              backgroundColor: Colors.white,
+              child: const Icon(
+                Icons.check,
+                color: Colors.black,
+                size: 30,
               ),
+            ),
+          ),
+          
 
               // Botón "Omitir"
               Padding(
@@ -226,6 +244,8 @@ class OnBoardingCuatro extends StatelessWidget {
       ),
     );
   }
+
+ 
 
   Widget _buildPageIndicator(bool isActive) {
     return Container(

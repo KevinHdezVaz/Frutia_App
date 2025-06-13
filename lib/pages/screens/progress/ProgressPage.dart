@@ -4,7 +4,7 @@ import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart';
+ import 'package:intl/intl.dart';
 
 // Clase para definir los temas de color e imagen de fondo
 class DynamicTheme {
@@ -86,7 +86,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Tu Camino',
+                automaticallyImplyLeading: false,
+
+        title: Text('Tu Progreso',
             style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -158,7 +160,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           children: [
             Text('🔥', style: TextStyle(fontSize: 28))
                 .animate(onComplete: (c) => c.repeat(reverse: true))
-                .scaleXY(end: 1.3, duration: 300.ms, curve: Curves.easeInOut),
+                .scaleXY(end: 1.3, duration: 280.ms, curve: Curves.easeInOut),
             const SizedBox(width: 4),
             Text('$_currentStreak',
                 style: GoogleFonts.poppins(
@@ -222,10 +224,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
         ),
         ListView.builder(
+          // --- CORRECCIÓN APLICADA AQUÍ ---
+          reverse: true, // Esto invierte la lista, el día 1 estará abajo
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(vertical: 20),
           itemCount: _currentStreak + 10,
           itemBuilder: (context, index) {
+            // La lógica para calcular el número del día no cambia
             final stepNumber = index + 1;
             return _TimelineStepWidget(
               stepNumber: stepNumber,
@@ -273,13 +278,12 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   Widget build(BuildContext context) {
     final bool isPast = widget.stepNumber < widget.currentStreak;
     final bool isFuture = widget.stepNumber > widget.currentStreak;
-
+    
     return InkWell(
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       onTap: () {
         if (!isFuture) {
-          // Solo permite interactuar con días pasados y el actual
           setState(() {
             _isExpanded = !_isExpanded;
           });
@@ -287,18 +291,14 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
       },
       child: Container(
         height: widget.stepHeight,
-        // El padding exterior se elimina, el espaciado se maneja adentro
         child: Row(
           children: [
-            // Contenedor Izquierdo (Tarjeta o Vacío)
             Expanded(
               child: widget.isLeftAligned
                   ? _buildStepCard(isPast, isFuture)
                   : const SizedBox(),
             ),
-            // Nodo Central
             _buildNode(),
-            // Contenedor Derecho (Tarjeta o Vacío)
             Expanded(
               child: !widget.isLeftAligned
                   ? _buildStepCard(isPast, isFuture)
@@ -331,7 +331,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
               color: widget.accentColor.withOpacity(0.3),
             ),
             child:
-                Image.asset('assets/images/fruta22.png', width: 45, height: 45),
+                Image.asset('assets/images/fruta22.png', width: 100, height: 100),
           )
               .animate()
               .scale(delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
@@ -349,23 +349,27 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
           widget.isLeftAligned ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: 16.0), // Espacio entre tarjeta y nodo
+            horizontal: 16.0),
         child: AnimatedContainer(
           duration: 300.ms,
           curve: Curves.easeInOut,
-          constraints: const BoxConstraints(maxWidth: 150), // Ancho máximo
+          constraints: const BoxConstraints(maxWidth: 150),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isFuture
-                ? Colors.black.withOpacity(0.1)
-                : Colors.black.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: widget.isCurrent
-                    ? widget.accentColor
-                    : Colors.white.withOpacity(0.2)),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
-          ),
+  color: isFuture
+      ? Colors.black.withOpacity(0.1)
+      : Colors.black.withOpacity(0.25),
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(
+    color: widget.isCurrent
+        ? Colors.red // Borde rojo para el día actual
+        : (widget.isMilestone 
+            ? Colors.yellow.shade700 // Borde amarillo para hitos
+            : Colors.white.withOpacity(0.2)), // Borde normal
+    width: widget.isCurrent ? 2.0 : 1.0, // Grosor más ancho para el día actual
+  ),
+  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,6 +382,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                   else
                     Text('Día ${widget.stepNumber}',
                         style: GoogleFonts.poppins(
+                          fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             shadows: [
@@ -395,7 +400,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                   const Spacer(),
                   if (isPast)
                     Icon(Icons.check_circle,
-                        color: Colors.green.shade300, size: 18),
+                        color: Colors.green, size: 18),
                 ],
               ),
               AnimatedSize(
@@ -419,7 +424,6 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   }
 }
 
-// --- WIDGET DE FONDO ---
 class _AnimatedParallaxBackground extends StatefulWidget {
   final String imagePath;
   const _AnimatedParallaxBackground({Key? key, required this.imagePath})

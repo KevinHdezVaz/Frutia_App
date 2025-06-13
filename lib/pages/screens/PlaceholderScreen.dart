@@ -25,6 +25,8 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
     return Scaffold(
 
   appBar: AppBar(
+            automaticallyImplyLeading: false,
+
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

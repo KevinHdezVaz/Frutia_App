@@ -116,10 +116,7 @@ class OnboardingScreenOne extends StatelessWidget {
             right: 30,
             child: FloatingActionButton(
               onPressed: () async {
-                // Trigger vibration on button press
-                if (await Vibration.hasVibrator() ?? false) {
-                  Vibration.vibrate(duration: 10); // Short vibration
-                }
+              
                 pageController.nextPage(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,

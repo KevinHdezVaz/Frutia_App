@@ -141,7 +141,7 @@ class _PlanCarouselState extends State<PlanCarousel> {
               effect: WormEffect(
                 dotHeight: 8,
                 dotWidth: 8,
-                activeDotColor: FrutiaColors.accent,
+                activeDotColor: Colors.blue,
                 dotColor: Colors.grey.shade300,
               ),
               onDotClicked: (index) {
@@ -158,40 +158,51 @@ class _PlanCarouselState extends State<PlanCarousel> {
   }
 }
 
+
 class _MealCarouselCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final List<dynamic>? options;
+  final bool isPremium; // Nuevo parámetro para determinar si es premium
 
   const _MealCarouselCard({
     required this.icon,
     required this.title,
     this.options,
+    this.isPremium = false, // Valor por defecto false
   });
 
   @override
   Widget build(BuildContext context) {
     final optionCount = options?.length ?? 0;
+    final borderColor = isPremium ? Colors.green : Colors.orange;
+    final backgroundColor = isPremium 
+        ? Colors.green[50]?.withOpacity(0.7) 
+        : Colors.orange[50]?.withOpacity(0.7);
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            FrutiaColors.accent,
-            FrutiaColors.accent2.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: FrutiaColors.accent.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+     decoration: BoxDecoration(
+  gradient: LinearGradient(
+    colors: [
+      isPremium ? Colors.green.shade100 : Colors.orange.shade100,
+      isPremium ? Colors.green.shade50 : Colors.orange.shade50,
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  ),
+  borderRadius: BorderRadius.circular(20),
+  border: Border.all(
+    color: isPremium ? Colors.green : Colors.orange,
+    width: 2.0,
+  ),
+  boxShadow: [
+    BoxShadow(
+      color: (isPremium ? Colors.green : Colors.orange).withOpacity(0.2),
+      blurRadius: 12,
+      offset: const Offset(0, 6),
+    ),
+  ],
+),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -206,12 +217,16 @@ class _MealCarouselCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(icon, color: Colors.white, size: 28),
+                    Icon(
+                      icon, 
+                      color: borderColor, 
+                      size: 28
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       title,
                       style: GoogleFonts.lato(
-                        color: Colors.white,
+                        color: Colors.black,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -224,7 +239,7 @@ class _MealCarouselCard extends StatelessWidget {
                       ? 'Tienes $optionCount opciones deliciosas:'
                       : 'Tu opción para hoy es:',
                   style: GoogleFonts.lato(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.black.withOpacity(0.8),
                     fontSize: 14,
                   ),
                 ),
@@ -233,7 +248,7 @@ class _MealCarouselCard extends StatelessWidget {
                   Text(
                     '• ${options![0]['opcion']}',
                     style: GoogleFonts.lato(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
