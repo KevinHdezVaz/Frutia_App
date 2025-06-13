@@ -5,9 +5,11 @@ import 'dart:ui';
 import 'package:Frutia/pages/screens/chatFrutia/ElevenLabsService.dart';
 import 'package:Frutia/pages/screens/chatFrutia/PermissionService.dart';
 import 'package:Frutia/services/ChatServiceApi.dart';
+import 'package:Frutia/utils/colors.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
@@ -483,10 +485,33 @@ class _RecordingScreenState extends State<RecordingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final Color tiffanyColor = Color(0xFF88D5C2);
-
+ 
     return Scaffold(
-      backgroundColor: tiffanyColor,
+    appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Text(
+          'Chat de voz',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.black),
+        
+      ),
+      
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
@@ -568,7 +593,7 @@ class _RecordingScreenState extends State<RecordingScreen>
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Colors.black,
                               ),
                             ),
                             const SizedBox(width: 16),

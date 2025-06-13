@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/model/ChatMessage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ConversationState.dart';
 import 'package:Frutia/pages/screens/chatFrutia/RecordingScreen.dart';
 import 'package:Frutia/services/ChatServiceApi.dart';
 import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -36,7 +38,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
 
   String _statusMessage = '';
   final Color _primaryColor = const Color.fromARGB(255, 255, 255, 255);
-  final Color _backgroundColor = const Color(0xFF88D5C2);
+  final Color _backgroundColor =  FrutiaColors.accent2;
   bool _isLoading = true;
   bool _showMicButton = false;
   bool _isSaved = false; // Track if chat is saved
@@ -415,116 +417,133 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _backgroundColor,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+      if (didPop) return; // Si ya se permitió el pop, no hacer nada
+      // Navegar a AuthCheckMain
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AuthCheckMain()),
+      );
+    },
+      child: Scaffold(
         backgroundColor: _backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Chat de voz',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+        appBar: AppBar(
+          backgroundColor: _backgroundColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+      onPressed: () {
+            // Mantener la misma lógica de navegación para el botón de retroceso de la AppBar
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const AuthCheckMain()),
+            );
+          },
           ),
+          title: const Text(
+            'Chat de voz',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            if (!_isSaved)
+              Padding(
+                padding: EdgeInsets.only(right: 10),
+                child: TextButton.icon(
+                  icon: Icon(Icons.save, color: Colors.white, size: 22),
+                  label: Text(
+                    'Guardar'.tr(),
+                    style: TextStyle(color: Colors.black, fontSize: 14),
+                  ),
+                  onPressed: _saveChat,
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                ),
+              ),
+          ],
         ),
-        actions: [
-          if (!_isSaved)
-            Padding(
-              padding: EdgeInsets.only(right: 10),
-              child: TextButton.icon(
-                icon: Icon(Icons.save, color: Colors.white, size: 22),
-                label: Text(
-                  'Guardar'.tr(),
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+        body: _isLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 6.0,
+                  valueColor: AlwaysStoppedAnimation<Color>(ivoryColor),
+                  backgroundColor: Colors.white.withOpacity(0.3),
                 ),
-                onPressed: _saveChat,
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 6.0,
-                valueColor: AlwaysStoppedAnimation<Color>(ivoryColor),
-                backgroundColor: Colors.white.withOpacity(0.3),
-              ),
-            )
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    _statusMessage,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        if (_conversationState.isThinking)
-                          const LinearProgressIndicator(),
-                        Expanded(
-                          child: ListView.builder(
-                            reverse: true,
-                            itemCount: _conversationState.messages.length,
-                            itemBuilder: (context, index) {
-                              return _buildMessageBubble(
-                                  _conversationState.messages[index]);
-                            },
-                          ),
-                        ),
-                      ],
+              )
+            : Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      _statusMessage,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Visibility(
-                    visible: _showMicButton,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: _navigateToRecordingScreen,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueGrey,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          if (_conversationState.isThinking)
+                            const LinearProgressIndicator(),
+                          Expanded(
+                            child: ListView.builder(
+                              reverse: true,
+                              itemCount: _conversationState.messages.length,
+                              itemBuilder: (context, index) {
+                                return _buildMessageBubble(
+                                    _conversationState.messages[index]);
+                              },
                             ),
-                            padding: const EdgeInsets.all(20),
-                            minimumSize: const Size(50, 50),
                           ),
-                          child: const Icon(
-                            Icons.mic,
-                            size: 30,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Visibility(
+                      visible: _showMicButton,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: _navigateToRecordingScreen,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueGrey,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              minimumSize: const Size(50, 50),
+                            ),
+                            child: const Icon(
+                              Icons.mic,
+                              size: 30,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }
