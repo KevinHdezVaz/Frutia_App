@@ -22,17 +22,19 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   void initState() {
     super.initState();
     _audioPlayer.setSource(AssetSource('sonidos/sonido3.mp3'));
-    
+
     _pageController.addListener(_handlePageChange);
   }
 
   void _handlePageChange() {
     if (_pageController.page == null) return;
-    
+
     final currentPage = _pageController.page!.round();
-    
+
     // Solo activar si la página cambió y la animación está completa
-    if (currentPage != _lastPage && _pageController.position.pixels == _pageController.position.maxScrollExtent * (currentPage / 3)) {
+    if (currentPage != _lastPage &&
+        _pageController.position.pixels ==
+            _pageController.position.maxScrollExtent * (currentPage / 3)) {
       _lastPage = currentPage;
       _playSwipeSound();
       _triggerVibration();
@@ -52,9 +54,9 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
   Future<void> _triggerVibration() async {
     if (await Vibration.hasVibrator() ?? false) {
       if (Theme.of(context).platform == TargetPlatform.iOS) {
-        Vibration.vibrate(duration: 5, amplitude: 50);
+        Vibration.vibrate(duration: 1, amplitude: 10);
       } else {
-        Vibration.vibrate(duration: 5, amplitude: 50);
+        Vibration.vibrate(duration: 1, amplitude: 10);
       }
     }
   }

@@ -1,6 +1,8 @@
+import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/services/profile_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:Frutia/utils/gender_card.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -25,8 +27,9 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   bool _isLoading = false;
 
   double _height = 170.0;
-  double _weight = 70.0;
+  double _weight = 120.0;
   double _age = 25.0;
+  Country? _selectedCountry;
 
   Future<void> _submitForm() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
@@ -38,6 +41,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         'weight': _weight.toStringAsFixed(1),
         'age': _age.round().toString(),
         'sex': formData['sex'],
+        'pais': formData['pais'] ?? _selectedCountry?.name ?? '',
       };
 
       try {
@@ -50,8 +54,18 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 backgroundColor: Colors.green),
           );
 
-          // Eliminamos Navigator.pop(context) y solo llamamos al callback
+          // Call onSuccess to refresh HomePage
           widget.onSuccess();
+
+          // Close the modal
+          Navigator.pop(context);
+
+          // Navigate to AuthCheckMain, replacing the current stack
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AuthCheckMain()),
+            (route) => false, // Remove all previous routes
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -71,9 +85,9 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.6),
-      body: Center(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Center(
         child: Card(
           elevation: 20,
           shape:
@@ -85,7 +99,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 )
               : ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxWidth: MediaQuery.of(context).size.width * 0.95,
+                    maxHeight: MediaQuery.of(context).size.height * 0.9,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
@@ -120,6 +135,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                             const SizedBox(height: 20),
                             _buildAgeSlider(),
                             const SizedBox(height: 20),
+                            _buildCountrySelector(),
+                            const SizedBox(height: 20),
                             _buildSexSelector(),
                             const SizedBox(height: 32),
                             SizedBox(
@@ -141,6 +158,17 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                'Cancelar',
+                                style: GoogleFonts.lato(
+                                  fontSize: 14,
+                                  color: FrutiaColors.secondaryText,
                                 ),
                               ),
                             ),
@@ -298,6 +326,83 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildCountrySelector() {
+    return FormBuilderField<String>(
+      name: 'pais',
+      validator: FormBuilderValidators.required(
+        errorText: 'Por favor, selecciona un país.',
+      ),
+      builder: (FormFieldState<String> field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'País:',
+              style: GoogleFonts.lato(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () {
+                showCountryPicker(
+                  context: context,
+                  showPhoneCode: false,
+                  onSelect: (Country country) {
+                    setState(() {
+                      _selectedCountry = country;
+                      field.didChange(country.name);
+                    });
+                  },
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 12.0, horizontal: 16.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[400]!),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: Row(
+                  children: [
+                    if (_selectedCountry != null)
+                      Text(
+                        _selectedCountry!.flagEmoji,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _selectedCountry?.name ?? 'Selecciona un país',
+                        style: GoogleFonts.lato(
+                          fontSize: 16,
+                          color: _selectedCountry == null
+                              ? Colors.grey
+                              : FrutiaColors.primaryText,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down,
+                        color: FrutiaColors.accent),
+                  ],
+                ),
+              ),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 12.0),
+                child: Text(
+                  field.errorText ?? '',
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

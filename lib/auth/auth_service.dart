@@ -1,7 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/constantes.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+
+import '../model/User.dart' as frutia;
 
 class AuthException implements Exception {
   final String message;
@@ -10,6 +16,19 @@ class AuthException implements Exception {
 
 class AuthService {
   final StorageService _storage = StorageService();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  final storage = StorageService();
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    // Configuración para iOS:
+    clientId: Platform.isIOS
+        ? '730095641142-qj58r88ha7vnjlro9b5gsmb8upo9idcu.apps.googleusercontent.com' // De GoogleService-Info.plist
+        : null,
+    serverClientId:
+        '730095641142-2sc256o1n605r12hshom8sop83l5p4sk.apps.googleusercontent.com', // De google-services.json (client_type 3)
+  );
 
   /// Intenta registrar un nuevo usuario.
   /// Devuelve el mapa del usuario y el token si es exitoso.
@@ -47,9 +66,75 @@ class AuthService {
     }
   }
 
-  /// Intenta iniciar sesión.
-  /// Devuelve el mapa del usuario y el token si es exitoso.
-  /// Lanza una AuthException si falla.
+  Future<bool> signInWithGoogle() async {
+    try {
+      debugPrint('Iniciando login con Google...');
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return false;
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final String? firebaseToken = await userCredential.user?.getIdToken();
+      if (firebaseToken == null) {
+        throw AuthException("No se obtuvo token de Firebase");
+      }
+
+      return await _sendTokenToBackend(firebaseToken, 'google');
+    } on AuthException catch (e) {
+      debugPrint('Error de autenticación: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Error inesperado en Google Sign-In: $e');
+      throw AuthException('Error inesperado al iniciar sesión con Google');
+    }
+  }
+
+  Future<bool> _sendTokenToBackend(
+      String firebaseToken, String provider) async {
+    try {
+      final endpoint = provider == 'google' ? 'google-login' : 'facebook-login';
+      final response = await http.post(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'id_token': firebaseToken}),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        // Guardar token como en el registro/login normal
+        await _storage.saveToken(data['token']);
+
+        // Guardar usuario si viene en la respuesta
+        if (data['user'] != null) {
+          await _storage.saveUser(frutia.User.fromJson(data['user']));
+        }
+
+        return true;
+      } else {
+        // Manejar otros códigos de estado (401, 422, etc.)
+        String errorMessage =
+            data['message'] ?? 'Error en autenticación con Google';
+        if (data['errors'] != null) {
+          errorMessage = data['errors'].values.first[0];
+        }
+        throw AuthException(errorMessage);
+      }
+    } catch (e) {
+      debugPrint('Error en _sendTokenToBackend: $e');
+      throw AuthException(e.toString());
+    }
+  }
+
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),

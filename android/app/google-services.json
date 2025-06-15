@@ -12,7 +12,20 @@
           "package_name": "com.frutia.app.latam"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "730095641142-aa4kufvsl8gojl0i96g9t27s10kdbtak.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.frutia.app.latam",
+            "certificate_hash": "2572a8ad1accb6888f5f8f26f9be92dafff43b0a"
+          }
+        },
+        {
+          "client_id": "730095641142-2sc256o1n605r12hshom8sop83l5p4sk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA991Y_0g-2UISi8R5Ckp-wKxmksWFxCl0"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "730095641142-2sc256o1n605r12hshom8sop83l5p4sk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "730095641142-qj58r88ha7vnjlro9b5gsmb8upo9idcu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.frutia.app.latam"
+              }
+            }
+          ]
         }
       }
     }

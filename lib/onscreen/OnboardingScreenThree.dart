@@ -2,12 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:vibration/vibration.dart';
+import 'package:video_player/video_player.dart';
 
 import 'constants2.dart';
 
-class OnboardingScreenThree extends StatelessWidget {
+class OnboardingScreenThree extends StatefulWidget {
   final PageController pageController;
-  OnboardingScreenThree({required this.pageController});
+
+  const OnboardingScreenThree({Key? key, required this.pageController})
+      : super(key: key);
+
+  @override
+  _OnboardingScreenThreeState createState() => _OnboardingScreenThreeState();
+}
+
+class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
+  late VideoPlayerController _videoController;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the video controller
+    _videoController = VideoPlayerController.asset(
+      'assets/images/videoSaludo.mp4',
+    )..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          _videoController.setLooping(true); // Set video to loop
+          _videoController.setVolume(0.0); // Mute the video
+          _videoController.play(); // Start playing automatically
+        }
+      }).catchError((error) {
+        print('Error initializing video: $error');
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,21 +98,25 @@ class OnboardingScreenThree extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              // Imagen de la fruta en la parte superior
+              // Video en la parte superior, reemplazando la imagen
               Positioned(
                 top: size.height * 0.10,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Container(
-                    height: 250,
-                    width: 350,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/frutastop.png'),
-                        fit: BoxFit.contain,
-                      ),
+                  child: ClipOval(
+                    child: Container(
+                      height: 300,
+                      width: 350,
+                      color:
+                          Colors.black, // Fondo negro mientras carga el video
+                      child: _isInitialized
+                          ? VideoPlayer(_videoController)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -86,7 +127,7 @@ class OnboardingScreenThree extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 200),
+                    const SizedBox(height: 300),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
@@ -153,8 +194,7 @@ class OnboardingScreenThree extends StatelessWidget {
                 right: 30,
                 child: FloatingActionButton(
                   onPressed: () async {
-               
-                    pageController.nextPage(
+                    widget.pageController.nextPage(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                     );

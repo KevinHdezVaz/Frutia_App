@@ -1,9 +1,7 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
-    id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
-    id "kotlin-android"
+    id "org.jetbrains.kotlin.android"
+    id "com.google.gms.google-services"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -27,26 +25,18 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.frutia.app.latam"
-    compileSdkVersion 35
+    compileSdkVersion 34
+    
     ndkVersion flutter.ndkVersion
 
-    configurations {
-        all {
-            // Exclude conflicting Kotlin stdlib modules
-            exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-            exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-        }
-    }
-
-    compileOptions { 
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-                coreLibraryDesugaringEnabled true
-
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -54,34 +44,34 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.frutia.app.latam"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 23
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
     }
 
-
-signingConfigs {
-    release {
-        storeFile file('nuevo-futplay.jks') 
-        storePassword 'Elmejor_10'
-        keyAlias 'futplay'
-        keyPassword 'Elmejor_10'
+    signingConfigs {
+        release {
+            storeFile file('nuevo-futplay.jks')
+            storePassword 'Elmejor_10'
+            keyAlias 'futplay'
+            keyPassword 'Elmejor_10'
+        }
     }
-}
 
-
-buildTypes {
-    release {
-        signingConfig signingConfigs.release  
-        minifyEnabled true
-        shrinkResources true
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.debug
+        }
     }
-}
 }
 
 flutter {
@@ -89,6 +79,7 @@ flutter {
 }
 
 dependencies {
-      coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
-
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22"
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
 }

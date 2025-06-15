@@ -3,14 +3,60 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:vibration/vibration.dart';
+import 'package:video_player/video_player.dart';
 
 import 'constants2.dart';
 
-class OnBoardingCuatro extends StatelessWidget {
+class OnBoardingCuatro extends StatefulWidget {
   final PageController pageController;
 
   const OnBoardingCuatro({Key? key, required this.pageController})
       : super(key: key);
+
+  @override
+  _OnBoardingCuatroState createState() => _OnBoardingCuatroState();
+}
+
+class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
+  late VideoPlayerController _videoController;
+  bool _isInitialized = false;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the video controller
+    _videoController = VideoPlayerController.asset(
+      'assets/images/videoDocSaludando.mp4',
+    )..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          _videoController.setLooping(true); // Set video to loop
+          _videoController.setVolume(0.0); // Mute the video
+          _videoController.play(); // Start playing automatically
+        }
+      }).catchError((error) {
+        print('Error initializing video: $error');
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playButtonSound() async {
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(AssetSource('sonidos/sonido2.mp3'));
+    } catch (e) {
+      print('Error al reproducir sonido: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,23 +64,9 @@ class OnBoardingCuatro extends StatelessWidget {
       return Theme.of(context).brightness == Brightness.dark;
     }
 
-
-
     Color fondo = isDarkMode(context) ? Colors.white : Colors.black;
-  final AudioPlayer _audioPlayer = AudioPlayer(); // Añade esta línea
 
     Size size = MediaQuery.of(context).size;
-
-
-   Future<void> _playButtonSound() async {
-    try {
-      await _audioPlayer.stop();  
-      await _audioPlayer.play(AssetSource('sonidos/sonido2.mp3')); // Asegúrate de tener este archivo en assets/sonidos/
-    } catch (e) {
-      print('Error al reproducir sonido: $e');
-    }
-  }
-
 
     Widget FeatureItem(String text) {
       return Padding(
@@ -139,21 +171,25 @@ class OnBoardingCuatro extends StatelessWidget {
                 ),
               ),
 
-              // Imagen de la fruta en la parte inferior
+              // Video en la parte inferior, reemplazando la imagen
               Positioned(
                 bottom: size.height * 0.10,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Container(
-                    height: 280,
-                    width: 350,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/frutamedica.png'),
-                        fit: BoxFit.contain,
-                      ),
+                  child: ClipOval(
+                    child: Container(
+                      height: 300,
+                      width: 350,
+                      color:
+                          Colors.black, // Fondo negro mientras carga el video
+                      child: _isInitialized
+                          ? VideoPlayer(_videoController)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -179,34 +215,33 @@ class OnBoardingCuatro extends StatelessWidget {
               ),
 
               // Botón de acción
-             Positioned(
-            bottom: 30,
-            right: 30,
-            child: FloatingActionButton(
-              onPressed: () async {
-                // Reproducir sonido y vibrar
-                await _playButtonSound();
-                if (await Vibration.hasVibrator() ?? false) {
-                  Vibration.vibrate(duration: 5, amplitude: 50);
-                }
-                
-                await _storeOnboardInfo();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AuthCheckMain(),
+              Positioned(
+                bottom: 30,
+                right: 30,
+                child: FloatingActionButton(
+                  onPressed: () async {
+                    // Reproducir sonido y vibrar
+                    await _playButtonSound();
+                    if (await Vibration.hasVibrator() ?? false) {
+                      Vibration.vibrate(duration: 5, amplitude: 50);
+                    }
+
+                    await _storeOnboardInfo();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AuthCheckMain(),
+                      ),
+                    );
+                  },
+                  backgroundColor: Colors.white,
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.black,
+                    size: 30,
                   ),
-                );
-              },
-              backgroundColor: Colors.white,
-              child: const Icon(
-                Icons.check,
-                color: Colors.black,
-                size: 30,
+                ),
               ),
-            ),
-          ),
-          
 
               // Botón "Omitir"
               Padding(
@@ -244,8 +279,6 @@ class OnBoardingCuatro extends StatelessWidget {
       ),
     );
   }
-
- 
 
   Widget _buildPageIndicator(bool isActive) {
     return Container(

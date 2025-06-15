@@ -4,7 +4,7 @@ import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
- import 'package:intl/intl.dart';
+import 'package:intl/intl.dart';
 
 // Clase para definir los temas de color e imagen de fondo
 class DynamicTheme {
@@ -86,8 +86,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-                automaticallyImplyLeading: false,
-
+        automaticallyImplyLeading: false,
         title: Text('Tu Progreso',
             style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
@@ -224,13 +223,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
         ),
         ListView.builder(
-          // --- CORRECCIÓN APLICADA AQUÍ ---
-          reverse: true, // Esto invierte la lista, el día 1 estará abajo
+          reverse: true,
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(vertical: 20),
           itemCount: _currentStreak + 10,
           itemBuilder: (context, index) {
-            // La lógica para calcular el número del día no cambia
             final stepNumber = index + 1;
             return _TimelineStepWidget(
               stepNumber: stepNumber,
@@ -278,7 +275,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   Widget build(BuildContext context) {
     final bool isPast = widget.stepNumber < widget.currentStreak;
     final bool isFuture = widget.stepNumber > widget.currentStreak;
-    
+
     return InkWell(
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
@@ -311,6 +308,18 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   }
 
   Widget _buildNode() {
+    // Determinar la imagen según la racha actual
+    String imagePath;
+    if (widget.currentStreak >= 30) {
+      imagePath = 'assets/images/frutaProgreso3.png'; // 30+ días
+    } else if (widget.currentStreak >= 7) {
+      imagePath = 'assets/images/frutaProgreso2.png'; // 7+ días
+    } else if (widget.currentStreak >= 2) {
+      imagePath = 'assets/images/frutaProgreso4.png'; // 2+ días
+    } else {
+      imagePath = 'assets/images/frutaProgreso1.png'; // Inicio (0 días)
+    }
+
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -330,11 +339,13 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
               shape: BoxShape.circle,
               color: widget.accentColor.withOpacity(0.3),
             ),
-            child:
-                Image.asset('assets/images/fruta22.png', width: 100, height: 100),
-          )
-              .animate()
-              .scale(delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
+            child: Image.asset(
+              imagePath,
+              width: 150,
+              height: 150,
+            ).animate().scale(
+                delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
+          ),
       ],
     );
   }
@@ -348,28 +359,27 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
       alignment:
           widget.isLeftAligned ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: AnimatedContainer(
           duration: 300.ms,
           curve: Curves.easeInOut,
           constraints: const BoxConstraints(maxWidth: 150),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-  color: isFuture
-      ? Colors.black.withOpacity(0.1)
-      : Colors.black.withOpacity(0.25),
-  borderRadius: BorderRadius.circular(16),
-  border: Border.all(
-    color: widget.isCurrent
-        ? Colors.red // Borde rojo para el día actual
-        : (widget.isMilestone 
-            ? Colors.yellow.shade700 // Borde amarillo para hitos
-            : Colors.white.withOpacity(0.2)), // Borde normal
-    width: widget.isCurrent ? 2.0 : 1.0, // Grosor más ancho para el día actual
-  ),
-  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
-),
+            color: isFuture
+                ? Colors.black.withOpacity(0.1)
+                : Colors.black.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.isCurrent
+                  ? Colors.red
+                  : (widget.isMilestone
+                      ? Colors.yellow.shade700
+                      : Colors.white.withOpacity(0.2)),
+              width: widget.isCurrent ? 2.0 : 1.0,
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,11 +393,12 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                     Text('Día ${widget.stepNumber}',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              const Shadow(color: Colors.black26, blurRadius: 2)
-                            ])),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: const [
+                            Shadow(color: Colors.black26, blurRadius: 2)
+                          ],
+                        )),
                   if (widget.isMilestone) const SizedBox(width: 4),
                   if (widget.isMilestone)
                     Text('Hito',
@@ -399,8 +410,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                             ])),
                   const Spacer(),
                   if (isPast)
-                    Icon(Icons.check_circle,
-                        color: Colors.green, size: 18),
+                    Icon(Icons.check_circle, color: Colors.green, size: 18),
                 ],
               ),
               AnimatedSize(

@@ -12,8 +12,10 @@ class FrutiaColors {
       Color(0xFF2D2D2D); // Dark Gray for primary text
   static const Color secondaryText =
       Color.fromARGB(255, 7, 7, 7); // Light Gray for secondary text
-  static const Color disabledText = Color.fromRGBO(118, 118, 118, 1); // Medium Gray for disabled text
-  static const Color accent2 = Color.fromARGB(255, 234, 116, 116); // Strawberry Red for pr
+  static const Color disabledText =
+      Color.fromRGBO(118, 118, 118, 1); // Medium Gray for disabled text
+  static const Color accent2 =
+      Color.fromARGB(255, 234, 116, 116); // Strawberry Red for pr
   // Accent and Highlight Colors
   static const Color accent = Color(
       0xFFFF4D4D); // Strawberry Red for primary accent (buttons, highlights)
@@ -40,4 +42,11 @@ class FrutiaColors {
       Color(0x1A000000); // Black with 10% opacity for shadows
   static const Color overlay =
       Color(0x80000000); // Black with 50% opacity for overlays
+
+  static const Color primary =
+      Color(0xFF2E7D32); // A strong green for primary actions/highlights
+  static const Color accentLight =
+      Color(0xFFFFECB3); // A lighter shade of accent
+  static const Color tertiaryBackground =
+      Color(0xFFE0E0E0); // Lighter grey for dividers
 }

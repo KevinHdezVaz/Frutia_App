@@ -2,12 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:vibration/vibration.dart';
+import 'package:video_player/video_player.dart';
 
 import 'constants2.dart';
 
-class OnboardingScreenTwo extends StatelessWidget {
+class OnboardingScreenTwo extends StatefulWidget {
   final PageController pageController;
-  OnboardingScreenTwo({required this.pageController});
+
+  const OnboardingScreenTwo({Key? key, required this.pageController})
+      : super(key: key);
+
+  @override
+  _OnboardingScreenTwoState createState() => _OnboardingScreenTwoState();
+}
+
+class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
+  late VideoPlayerController _videoController;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the video controller
+    _videoController = VideoPlayerController.asset(
+      'assets/images/videoEjercicio.mp4',
+    )..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          _videoController.setLooping(true); // Set video to loop
+          _videoController.setVolume(0.0); // Mute the video
+          _videoController.play(); // Start playing automatically
+        }
+      }).catchError((error) {
+        print('Error initializing video: $error');
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,21 +155,25 @@ class OnboardingScreenTwo extends StatelessWidget {
                 ),
               ),
 
-              // Imagen de la fruta en la parte inferior
+              // Video en la parte inferior, reemplazando la imagen
               Positioned(
                 bottom: size.height * 0.10,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Container(
-                    height: 300,
-                    width: 300,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/fruta44.png'),
-                        fit: BoxFit.contain,
-                      ),
+                  child: ClipOval(
+                    child: Container(
+                      height: 300,
+                      width: 300,
+                      color:
+                          Colors.black, // Fondo negro mientras carga el video
+                      child: _isInitialized
+                          ? VideoPlayer(_videoController)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -163,8 +204,7 @@ class OnboardingScreenTwo extends StatelessWidget {
                 right: 30,
                 child: FloatingActionButton(
                   onPressed: () async {
-                  
-                    pageController.nextPage(
+                    widget.pageController.nextPage(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                     );
@@ -226,7 +266,7 @@ class OnboardingScreenTwo extends StatelessWidget {
     );
   }
 
-  _storeOnboardInfo() async {
+  Future<void> _storeOnboardInfo() async {
     print("Shared pref called");
     int isViewed = 0;
     SharedPreferences prefs = await SharedPreferences.getInstance();

@@ -9,21 +9,19 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-        appBar: AppBar(
-                          automaticallyImplyLeading: false,
-
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
+              colors: [FrutiaColors.accent, FrutiaColors.accent2],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
         title: Text(
-          ' Nosotros',
+          'Nosotros',
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -33,7 +31,6 @@ class ProfilePage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.black),
-        
       ),
       backgroundColor: Colors.transparent,
       body: Container(
@@ -41,21 +38,22 @@ class ProfilePage extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                             const SizedBox(height: 24),
-
+                const SizedBox(height: 24),
                 Center(
-                  child: Image.asset(
-                    'assets/images/fruta22.png', // Placeholder para la imagen de Frutia
-                    height: 200,
-                    fit: BoxFit.contain,
-                  ).animate().fadeIn(duration: 300.ms).scale(
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1.0, 1.0),
-                      duration: 300.ms,
-                      curve: Curves.easeOut),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/imagenFrutia.png', // Placeholder para la imagen de Frutia
+                      height: 200,
+                      fit: BoxFit
+                          .cover, // Ajusta la imagen para llenar el círculo
+                    ).animate().fadeIn(duration: 300.ms).scale(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1.0, 1.0),
+                        duration: 300.ms,
+                        curve: Curves.easeOut),
+                  ),
                 ),
                 const SizedBox(height: 24),
-
                 // Contenedor de texto
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -70,7 +68,6 @@ class ProfilePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                    
                           const SizedBox(height: 16),
                           Text(
                             'Creamos esta app con una idea clara: la nutrición no debería sentirse como una carga, ni depender de planes genéricos que no se adaptan a tu vida. Por eso combinamos ciencia, tecnología e inteligencia artificial para ofrecerte un acompañamiento real, sin fórmulas mágicas, sin promesas vacías, y sin complicarte el día a día.',

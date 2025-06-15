@@ -1,11 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart';
+import 'package:video_player/video_player.dart';
 
-class OnboardingScreenOne extends StatelessWidget {
+class OnboardingScreenOne extends StatefulWidget {
   final PageController pageController;
 
   const OnboardingScreenOne({Key? key, required this.pageController})
       : super(key: key);
+
+  @override
+  _OnboardingScreenOneState createState() => _OnboardingScreenOneState();
+}
+
+class _OnboardingScreenOneState extends State<OnboardingScreenOne> {
+  late VideoPlayerController _videoController;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the video controller
+    _videoController = VideoPlayerController.asset(
+      'assets/images/videoDoc.mp4',
+    )..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          _videoController.setLooping(true); // Set video to loop
+          _videoController.setVolume(0.0); // Mute the video
+          _videoController.play(); // Start playing automatically
+        }
+      }).catchError((error) {
+        print('Error initializing video: $error');
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +63,23 @@ class OnboardingScreenOne extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(
-                    height: 20), // Reducido para mover la fresa hacia arriba
+                    height: 20), // Reducido para mover el video hacia arriba
 
-                // Imagen circular de la fresa, más grande
+                // Video circular, reemplazando la imagen de la fresa
                 Center(
-                  child: Container(
-                    width: 350, // Aumentado para hacer la fresa más grande
-                    height: 250, // Aumentado para hacer la fresa más grande
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/fruta22.png'),
-                        fit: BoxFit.contain,
-                      ),
+                  child: ClipOval(
+                    child: Container(
+                      width: 350, // Tamaño igual que la imagen original
+                      height: 350, // Tamaño igual que la imagen original
+                      color:
+                          Colors.black, // Fondo negro mientras carga el video
+                      child: _isInitialized
+                          ? VideoPlayer(_videoController)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -116,8 +155,7 @@ class OnboardingScreenOne extends StatelessWidget {
             right: 30,
             child: FloatingActionButton(
               onPressed: () async {
-              
-                pageController.nextPage(
+                widget.pageController.nextPage(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );

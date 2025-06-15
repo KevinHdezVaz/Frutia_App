@@ -1,3 +1,4 @@
+import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/onscreen/QuestionnairePage.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
@@ -42,9 +43,21 @@ class _HomePageState extends State<HomePage> {
       final profile = userData['profile'];
 
       if (profile == null || profile['height'] == null) {
-        setState(() {
-          _userData = userData;
-          _pageState = PageState.needsOnboarding;
+        // Navigate to PersonalDataPage as a full-screen page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PersonalDataPage(
+              onSuccess: _fetchAndCheckProfile,
+            ),
+          ),
+        ).then((_) {
+          if (mounted) {
+            setState(() {
+              _userData = userData;
+              _pageState = PageState.needsOnboarding;
+            });
+          }
         });
       } else if (profile['plan_setup_complete'] != true &&
           profile['plan_setup_complete'] != 1) {
@@ -112,20 +125,7 @@ class _HomePageState extends State<HomePage> {
             key: ValueKey('loader'),
             child: CircularProgressIndicator(color: FrutiaColors.accent));
       case PageState.needsOnboarding:
-        return _buildNeedsInfoUI(
-          key: const ValueKey('onboarding'),
-          title: "¡Bienvenido a Frutia!",
-          subtitle:
-              "Necesitamos algunos datos básicos para poder continuar y crear un perfil para ti.",
-          buttonText: "Completar mis datos",
-          onPressed: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        PersonalDataPage(onSuccess: _fetchAndCheckProfile)));
-          },
-        );
+        return const SizedBox.shrink(key: ValueKey('onboarding'));
       case PageState.needsPlan:
         return _DashboardView(
             key: const ValueKey('dashboard'), userData: _userData!);
@@ -135,48 +135,6 @@ class _HomePageState extends State<HomePage> {
         return _DashboardView(
             key: const ValueKey('dashboard'), userData: _userData!);
     }
-  }
-
-  Widget _buildNeedsInfoUI({
-    required Key key,
-    required String title,
-    required String subtitle,
-    required String buttonText,
-    required VoidCallback onPressed,
-  }) {
-    return Center(
-      key: key,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search,
-                size: 80, color: FrutiaColors.accent.withOpacity(0.7)),
-            const SizedBox(height: 24),
-            Text(title,
-                style:
-                    GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            Text(subtitle,
-                style: GoogleFonts.lato(
-                    fontSize: 16, color: FrutiaColors.secondaryText),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: FrutiaColors.accent,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-              child: Text(buttonText),
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: const Duration(milliseconds: 400));
   }
 
   Widget _buildErrorUI({Key? key}) {
@@ -192,7 +150,8 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 24),
             Text(
               '¡Algo salió mal!',
-              style: GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
+              style:
+                  GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -255,7 +214,7 @@ class _DashboardView extends StatelessWidget {
         children: [
           _buildProfileHeader(userName, context),
           const SizedBox(height: 16),
-          _buildWeekCalendar(),
+          _buildWeekCalendar(context),
           const SizedBox(height: 24),
           _buildStatsRow(streakDays, currentWeight, mainGoal),
           const SizedBox(height: 24),
@@ -270,7 +229,8 @@ class _DashboardView extends StatelessWidget {
           const SizedBox(height: 30),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: hasPlan ? const PlanCarousel() : _buildCreatePlanCard(context),
+            child:
+                hasPlan ? const PlanCarousel() : _buildCreatePlanCard(context),
           ),
           if (hasPlan) ...[
             const SizedBox(height: 16),
@@ -283,9 +243,12 @@ class _DashboardView extends StatelessWidget {
           const SizedBox(height: 40),
           _buildAchievementsSection(),
           const SizedBox(height: 24),
+          _btnLogout(context),
+          const SizedBox(height: 60),
         ],
-      ).animate().fadeIn(
-          delay: const Duration(milliseconds: 400), duration: 500.ms),
+      )
+          .animate()
+          .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms),
     );
   }
 
@@ -319,8 +282,9 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(
-        delay: const Duration(milliseconds: 400), duration: 500.ms);
+    )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildStatsRow(int streakDays, String currentWeight, String mainGoal) {
@@ -365,96 +329,187 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(
-        delay: const Duration(milliseconds: 400), duration: 500.ms);
+    )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
-  Widget _buildWeekCalendar() {
+  Widget _buildWeekCalendar(BuildContext context) {
     final today = DateTime.now();
-    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    // Start 3 days before today
+    final startOfWindow = today.subtract(const Duration(days: 3));
     final Map<int, bool> complianceData = {
-      1: true,
-      2: true,
-      3: false,
-      4: true,
-      5: true
+      1: true, // Monday
+      2: true, // Tuesday
+      3: false, // Wednesday
+      4: true, // Thursday
+      5: true, // Friday
+      6: false, // Saturday
+      7: true, // Sunday
     };
+
+    // Initialize ScrollController
+    final ScrollController _scrollController = ScrollController();
+
+    // Scroll to center the current day after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        // Item width (60px) + right margin (12px) = 72px per item
+        const itemExtent = 60.0 + 12.0;
+        // Center the 3rd index (today)
+        final screenWidth = MediaQuery.of(context).size.width;
+        final offset = (3 * itemExtent) - (screenWidth / 2) + (itemExtent / 2);
+        _scrollController.animateTo(
+          offset.clamp(0.0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text('Tu semana',
-              style:
-                  GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text(
+            'Tu semana',
+            style: GoogleFonts.lato(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: FrutiaColors.primaryText,
+            ),
+          ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 80,
+          height: 90, // Slightly increased height for better visuals
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: 7,
+            controller: _scrollController,
+            itemCount: 7, // 3 days before + today + 3 days after
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemBuilder: (context, index) {
-              final day = startOfWeek.add(Duration(days: index));
-              final isToday = day.day == today.day && day.month == today.month;
+              // Calculate the day for this index (from startOfWindow)
+              final day = startOfWindow.add(Duration(days: index));
+              final isToday = day.day == today.day &&
+                  day.month == today.month &&
+                  day.year == today.year;
               final didComply = complianceData[day.weekday] ?? false;
 
-              return Container(
-                width: 60,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: isToday
-                      ? FrutiaColors.accent
-                      : FrutiaColors.secondaryBackground,
-                  borderRadius: BorderRadius.circular(12),
-                  border: isToday
-                      ? Border.all(color: Colors.white, width: 2)
-                      : null,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2))
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(DateFormat('E', 'es_ES').format(day),
-                        style: TextStyle(
+              return GestureDetector(
+                onTap: () {
+                  // Optional: Add tap feedback or navigation
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Seleccionaste ${DateFormat('EEEE', 'es_ES').format(day)}',
+                      ),
+                    ),
+                  );
+                },
+                child: Semantics(
+                  label: isToday
+                      ? 'Hoy, ${didComply ? "completado" : "no completado"}'
+                      : '${DateFormat('EEEE', 'es_ES').format(day)}, ${didComply ? "completado" : "no completado"}',
+                  child: Container(
+                    width: 60,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      gradient: isToday
+                          ? LinearGradient(
+                              colors: [
+                                FrutiaColors.accent,
+                                FrutiaColors.accent2
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isToday ? null : FrutiaColors.secondaryBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      border: isToday
+                          ? Border.all(color: Colors.white, width: 2)
+                          : Border.all(
+                              color: FrutiaColors.secondaryBackground
+                                  .withOpacity(0.5),
+                            ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isToday
+                              ? FrutiaColors.accent.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          DateFormat('E', 'es_ES')
+                              .format(day)
+                              .substring(0, 3)
+                              .toUpperCase(),
+                          style: GoogleFonts.lato(
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: isToday
                                 ? Colors.white
-                                : FrutiaColors.secondaryText)),
-                    const SizedBox(height: 4),
-                    Text(day.day.toString(),
-                        style: TextStyle(
-                            fontSize: 18,
+                                : FrutiaColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          day.day.toString(),
+                          style: GoogleFonts.lato(
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: isToday
                                 ? Colors.white
-                                : FrutiaColors.primaryText)),
-                    if (didComply) ...[
-                      const SizedBox(height: 4),
-                      Icon(Icons.check_circle,
+                                : FrutiaColors.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Icon(
+                          didComply ? Icons.check_circle : Icons.cancel,
                           size: 16,
-                          color: isToday ? Colors.white : Colors.green),
-                    ]
-                  ],
+                          color: isToday
+                              ? Colors.white
+                              : didComply
+                                  ? Colors.green
+                                  : Colors.red.withOpacity(0.7),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
+              ).animate(
+                effects: isToday
+                    ? [
+                        ScaleEffect(
+                          begin: const Offset(0.8, 0.8),
+                          end: const Offset(1.0, 1.0),
+                          duration: 300.ms,
+                          curve: Curves.easeInOut,
+                        ),
+                      ]
+                    : [],
               );
             },
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
       ],
     ).animate().slideX(
-        begin: 0.2,
-        delay: const Duration(milliseconds: 400),
-        duration: 400.ms,
-        curve: Curves.easeOut);
+          begin: 0.2,
+          end: 0.0,
+          delay: const Duration(milliseconds: 400),
+          duration: 400.ms,
+          curve: Curves.easeOut,
+        );
   }
 
   Widget _buildUpcomingMealCard() {
@@ -527,8 +582,9 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(
-        delay: const Duration(milliseconds: 400), duration: 500.ms);
+    )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildMealCard(String title, List<dynamic>? options) {
@@ -626,8 +682,9 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(
-        delay: const Duration(milliseconds: 400), duration: 500.ms);
+    )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildAchievementsSection() {
@@ -656,8 +713,9 @@ class _DashboardView extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(
-        delay: const Duration(milliseconds: 400), duration: 500.ms);
+    )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
   Widget _buildAchievementCard(String title, IconData icon, Color color) {
@@ -686,6 +744,84 @@ class _DashboardView extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _btnLogout(BuildContext context) {
+  final AuthService _authService = AuthService();
+
+  return Center(
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          bool confirm = await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text('¿Cerrar sesión?',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              content: const Text('Estás a punto de salir de tu cuenta.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar',
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child:
+                      const Text('Salir', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm == true) {
+            try {
+              await _authService.logout();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => AuthCheckMain()),
+                (Route<dynamic> route) => false,
+              );
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+        icon: const Icon(Icons.logout_rounded, size: 22),
+        label: const Text('Cerrar sesión',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.red[700],
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.red.shade200, width: 1.5),
+          ),
+          elevation: 0,
+        ),
+      ),
+    ),
+  );
 }
 
 class _StatCard extends StatelessWidget {

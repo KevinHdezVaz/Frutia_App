@@ -204,10 +204,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Logo
-
                               SizedBox(height: 20),
-                              // Welcome Text
+
                               Text(
                                 "Bienvenido a Frutia",
                                 textAlign: TextAlign.center,
@@ -416,7 +414,29 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 child: Container(
                                   width: size.width * 0.8,
                                   child: OutlinedButton(
-                                    onPressed: () => {},
+                                    onPressed: () async {
+                                      try {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Center(
+                                            child: CircularProgressIndicator(
+                                              color: FrutiaColors.primary,
+                                            ),
+                                          ),
+                                        );
+
+                                        final success = await _authService
+                                            .signInWithGoogle();
+
+                                        if (!mounted) return;
+                                        Navigator.pop(
+                                            context); // Cierra el diálogo de carga
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        Navigator.pop(
+                                            context); // Cierra el diálogo de carga
+                                      }
+                                    },
                                     style: OutlinedButton.styleFrom(
                                       padding:
                                           EdgeInsets.symmetric(vertical: 16),

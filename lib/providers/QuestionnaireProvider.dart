@@ -8,10 +8,9 @@ class QuestionnaireProvider extends ChangeNotifier {
   String? mainGoal;
 
   // --- Pantalla 2: Tu Rutina ---
-  String sport = ''; // Initialized to empty string
+  List<String> sport = [];
   String? trainingFrequency;
   String? dailyActivityLevel;
-  String? whoCooks;
   TimeOfDay? breakfastTime;
   TimeOfDay? lunchTime;
   TimeOfDay? dinnerTime;
@@ -27,9 +26,10 @@ class QuestionnaireProvider extends ChangeNotifier {
 
   // --- Pantalla 4: Tus Preferencias ---
   String? communicationTone;
-  Set<String> preferredMessageTypes = {};
   String? preferredName;
-  String thingsToAvoid = '';
+  Set<String> dietDifficulties =
+      {}; // Nuevo: Dificultades en el plan alimenticio
+  Set<String> dietMotivations = {}; // Nuevo: Motivaciones para seguir el plan
 
   // Método para actualizar y notificar
   void update(VoidCallback callback) {
@@ -46,7 +46,6 @@ class QuestionnaireProvider extends ChangeNotifier {
     debugPrint('Objetivo Principal: $mainGoal');
     debugPrint('---');
     debugPrint('Deporte: $sport, Frecuencia: $trainingFrequency');
-    debugPrint('Nivel Actividad: $dailyActivityLevel, Quién cocina: $whoCooks');
     debugPrint('Horarios: D: $breakfastTime, A: $lunchTime, C: $dinnerTime');
     debugPrint('Come fuera: $eatsOut');
     debugPrint('---');
@@ -56,8 +55,8 @@ class QuestionnaireProvider extends ChangeNotifier {
     debugPrint('Comidas al día: $mealCount');
     debugPrint('---');
     debugPrint('Tono: $communicationTone, Nombre preferido: $preferredName');
-    debugPrint('Mensajes preferidos: $preferredMessageTypes');
-    debugPrint('A evitar: $thingsToAvoid');
+    debugPrint('Dificultades: $dietDifficulties'); // Nuevo
+    debugPrint('Motivaciones: $dietMotivations'); // Nuevo
     debugPrint('------------------------------------------');
   }
 }
