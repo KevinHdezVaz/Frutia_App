@@ -34,6 +34,12 @@ class ProfilePage extends StatelessWidget {
       ),
       backgroundColor: Colors.transparent,
       body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/fondoPantalla1.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Column(
@@ -42,19 +48,18 @@ class ProfilePage extends StatelessWidget {
                 Center(
                   child: ClipOval(
                     child: Image.asset(
-                      'assets/images/imagenFrutia.png', // Placeholder para la imagen de Frutia
+                      'assets/images/imagenFrutia.png',
                       height: 200,
-                      fit: BoxFit
-                          .cover, // Ajusta la imagen para llenar el círculo
+                      fit: BoxFit.cover,
                     ).animate().fadeIn(duration: 300.ms).scale(
-                        begin: const Offset(0.8, 0.8),
-                        end: const Offset(1.0, 1.0),
-                        duration: 300.ms,
-                        curve: Curves.easeOut),
+                          begin: const Offset(0.8, 0.8),
+                          end: const Offset(1.0, 1.0),
+                          duration: 300.ms,
+                          curve: Curves.easeOut,
+                        ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Contenedor de texto
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Card(

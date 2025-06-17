@@ -19,7 +19,6 @@ import 'firebase_options.dart';
 // --- AÑADE ESTA IMPORTACIÓN ---
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-
 // Llaves globales
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -38,7 +37,7 @@ Future<void> main() async {
 
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   // --- LÍNEA ELIMINADA ---
   // Ya no necesitas la llamada manual a initializeDateFormatting.
   // await initializeDateFormatting('es_ES', null);
@@ -74,7 +73,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
           scaffoldMessengerKey: scaffoldMessengerKey,
-          
+
           // --- AÑADE ESTAS LÍNEAS PARA LA LOCALIZACIÓN ---
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
@@ -87,7 +86,7 @@ class MyApp extends StatelessWidget {
           ],
           locale: const Locale('es', 'ES'), // Establece el idioma por defecto
           // ---------------------------------------------
-          
+
           themeMode: themeProvider.currentTheme,
           theme: lightTheme,
           darkTheme: darkTheme,

@@ -174,7 +174,53 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: FrutiaColors.secondaryBackground,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset(
+                'assets/images/loaderFruta.json', // Asegúrate de tener esta animación en tus assets
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'estamos generando tu plan personalizado.',
+                style: GoogleFonts.lato(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: FrutiaColors.primaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                'estamos generando tu plan personalizado.',
+                style: GoogleFonts.lato(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: FrutiaColors.primaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ).animate().fadeIn(duration: 300.ms),
     );
 
     try {

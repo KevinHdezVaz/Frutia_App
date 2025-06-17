@@ -65,6 +65,7 @@ class MealItem {
   final int prepTimeMinutes;
   final List<String> ingredients;
   final List<String> instructions;
+  final Map<String, dynamic>? details;
 
   MealItem({
     required this.option,
@@ -73,19 +74,31 @@ class MealItem {
     required this.prepTimeMinutes,
     required this.ingredients,
     required this.instructions,
+    this.details,
   });
 
   factory MealItem.fromJson(Map<String, dynamic> json) {
+    final ingredientsList = <String>[];
+    final rawIngredients = json['details']?['ingredients'] as List? ?? [];
+
+    for (var ingredient in rawIngredients) {
+      if (ingredient is String) {
+        ingredientsList.add(ingredient);
+      } else if (ingredient is Map<String, dynamic>) {
+        ingredientsList.add(ingredient['name'] ?? '');
+      }
+    }
+
     return MealItem(
       option: json['opcion'] ?? 'Receta sin título',
       description:
           json['details']?['description'] ?? 'Descubriendo una nueva receta...',
       calories: json['details']?['calories'] ?? 0,
       prepTimeMinutes: json['details']?['prep_time_minutes'] ?? 0,
-      ingredients:
-          (json['details']?['ingredients'] as List?)?.cast<String>() ?? [],
+      ingredients: ingredientsList,
       instructions:
           (json['details']?['instructions'] as List?)?.cast<String>() ?? [],
+      details: json['details'],
     );
   }
 }

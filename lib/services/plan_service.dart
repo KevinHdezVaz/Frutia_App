@@ -29,6 +29,37 @@ class PlanService {
     }
   }
 
+  Future<List<String>> getShoppingListIngredients() async {
+    // Nuevo método
+    final token = await _storage.getToken();
+    if (token == null) throw AuthException('No autenticado.');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/plan/ingredients'), // Nueva URL
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData.containsKey('data')) {
+        return List<String>.from(responseData[
+            'data']); // La data es directamente la lista de strings
+      } else {
+        throw Exception(
+            'Respuesta inesperada: campo "data" no encontrado en ingredientes.');
+      }
+    } else if (response.statusCode == 404) {
+      throw Exception(
+          'No se encontró un plan activo para generar la lista de compras.');
+    } else {
+      throw Exception(
+          'Error al obtener la lista de ingredientes. Código: ${response.statusCode}. Mensaje: ${json.decode(response.body)['message'] ?? 'Error desconocido'}');
+    }
+  }
+
   Future<MealPlanData> generatePlan() async {
     // Cambiado el tipo de retorno a MealPlanData
     final token = await _storage.getToken();

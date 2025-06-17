@@ -1,9 +1,8 @@
 import 'package:Frutia/pages/screens/ProductDetailScreen.dart';
-import 'package:Frutia/providers/ShoppingProvider.dart';
+import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 
 class ComprasScreen extends StatelessWidget {
@@ -47,45 +46,220 @@ class ComprasScreen extends StatelessWidget {
   }
 }
 
-// --- PESTAÑA 1: MI LISTA ---
-class _MyListTab extends StatelessWidget {
+class _MyListTab extends StatefulWidget {
+  @override
+  _MyListTabState createState() => _MyListTabState();
+}
+
+class IngredientItem {
+  final String name;
+  bool isChecked;
+  final String category;
+
+  IngredientItem({
+    required this.name,
+    this.isChecked = false,
+    required this.category,
+  });
+}
+
+class _MyListTabState extends State<_MyListTab> {
+  List<IngredientItem> _ingredients = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIngredients();
+  }
+
+  // Función para determinar la categoría basada en el nombre del ingrediente
+  String _determineCategory(String ingredient) {
+    final lowerIngredient = ingredient.toLowerCase();
+
+    if (lowerIngredient.contains('leche') ||
+        lowerIngredient.contains('queso') ||
+        lowerIngredient.contains('yogur')) {
+      return 'Lácteos';
+    } else if (lowerIngredient.contains('pollo') ||
+        lowerIngredient.contains('carne') ||
+        lowerIngredient.contains('pescado')) {
+      return 'Carnes';
+    } else if (lowerIngredient.contains('manzana') ||
+        lowerIngredient.contains('banana') ||
+        lowerIngredient.contains('fruta')) {
+      return 'Frutas';
+    } else if (lowerIngredient.contains('espinaca') ||
+        lowerIngredient.contains('lechuga') ||
+        lowerIngredient.contains('vegetal')) {
+      return 'Vegetales';
+    } else if (lowerIngredient.contains('arroz') ||
+        lowerIngredient.contains('pasta') ||
+        lowerIngredient.contains('pan')) {
+      return 'Granos';
+    } else if (lowerIngredient.contains('aceite') ||
+        lowerIngredient.contains('vinagre') ||
+        lowerIngredient.contains('especia')) {
+      return 'Condimentos';
+    } else {
+      return 'Otros';
+    }
+  }
+
+  Future<void> _loadIngredients() async {
+    try {
+      final ingredients = await PlanService().getShoppingListIngredients();
+      setState(() {
+        _ingredients = ingredients
+            .map((ing) => IngredientItem(
+                  name: ing,
+                  category: _determineCategory(ing),
+                ))
+            .toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _toggleIngredientCheck(int index) {
+    setState(() {
+      _ingredients[index].isChecked = !_ingredients[index].isChecked;
+    });
+  }
+
+  void _removeIngredient(int index) {
+    setState(() {
+      _ingredients.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ShoppingProvider>();
-    final list = provider.userShoppingList;
-
-    if (list.isEmpty) {
-      return const Center(
-          child: Text(
-              'Tu lista está vacía. Ve a "Explorar" para añadir productos.'));
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
     }
 
-    // Agrupar por categoría
-    final groupedList =
-        groupBy(list, (UserShoppingListItem item) => item.item.category);
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error al cargar ingredientes',
+                style: TextStyle(color: Colors.red)),
+            Text(_error!),
+            ElevatedButton(
+              onPressed: _loadIngredients,
+              child: Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FrutiaColors.accent,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_ingredients.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('No hay ingredientes en tu plan actual'),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // Navegar a generación de plan o mostrar diálogo
+              },
+              child: Text('Generar Plan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FrutiaColors.accent,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Agrupar ingredientes por categoría
+    final groupedIngredients = groupBy(_ingredients, (item) => item.category);
+    final categories = groupedIngredients.keys.toList()..sort();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: groupedList.keys.length,
-      itemBuilder: (context, index) {
-        String category = groupedList.keys.elementAt(index);
-        List<UserShoppingListItem> items = groupedList[category]!;
+      itemCount: categories.length,
+      itemBuilder: (context, categoryIndex) {
+        final category = categories[categoryIndex];
+        final categoryItems = groupedIngredients[category]!;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Text(category,
-                  style: GoogleFonts.lato(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(
+                category,
+                style: GoogleFonts.lato(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.accent,
+                ),
+              ),
             ),
-            ...items
-                .map((userItem) => _UserListItemCard(userItem: userItem))
+            ...categoryItems
+                .map((ingredient) => _buildIngredientCard(ingredient))
                 .toList(),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildIngredientCard(IngredientItem ingredient) {
+    final index = _ingredients.indexOf(ingredient);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        child: Row(
+          children: [
+            Checkbox(
+              value: ingredient.isChecked,
+              onChanged: (_) => _toggleIngredientCheck(index),
+              activeColor: FrutiaColors.accent,
+            ),
+            Expanded(
+              child: Text(
+                ingredient.name,
+                style: GoogleFonts.lato(
+                  fontWeight: FontWeight.w600,
+                  decoration: ingredient.isChecked
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  color: ingredient.isChecked
+                      ? FrutiaColors.disabledText
+                      : FrutiaColors.primaryText,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: () => _removeIngredient(index),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -94,141 +268,7 @@ class _MyListTab extends StatelessWidget {
 class _ExploreTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ShoppingProvider>();
-    final masterList = provider.masterProductList;
-    final groupedList =
-        groupBy(masterList, (ShoppingItem item) => item.category);
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: groupedList.keys.length,
-      itemBuilder: (context, index) {
-        String category = groupedList.keys.elementAt(index);
-        List<ShoppingItem> items = groupedList[category]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: Text(category,
-                  style: GoogleFonts.lato(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            ...items.map((item) => _MasterProductCard(item: item)).toList(),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// --- WIDGETS DE ITEMS ---
-
-class _UserListItemCard extends StatelessWidget {
-  final UserShoppingListItem userItem;
-  const _UserListItemCard({required this.userItem});
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.read<ShoppingProvider>();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-        child: Row(
-          children: [
-            Checkbox(
-              value: userItem.isChecked,
-              onChanged: (_) => provider.toggleCheck(userItem.item.id),
-              activeColor: FrutiaColors.accent,
-            ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(userItem.item.image,
-                  width: 50, height: 50, fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                userItem.item.name,
-                style: GoogleFonts.lato(
-                  fontWeight: FontWeight.w600,
-                  decoration: userItem.isChecked
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                  color: userItem.isChecked
-                      ? FrutiaColors.disabledText
-                      : FrutiaColors.primaryText,
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                    icon: const Icon(Icons.remove_circle_outline,
-                        color: Colors.redAccent),
-                    onPressed: () =>
-                        provider.decrementQuantity(userItem.item.id)),
-                Text('${userItem.quantity}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
-                IconButton(
-                    icon: const Icon(Icons.add_circle_outline,
-                        color: FrutiaColors.accent),
-                    onPressed: () =>
-                        provider.incrementQuantity(userItem.item.id)),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MasterProductCard extends StatelessWidget {
-  final ShoppingItem item;
-  const _MasterProductCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.read<ShoppingProvider>();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => ProductDetailScreen(item: item))),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(item.image,
-                    width: 60, height: 60, fit: BoxFit.cover),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                  child: Text(item.name,
-                      style: GoogleFonts.lato(fontWeight: FontWeight.w600))),
-              IconButton(
-                icon: const Icon(Icons.add_shopping_cart,
-                    color: FrutiaColors.accent),
-                onPressed: () {
-                  provider.addItemToUserList(item);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('${item.name} añadido a tu lista')));
-                },
-              )
-            ],
-          ),
-        ),
-      ),
-    );
+    // Implementación existente de la pestaña Explorar
+    return Center(child: Text('Pestaña de Explorar'));
   }
 }
