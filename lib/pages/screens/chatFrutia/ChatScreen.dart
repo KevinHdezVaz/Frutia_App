@@ -86,14 +86,7 @@ final Color time_text_color = Colors.white70;       // Color más suave para la 
   // Lógica para conteo de tokens y resumen
   final int _tokenLimit = 500;
   int _totalTokens = 0;
-
-  // Mapa de códigos de idioma para reconocimiento de voz
-  final Map<String, String> _speechLocales = {
-    'es': 'es_ES',
-    'en': 'en_US',
-    'fr': 'fr_FR',
-    'pt': 'pt_BR',
-  };
+ 
 
   List<TextSpan> _parseTextToSpans(String text) {
     final List<TextSpan> spans = [];
@@ -509,65 +502,65 @@ text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta v�
 
   // Elimina esta línea:
 // String _transcribedText = '';
+ Future<void> _startListening() async {
+  if (_isListening) return;
 
-// En ChatScreen
-  Future<void> _startListening() async {
-    if (_isListening) return;
+  final permissionService = PermissionService();
+  final micStatus = await permissionService.checkOrRequest(Permission.microphone);
+  debugPrint('Microphone permission status: $micStatus');
 
-    final permissionService = PermissionService();
-    final micStatus =
-        await permissionService.checkOrRequest(Permission.microphone);
-
-    if (!micStatus.isGranted) {
-      if (micStatus.isPermanentlyDenied) {
-        _showErrorSnackBar(
-            'Por favor habilita los permisos de micrófono en Configuración');
-        await openAppSettings();
-      }
-      return;
+  if (!micStatus.isGranted) {
+    if (micStatus.isPermanentlyDenied) {
+      _showErrorSnackBar('Por favor habilita los permisos de micrófono en Configuración');
+      await openAppSettings();
     }
+    return;
+  }
 
-    if (!_isSpeechInitialized) {
-      _showErrorSnackBar('El reconocimiento de voz no está inicializado');
+  if (!_isSpeechInitialized || !_isSpeechAvailable) {
+    _showErrorSnackBar('El reconocimiento de voz no está disponible');
+    await _initializeSpeech();
+    if (!_isSpeechInitialized || !_isSpeechAvailable) {
       return;
-    }
-
-    try {
-      setState(() {
-        _isListening = true;
-        _controller.clear();
-      });
-
-      final localeId = _speechLocales[context.locale.languageCode] ?? 'es_ES';
-      debugPrint('Starting speech recognition with locale: $localeId');
-
-      _speech.listen(
-        onResult: (result) {
-          debugPrint('Recognized words: ${result.recognizedWords}');
-          setState(() {
-            _controller.text = result.recognizedWords;
-            _controller.selection = TextSelection.collapsed(
-              offset: _controller.text.length,
-            );
-          });
-        },
-        localeId: localeId,
-        listenFor: const Duration(minutes: 5),
-        pauseFor: const Duration(seconds: 3),
-        partialResults: true,
-        onSoundLevelChange: (level) {
-          debugPrint('Sound level: $level');
-          setState(() {
-            _soundLevel = level;
-          });
-        },
-      );
-    } catch (e) {
-      debugPrint('Error starting speech recognition: $e');
-      setState(() => _isListening = false);
-      _showErrorSnackBar('Error al iniciar: $e');
     }
   }
+
+  try {
+    setState(() {
+      _isListening = true;
+      _controller.clear();
+    });
+
+    const localeId = 'es_ES'; // Valor fijo para español (España)
+    debugPrint('Starting speech recognition with locale: $localeId');
+
+    await _speech.listen(
+      onResult: (result) {
+        debugPrint('Recognized words: ${result.recognizedWords}');
+        setState(() {
+          _controller.text = result.recognizedWords;
+          _controller.selection = TextSelection.collapsed(
+            offset: _controller.text.length,
+          );
+        });
+      },
+      localeId: localeId,
+      listenFor: const Duration(minutes: 5),
+      pauseFor: const Duration(seconds: 3),
+      partialResults: true,
+      onSoundLevelChange: (level) {
+        debugPrint('Sound level: $level');
+        setState(() {
+          _soundLevel = level;
+        });
+      },
+    );
+  } catch (e, stackTrace) {
+    debugPrint('Error starting speech recognition: $e\n$stackTrace');
+    setState(() => _isListening = false);
+    _showErrorSnackBar('Error al iniciar: $e');
+  }
+}
 
   Future<void> _stopListening() async {
     if (!_isListening) return;

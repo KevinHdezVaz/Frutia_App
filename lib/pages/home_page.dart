@@ -244,7 +244,7 @@ class _DashboardView extends StatelessWidget {
           _buildAchievementsSection(),
           const SizedBox(height: 24),
           _btnLogout(context),
-          const SizedBox(height: 60),
+          const SizedBox(height: 120),
         ],
       )
           .animate()

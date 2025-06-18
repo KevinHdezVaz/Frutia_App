@@ -23,25 +23,28 @@ class MyPlanDetailsScreen extends StatelessWidget {
     final prepTime = details['prep_time_minutes'] ?? 0;
 
     // *** LA PARTE CRÍTICA: EXTRACCIÓN SÚPER ROBUSTA DE INGREDIENTES ***
-    // Obtener la lista de ingredientes de forma segura.
-    // Usamos `whereType<T>()` para filtrar solo elementos del tipo esperado.
-    // Aunque el backend intente normalizar, si el JSON llega corrupto o mal formado
-    // en este punto, esto asegura que solo Maps sean procesados, y los Strings serán ignorados
-    // o transformados si aún existieran.
     final List<Map<String, dynamic>> ingredients = [];
-    final dynamic rawIngredients =
-        details['ingredients']; // Obtenemos como dynamic
+    final dynamic rawIngredients = details['ingredients']; // Obtenemos como dynamic
+    print('MyPlanDetailsScreen: Raw ingredients data = $rawIngredients');
 
     if (rawIngredients is List) {
       for (var item in rawIngredients) {
         if (item is Map<String, dynamic>) {
           ingredients.add(item); // Ya es un Map, lo añadimos directamente
         } else if (item is String) {
-          // Si es un String inesperado, lo convertimos a un Map simulado
-          ingredients.add({'item': item, 'quantity': '', 'prices': []});
+          if (item.isNotEmpty) {
+            ingredients.add({'item': item, 'quantity': '', 'prices': []});
+          }
+        } else if (item == null) {
+          ingredients.add({'item': 'Ingrediente no especificado', 'quantity': '', 'prices': []});
         }
-        // Cualquier otro tipo inesperado será ignorado.
+        // Cualquier otro tipo inesperado será ignorado con un mensaje de depuración
+        else {
+          print('MyPlanDetailsScreen: Tipo inesperado en ingredients: $item');
+        }
       }
+    } else {
+      print('MyPlanDetailsScreen: ingredients no es una lista, es: $rawIngredients');
     }
 
     final instructions = List<String>.from(details['instructions'] ?? []);
@@ -72,6 +75,16 @@ class MyPlanDetailsScreen extends StatelessWidget {
                   const Divider(height: 40),
                   _buildSectionTitle('Ingredientes'),
                   const SizedBox(height: 16),
+                  // Mostrar mensaje si no hay ingredientes
+                  if (ingredients.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Text(
+                        'No se especificaron ingredientes.',
+                        style: GoogleFonts.lato(
+                            fontSize: 14, color: FrutiaColors.secondaryText),
+                      ),
+                    ),
                   // Pasa cada Map de ingrediente al _buildIngredientTile
                   ...ingredients
                       .map((itemData) => _buildIngredientTile(itemData))
@@ -154,7 +167,6 @@ class MyPlanDetailsScreen extends StatelessWidget {
     final quantity = ingredientData['quantity'] as String? ?? '';
 
     // --- EXTRACCIÓN SÚPER ROBUSTA DE PRECIOS ---
-    // Aseguramos que 'prices' es una lista, y que cada elemento de esa lista es un Map.
     final List<Map<String, dynamic>> prices = [];
     final dynamic rawPrices = ingredientData['prices'];
     if (rawPrices is List) {

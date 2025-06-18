@@ -2,53 +2,75 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_tts/flutter_tts.dart'; // Importar el TTS nativo
 import 'package:path_provider/path_provider.dart';
 
 class ElevenLabsService {
   final String apiKey;
+  final FlutterTts flutterTts; // Inyectar la dependencia del TTS nativo
   final String baseUrl = 'https://api.elevenlabs.io/v1/text-to-speech';
   final AudioPlayer _audioPlayer = AudioPlayer();
+  
   bool _isSpeaking = false;
-  StreamSubscription? _completionSubscription;
 
-  ElevenLabsService({required this.apiKey}) {
+  // Callbacks para notificar al exterior sobre el estado
+  VoidCallback? _onStart;
+  VoidCallback? _onComplete;
+
+  ElevenLabsService({required this.apiKey, required this.flutterTts}) {
     _configureAudioPlayer();
+    _configureTtsHandlers();
+  }
+
+  /// Configura los manejadores para ambos sistemas de TTS
+  void _configureTtsHandlers() {
+    // Manejador para cuando el audio de ElevenLabs (audioplayers) termina
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (state == PlayerState.completed) {
+        _isSpeaking = false;
+        _onComplete?.call();
+      }
+    });
+
+    // Manejador para cuando el audio del TTS nativo (flutter_tts) comienza
+    flutterTts.setStartHandler(() {
+      _isSpeaking = true;
+      _onStart?.call();
+    });
+
+    // Manejador para cuando el audio del TTS nativo (flutter_tts) termina
+    flutterTts.setCompletionHandler(() {
+      _isSpeaking = false;
+      _onComplete?.call();
+    });
+  }
+
+  // Métodos para establecer los callbacks desde RecordingScreen
+  void setOnStart(VoidCallback onStart) {
+    _onStart = onStart;
+  }
+  
+  void setOnComplete(VoidCallback onComplete) {
+    _onComplete = onComplete;
   }
 
   Future<void> _configureAudioPlayer() async {
-    try {
-      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
-      await _audioPlayer.setVolume(1.0);
-
-      // Configuración para ambas plataformas
-      await _audioPlayer.setAudioContext(AudioContext(
-        iOS: AudioContextIOS(
-          category: AVAudioSessionCategory.playback,
-          options: [
-            AVAudioSessionOptions.defaultToSpeaker,
-            AVAudioSessionOptions.mixWithOthers,
-          ],
-        ),
-        android: AudioContextAndroid(
-          isSpeakerphoneOn: true,
-          stayAwake: false,
-          contentType: AndroidContentType.speech,
-          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
-        ),
-      ));
-    } catch (e) {
-      print('Error configuring audio player: $e');
-    }
+    // ... (sin cambios aquí, tu configuración original es correcta)
+    await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+    await _audioPlayer.setVolume(1.0);
   }
 
   Future<void> speak(String text, String voiceId, String language) async {
-    try {
-      if (_isSpeaking) {
-        await stop(); // Asegura que stop() complete antes de continuar
-      }
+    if (_isSpeaking) {
+      await stop();
+    }
 
+    try {
+      // --- INTENTO 1: USAR ELEVENLABS ---
+      print("▶️ Intentando usar ElevenLabs...");
       final response = await http
           .post(
             Uri.parse('$baseUrl/$voiceId'),
@@ -58,14 +80,33 @@ class ElevenLabsService {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
-        throw Exception(
-            '❌ ElevenLabs Error (${response.statusCode}): ${response.body}');
+        // Si el status no es 200, lanza una excepción para activar el fallback
+        throw Exception('Error de ElevenLabs: ${response.statusCode}');
       }
 
-      await _handleAudioResponse(response.bodyBytes);
+      // Notificar que el audio va a empezar (para ElevenLabs)
+      _isSpeaking = true;
+      _onStart?.call();
+
+      await _playAudioBytes(response.bodyBytes);
+
     } catch (e) {
-      _isSpeaking = false;
-      rethrow; // Propaga el error para manejarlo en RecordingScreen
+      // --- INTENTO 2: FALLBACK AL TTS NATIVO ---
+      print("⚠️ ElevenLabs falló ($e). Usando TTS nativo como fallback.");
+      _isSpeaking = true; // El start handler de flutterTts se encargará de esto
+      await flutterTts.speak(text);
+    }
+  }
+
+  Future<void> _playAudioBytes(Uint8List bytes) async {
+    if (Platform.isIOS) {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/el_audio_${DateTime.now().millisecondsSinceEpoch}.mp3');
+      await file.writeAsBytes(bytes);
+      await _audioPlayer.play(DeviceFileSource(file.path));
+      // La limpieza del archivo se podría manejar en el onPlayerStateChanged
+    } else {
+      await _audioPlayer.play(BytesSource(bytes));
     }
   }
 
@@ -78,81 +119,19 @@ class ElevenLabsService {
   String _buildBody(String text, String language) => json.encode({
         'text': text,
         'model_id': 'eleven_multilingual_v2',
-        'voice_settings': {
-          'stability': 0.5,
-          'similarity_boost': 0.75,
-        },
+        'voice_settings': {'stability': 0.5, 'similarity_boost': 0.75},
       });
-
-  Future<void> _handleAudioResponse(Uint8List bytes) async {
-    _isSpeaking = true;
-
-    if (Platform.isIOS) {
-      await _playOnIOS(bytes);
-    } else {
-      await _audioPlayer.play(BytesSource(bytes));
-    }
-  }
-
-  Future<void> _playOnIOS(Uint8List bytes) async {
-    final dir = await getTemporaryDirectory();
-    final file = File(
-        '${dir.path}/el_audio_${DateTime.now().millisecondsSinceEpoch}.mp3');
-
-    try {
-      // Verificar si el archivo existe y eliminarlo
-      if (await file.exists()) {
-        await file.delete();
-      }
-      await file.writeAsBytes(bytes);
-      await _audioPlayer.play(DeviceFileSource(file.path));
-
-      // Limpieza post-reproducción
-      _audioPlayer.onPlayerComplete.listen((_) async {
-        try {
-          if (await file.exists()) {
-            await file.delete();
-          }
-        } catch (e) {
-          print('Error deleting temp file: $e');
-        }
-      });
-    } catch (e) {
-      if (await file.exists()) {
-        await file.delete();
-      }
-      rethrow;
-    }
-  }
-
-  void setOnComplete(void Function() onComplete) {
-    _completionSubscription?.cancel();
-    _completionSubscription = _audioPlayer.onPlayerComplete.listen((_) {
-      _isSpeaking = false;
-      onComplete();
-    });
-  }
 
   Future<void> stop() async {
-    try {
-      await _audioPlayer.stop();
-      _isSpeaking = false;
-      _completionSubscription?.cancel();
-      _completionSubscription = null;
-    } catch (e) {
-      print('Error stopping audio player: $e');
-    }
+    // Detener ambos reproductores por si acaso
+    await _audioPlayer.stop();
+    await flutterTts.stop();
+    _isSpeaking = false;
   }
 
   Future<void> dispose() async {
-    try {
-      await stop(); // Detener cualquier reproducción antes de liberar
-      await _audioPlayer.dispose();
-      _completionSubscription?.cancel();
-      _completionSubscription = null;
-    } catch (e) {
-      print('Error disposing audio player: $e');
-    }
+    await stop();
+    await _audioPlayer.dispose();
   }
 
   bool get isSpeaking => _isSpeaking;

@@ -8,7 +8,6 @@ import 'package:Frutia/services/ChatServiceApi.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -16,6 +15,109 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:vibration/vibration.dart';
 import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart';
+
+// WIDGET MEJORADO: Visualizador de ondas de sonido para el micrófono
+class SoundWaveVisualizer extends StatefulWidget {
+  final bool isRecording;
+
+  const SoundWaveVisualizer({
+    Key? key,
+    required this.isRecording,
+  }) : super(key: key);
+
+  @override
+  _SoundWaveVisualizerState createState() => _SoundWaveVisualizerState();
+}
+
+class _SoundWaveVisualizerState extends State<SoundWaveVisualizer> with SingleTickerProviderStateMixin {
+  late AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000), // Duración más larga para una pulsación suave
+    );
+
+    if (widget.isRecording) {
+      _waveController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SoundWaveVisualizer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isRecording && !_waveController.isAnimating) {
+      _waveController.repeat();
+    } else if (!widget.isRecording && _waveController.isAnimating) {
+      _waveController.stop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Solo muestra el widget si está grabando
+    if (!widget.isRecording) {
+      return const SizedBox.shrink();
+    }
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: WavePainter(animationValue: _waveController.value),
+          child: Container(),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+}
+
+// PAINTER MEJORADO: Dibuja ondas de pulsación constante
+class WavePainter extends CustomPainter {
+  final double animationValue; // Un valor que va de 0.0 a 1.0
+  final int waveCount = 3;
+
+  WavePainter({required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2.2; // El radio máximo que puede alcanzar una onda
+
+    // Dibuja múltiples ondas para un efecto más notable
+    for (int i = 0; i < waveCount; i++) {
+      // Cada onda está desfasada en la animación
+      final waveValue = (animationValue + (i / waveCount)) % 1.0;
+      final radius = maxRadius * waveValue;
+      
+      // La opacidad es alta al principio y se desvanece a medida que la onda se expande
+      final opacity = (1.0 - waveValue) * 0.7;
+
+      final paint = Paint()
+        ..color = Colors.red.withOpacity(opacity.clamp(0.0, 1.0))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0; // Un poco más gruesa
+
+      // Solo dibuja si el radio es significativo para evitar un punto en el centro
+      if (radius > 5) {
+        canvas.drawCircle(center, radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant WavePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
+}
+
 
 class RecordingScreen extends StatefulWidget {
   final String language;
@@ -39,64 +141,47 @@ class _RecordingScreenState extends State<RecordingScreen>
   bool _isRecording = false;
   bool _isSpeaking = false;
   bool _isProcessing = false;
+    bool _isAiAudioPlaying = false; 
+
   String _partialTranscription = '';
+    String _finalUserTranscription = ''; // <-- NUEVA VARIABLE AQUÍ
+
   String _aiResponse = '';
-  String _statusMessage = 'Preparando chat de voz...';
+  String _statusMessage = 'Toca el micrófono para grabar';
   String _emotionalState = 'neutral';
   String _conversationLevel = 'basic';
   bool _hasVibrator = false;
   double _soundLevel = 0.0;
-  double _smoothedSoundLevel = 0.0;
   Timer? _silenceTimer;
-  final int _silenceTimeout = 5000;
+  final int _silenceTimeout = 3000;
   bool _showListeningIndicator = false;
+  bool _isSpeechInitialized = false;
 
-  late AnimationController _pulseAnimationController;
-  late Animation<double> _pulseScale;
   late AnimationController _thinkingAnimationController;
   late AnimationController _rhythmAnimationController;
-  late Animation<double> _rhythmValue;
 
   StreamSubscription<AudioInterruptionEvent>? _audioSessionSubscription;
-
-  int _countdown = 5; // Contador regresivo inicial
-  bool _isCountingDown = true; // Estado del contador
-  bool _isPaused = false; // Estado de pausa
-  Timer? _countdownTimer; // Timer para el contador
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _speech = stt.SpeechToText();
-    _flutterTts = FlutterTts();
-    _elevenLabsService = ElevenLabsService(
+    _flutterTts = FlutterTts(); // Se inicializa FlutterTts
+
+_elevenLabsService = ElevenLabsService(
       apiKey: "sk_5c7014c450eb767dbc8cd3ca2cdadadaceb4dbc52708cac9",
-    );
-
-    _pulseAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat(reverse: true);
-
-    _pulseScale = Tween<double>(begin: 130.0, end: 200.0).animate(
-      CurvedAnimation(
-          parent: _pulseAnimationController, curve: Curves.easeInOut),
+      flutterTts: _flutterTts, // <-- Añade esta línea
     );
 
     _thinkingAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
-    );
+    )..repeat();
 
     _rhythmAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    );
-
-    _rhythmValue = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _rhythmAnimationController, curve: Curves.easeInOut),
     )..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           _rhythmAnimationController.reverse();
@@ -107,215 +192,198 @@ class _RecordingScreenState extends State<RecordingScreen>
 
     _initTts();
     _initVibration();
-    _configureAudioSession().then((_) {
-      _checkPermissionsBeforeRecording();
-    });
+    if (Platform.isIOS) {
+      _configureAudioSession();
+    }
   }
 
   Future<void> _configureAudioSession() async {
-    if (Platform.isIOS) {
-      try {
-        final session = await AudioSession.instance;
-        await session.configure(AudioSessionConfiguration(
-          avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.defaultToSpeaker |
-                  AVAudioSessionCategoryOptions.allowBluetooth |
-                  AVAudioSessionCategoryOptions.mixWithOthers,
-          avAudioSessionMode: AVAudioSessionMode.spokenAudio,
-          avAudioSessionRouteSharingPolicy:
-              AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
-        ));
-        await session.setActive(true);
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.defaultToSpeaker |
+                AVAudioSessionCategoryOptions.allowBluetooth |
+                AVAudioSessionCategoryOptions.mixWithOthers,
+        avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+      ));
+      await session.setActive(true);
 
-        _audioSessionSubscription =
-            session.interruptionEventStream.listen((event) {
-          if (event.begin) {
-            _stopRecording();
-          } else {
-            _startRecording();
-          }
-        });
-      } catch (e) {
-        debugPrint('Error configuring audio session: $e');
-      }
+      _audioSessionSubscription =
+          session.interruptionEventStream.listen((event) {
+        if (event.begin) {
+          _stopAllActivity();
+        }
+      });
+    } catch (e) {
+      debugPrint('Error configuring audio session: $e');
     }
   }
 
   void _showErrorSnackBar(String message) {
+    // CORRECCIÓN: Comprobar si el widget está montado antes de mostrar el SnackBar
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
+        content: Text(message, style: GoogleFonts.poppins()),
+        backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );
   }
 
-  Future<void> _checkPermissionsBeforeRecording() async {
+  Future<bool> _checkPermissionsBeforeRecording() async {
     final permissionService = PermissionService();
     final micStatus =
         await permissionService.checkOrRequest(Permission.microphone);
 
     if (!micStatus.isGranted) {
+      _showErrorSnackBar('Permiso de micrófono requerido para continuar.');
+      // CORRECCIÓN: Comprobar si el widget está montado antes de abrir la configuración
       if (micStatus.isPermanentlyDenied && mounted) {
-        _showErrorSnackBar(
-            'Por favor habilita los permisos de micrófono en Configuración');
         await openAppSettings();
-        return;
       }
+      return false;
     }
-
-    if (mounted && micStatus.isGranted) {
-      setState(() {
-        _statusMessage = 'El chat de voz empezará en $_countdown segundos';
-        _startCountdown();
-      });
-    }
+    return true;
   }
 
   Future<void> _initTts() async {
-    _elevenLabsService.setOnComplete(() => _handleAudioCompletion());
 
-    final languageMap = {
-      'es': 'es-ES',
-      'en': 'en-US',
-      'fr': 'fr-FR',
-      'pt': 'pt-BR',
-    };
+      _elevenLabsService.setOnStart(() {
+      if (!mounted) return;
+      setState(() {
+        _isAiAudioPlaying = true; // <-- CAMBIO CLAVE
+      });
+      _rhythmAnimationController.forward(from: 0);
+    });
+    _elevenLabsService.setOnComplete(_handleAudioCompletion);
 
-    final ttsLanguage = languageMap[widget.language] ?? 'es-ES';
-    await _flutterTts.setLanguage(ttsLanguage);
+ 
+
+    final languageMap = {'es': 'es-ES', 'en': 'en-US', 'fr': 'fr-FR', 'pt': 'pt-BR'};
+    await _flutterTts.setLanguage(languageMap[widget.language] ?? 'es-ES');
     await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setPitch(1.1);
     _flutterTts.setCompletionHandler(() => _handleAudioCompletion());
+
+      _flutterTts.setStartHandler(() {
+      if (!mounted) return;
+      setState(() {
+        _isAiAudioPlaying = true; // <-- CAMBIO CLAVE
+      });
+      _rhythmAnimationController.forward(from: 0);
+    });
+    _flutterTts.setCompletionHandler(_handleAudioCompletion);
+  
   }
 
-  void _handleAudioCompletion() {
-    if (!mounted) return;
+ // En _RecordingScreenState
 
+void _closeScreen() {
+  _stopAllActivity(); // Detiene micrófonos y audios
+  if (mounted) {
+    // CAMBIO: Lógica para decidir qué texto de usuario enviar.
+    // Si la transcripción final ya se guardó, úsala.
+    // Si no, usa la transcripción parcial que se estaba grabando en ese momento.
+    final String userTextToSend = _finalUserTranscription.isNotEmpty
+        ? _finalUserTranscription
+        : _partialTranscription;
+
+    Navigator.pop(context, {
+      'transcription': userTextToSend, // Usa la variable decidida
+      'ai_response': _aiResponse,
+      'emotional_state': _emotionalState,
+      'conversation_level': _conversationLevel,
+    });
+  }
+}
+
+  void _handleAudioCompletion() {
+    // CORRECCIÓN: Comprobar si el widget está montado antes de llamar a setState
+    if (!mounted) return;
     setState(() {
       _isSpeaking = false;
       _isProcessing = false;
-      _statusMessage = 'listening'.tr();
-      _showListeningIndicator = true;
-      _pulseAnimationController.forward();
-      _thinkingAnimationController.stop();
+
+          _isAiAudioPlaying = false; // <-- CAMBIO CLAVE: Resetear el nuevo estado
+  _statusMessage = 'Toca el micrófono para grabar';
+      _showListeningIndicator = false;
       _rhythmAnimationController.stop();
-
-      if (_hasVibrator) Vibration.cancel();
-
-      // No iniciar automáticamente, esperar al usuario
     });
   }
 
   Future<void> _initVibration() async {
-    try {
-      bool? hasVibrator = await Vibration.hasVibrator();
-      setState(() => _hasVibrator = hasVibrator ?? false);
-    } catch (e) {
-      setState(() => _hasVibrator = false);
-    }
+    _hasVibrator = (await Vibration.hasVibrator()) ?? false;
+  }
+  
+  void _onMicButtonPressed() {
+      if (_isRecording) {
+        _stopRecording();
+      } else {
+        _startRecording();
+      }
   }
 
   Future<void> _startRecording() async {
-    if (_isRecording || _isSpeaking) return;
+    if (_isRecording || _isSpeaking || _isProcessing) return;
+    if (!await _checkPermissionsBeforeRecording()) return;
 
-    if (Platform.isIOS) {
-      try {
-        final session = await AudioSession.instance;
-        final micStatus = await Permission.microphone.status;
-        if (!micStatus.isGranted) {
-          final status = await Permission.microphone.request();
-          if (!status.isGranted) {
-            if (mounted) {
-              _showErrorSnackBar('Se requieren permisos de micrófono');
-              if (status.isPermanentlyDenied) {
-                await openAppSettings();
-              }
-            }
+    if (!_isSpeechInitialized) {
+        _isSpeechInitialized = await _speech.initialize(
+            onError: (error) => _handleRecordingError(error.errorMsg),
+            onStatus: (status) {
+                 if (mounted && status == 'listening') {
+                     setState(() {
+                         _statusMessage = 'Escuchando...';
+                         _showListeningIndicator = true;
+                     });
+                 }
+            },
+        );
+        if (!_isSpeechInitialized) {
+            _showErrorSnackBar('No se pudo inicializar el reconocimiento de voz.');
             return;
-          }
         }
-
-        if (!await session.setActive(true)) {
-          if (mounted) {
-            _showErrorSnackBar(
-                'El micrófono está siendo usado por otra aplicación');
-          }
-          return;
-        }
-      } catch (e) {
-        debugPrint('Error checking iOS microphone: $e');
-        return;
-      }
     }
+    
+    final localeId = {'es': 'es_ES', 'en': 'en_US', 'fr': 'fr_FR', 'pt': 'pt_BR'}[widget.language] ?? 'es_ES';
 
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (mounted) {
-          setState(() {
-            _statusMessage = 'listening'.tr();
-            _showListeningIndicator = true;
-          });
-        }
+    await _speech.listen(
+      onResult: (result) {
+        if (!mounted) return;
+        setState(() {
+          _partialTranscription = result.recognizedWords;
+          _showListeningIndicator = true;
+        });
+        _resetSilenceTimer();
       },
-      onError: (error) => _handleRecordingError(error.errorMsg),
+      onSoundLevelChange: (level) {
+        if (!mounted) return;
+        setState(() {
+           _soundLevel = (level.clamp(-160, 0) + 160) / 160;
+        });
+      },
+      localeId: localeId,
+      listenFor: const Duration(seconds: 60),
+      partialResults: true,
     );
 
-    if (available) {
-      final localeId = {
-            'es': 'es_ES',
-            'en': 'en_US',
-            'fr': 'fr_FR',
-            'pt': 'pt_BR'
-          }[widget.language] ??
-          'es_ES';
-
-      _speech.listen(
-        onResult: (result) {
-          if (result.recognizedWords.isNotEmpty && mounted) {
-            setState(() {
-              _partialTranscription = result.recognizedWords;
-              _showListeningIndicator = true;
-            });
-            _resetSilenceTimer();
-            _pulseAnimationController.forward();
-          }
-        },
-        onSoundLevelChange: (level) {
-          if (_isRecording && mounted) {
-            final newLevel = ((level + 160) / 160).clamp(0.0, 1.0);
-            setState(() {
-              _soundLevel = newLevel;
-              _smoothedSoundLevel =
-                  lerpDouble(_smoothedSoundLevel, _soundLevel, 0.1)!;
-              if (newLevel > 0.1) {
-                _showListeningIndicator = true;
-                _resetSilenceTimer();
-              }
-            });
-          }
-        },
-        localeId: localeId,
-        listenFor: const Duration(seconds: 30),
-        partialResults: true,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isRecording = true;
-          _statusMessage = 'listening'.tr();
-          _showListeningIndicator = true;
-          _pulseAnimationController.forward();
-        });
-      }
-      _startSilenceTimer();
-    }
+    if (!mounted) return;
+    setState(() {
+      _isRecording = true;
+      _statusMessage = 'Escuchando...';
+      _showListeningIndicator = true;
+    });
+    if(_hasVibrator) Vibration.vibrate(duration: 50);
+    _startSilenceTimer();
   }
 
   void _resetSilenceTimer() {
@@ -324,10 +392,8 @@ class _RecordingScreenState extends State<RecordingScreen>
   }
 
   void _startSilenceTimer() {
-    _silenceTimer?.cancel();
     _silenceTimer = Timer(Duration(milliseconds: _silenceTimeout), () {
       if (_isRecording && mounted) {
-        setState(() => _showListeningIndicator = false);
         _stopRecording();
       }
     });
@@ -336,315 +402,292 @@ class _RecordingScreenState extends State<RecordingScreen>
   void _handleRecordingError(String errorMsg) {
     if (!mounted) return;
     setState(() {
-      _statusMessage = 'error'.tr() + errorMsg;
+      _statusMessage = 'Error: $errorMsg';
       _isRecording = false;
       _isProcessing = false;
       _soundLevel = 0.0;
-      _smoothedSoundLevel = 0.0;
-      _pulseAnimationController.stop();
-      _thinkingAnimationController.stop();
-      if (_hasVibrator) Vibration.cancel();
     });
-    if (!errorMsg.toLowerCase().contains('permission')) {
-      Future.delayed(Duration(seconds: 2), () {
-        if (mounted) _startRecording();
-      });
-    }
   }
 
   Future<void> _stopRecording() async {
     _silenceTimer?.cancel();
+    if (!_isRecording) return;
+
     await _speech.stop();
+    
+    // CORRECCIÓN: Comprobar si el widget está montado después de una operación asíncrona
+    if (!mounted) return;
+
+    if (_hasVibrator) Vibration.vibrate(duration: 50);
+
     setState(() {
       _isRecording = false;
-      _isProcessing = true;
-      _statusMessage = 'Procesando...';
-      _showListeningIndicator = true;
-      _pulseAnimationController.stop();
-      _thinkingAnimationController.forward();
+      _soundLevel = 0.0;
+      if (_partialTranscription.trim().isEmpty) {
+        _statusMessage = 'No se detectó voz. Toca para grabar.';
+        _showListeningIndicator = false;
+      } else {
+        _isProcessing = true;
+        _statusMessage = 'Procesando...';
+      }
     });
 
-    if (_partialTranscription.isNotEmpty) {
+    if (_partialTranscription.trim().isNotEmpty) {
       await _processTranscription();
-    } else {
-      setState(() {
-        _statusMessage = 'no_speech_detected'.tr();
-        _isProcessing = false;
-        _startRecording(); // Reiniciar solo si el usuario lo activa manualmente
-      });
     }
   }
-
+  
   Future<void> _processTranscription() async {
-    try {
-      final response = await widget.chatService.sendVoiceMessage(
-        message: _partialTranscription,
+   
+   
+     if (_partialTranscription.trim().isNotEmpty) {
+      _finalUserTranscription = _partialTranscription;
+    }
+    
+     try {
+        final response = await widget.chatService.sendVoiceMessage(
+        message: _finalUserTranscription, // Usa la transcripción final
         sessionId: null,
       );
 
-      if (mounted) {
+        // CORRECCIÓN: Comprobar si el widget está montado después de una llamada de red
+        if (!mounted) return;
+
         setState(() {
-          _aiResponse = response['ai_message']['text'];
-          _emotionalState =
-              response['ai_message']['emotional_state'] ?? 'neutral';
-          _conversationLevel =
-              response['ai_message']['conversation_level'] ?? 'basic';
-          _statusMessage = 'Hablando IA...';
-          _isSpeaking = true;
-          _isProcessing = false;
-          _showListeningIndicator = true;
-          _thinkingAnimationController.forward();
-          _rhythmAnimationController.forward();
-
-          if (_hasVibrator) {
-            Vibration.cancel();
-            Vibration.vibrate(pattern: [1000, 100, 1000, 100], repeat: -1);
-          }
+            _aiResponse = response['ai_message']['text'];
+            _emotionalState = response['ai_message']['emotional_state'] ?? 'neutral';
+            _conversationLevel = response['ai_message']['conversation_level'] ?? 'basic';
+            _statusMessage = 'IA Hablando...';
+            _isSpeaking = true;
+            _isProcessing = false;
+            _showListeningIndicator = true;
+            _rhythmAnimationController.forward();
+            _partialTranscription = '';
         });
-      }
 
-      try {
-        await _elevenLabsService.speak(
-          _aiResponse,
-          'pFZP5JQG7iQjIQuC4Bku',
-          widget.language,
-        );
-      } catch (e) {
-        await _flutterTts.speak(_aiResponse);
-      }
+        await _speakResponse(_aiResponse);
+
     } catch (e) {
-      _handleRecordingError(e.toString());
-      // No reiniciar automáticamente, esperar al usuario
+        // CORRECCIÓN: Llamar a _handleRecordingError que ya tiene la comprobación 'mounted'
+        _handleRecordingError("Error al procesar: ${e.toString()}");
     }
   }
 
-  void _closeScreen() {
-    _silenceTimer?.cancel();
-    _speech.stop();
-    _flutterTts.stop();
-    _elevenLabsService.stop();
-    _pulseAnimationController.stop();
-    _thinkingAnimationController.stop();
-    _rhythmAnimationController.stop();
-    if (_hasVibrator) Vibration.cancel();
-
-    Navigator.pop(context, {
-      'transcription': _partialTranscription,
-      'ai_response': _aiResponse,
-      'emotional_state': _emotionalState,
-      'conversation_level': _conversationLevel,
-    });
-  }
-
-  void _startCountdown() {
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        if (!_isPaused && _countdown > 0) {
-          setState(() {
-            _countdown--;
-            _statusMessage = 'El chat de voz empezará en $_countdown segundos';
-          });
-        } else if (_countdown == 0) {
-          _countdownTimer?.cancel();
-          _startRecording();
-        }
+  Future<void> _speakResponse(String text) async {
+      try {
+          await _elevenLabsService.speak(text, 'pFZP5JQG7iQjIQuC4Bku', widget.language);
+      } catch (e) {
+          debugPrint("Error con ElevenLabs, usando fallback TTS: $e");
+          try {
+              await _flutterTts.speak(text);
+          } catch (e2) {
+              _showErrorSnackBar("Error en ambos servicios de audio.");
+              _handleAudioCompletion();
+          }
       }
-    });
+  }
+  
+  void _stopAiSpeaking() {
+      _elevenLabsService.stop();
+      _flutterTts.stop();
+      // _handleAudioCompletion se encarga del resto de la limpieza de estado
+      _handleAudioCompletion();
   }
 
-  void _togglePause() {
-    setState(() {
-      _isPaused = !_isPaused;
-      _statusMessage =
-          _isPaused ? 'Pausado. Toca "Iniciar" para continuar' : 'Reanudando...';
-    });
-    if (!_isPaused && _countdown > 0) {
-      _startCountdown(); // Reanudar el conteo si se despausa
-    }
-  }
+ 
+  
+  void _stopAllActivity() {
+      _silenceTimer?.cancel();
+      if (_speech.isListening) {
+        _speech.stop();
+      }
+      _flutterTts.stop();
+      _elevenLabsService.stop();
 
-  void _startRecordingManually() {
-    _countdownTimer?.cancel();
-    _startRecording();
+      // CORRECCIÓN: Comprobar si el widget está montado antes de cambiar su estado
+      if (mounted) {
+          setState(() {
+              _isRecording = false;
+              _isSpeaking = false;
+              _isProcessing = false;
+          });
+      }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _stopRecording();
-      if (Platform.isIOS) {
-        AudioSession.instance.then((session) => session.setActive(false));
-      }
-    } else if (state == AppLifecycleState.resumed) {
-      if (Platform.isIOS) {
-        AudioSession.instance.then((session) => session.setActive(true));
-      }
-      // No reiniciar automáticamente, esperar al usuario
+      _stopAllActivity();
     }
   }
 
   @override
   Widget build(BuildContext context) {
- 
-    return Scaffold(
-    appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return PopScope(
+  // canPop: false previene que el usuario regrese con el gesto/botón del sistema.
+    canPop: false, 
+    // onPopInvoked se activa cuando el usuario intenta regresar.
+    onPopInvoked: (didPop) {
+      // Si la navegación ya ocurrió por alguna razón, no hagas nada.
+      if (didPop) return;
+      // En su lugar, llama a nuestra función personalizada que guarda y cierra.
+      _closeScreen();
+    },
+
+      child: Scaffold(
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [FrutiaColors.accent, FrutiaColors.accent2],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
-        ),
-        title: Text(
-          'Chat de voz',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
+          title: Text(
+            'Chat de voz',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: _closeScreen,
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: Colors.black),
-        
-      ),
-      
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(child: ParticulasFlotantes()),
-            Column(
-              children: [
-                const SizedBox(height: 20),
-                AnimatedOpacity(
-                  opacity: _showListeningIndicator ? 1.0 : 0.0,
-                  duration: Duration(milliseconds: 300),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(20),
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+                Positioned.fill(child: ParticulasFlotantes()),
+              Column(
+                children: [
+                  const SizedBox(height: 20),
+                   AnimatedOpacity(
+                    opacity: _showListeningIndicator ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _isRecording ? (_partialTranscription.isEmpty ? 'Escuchando...' : _partialTranscription) : _statusMessage,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: _isProcessing
+                            ? Lottie.asset(
+                                'assets/images/animacioncirculo.json',
+                                width: 250,
+                                height: 250,
+                                controller: _thinkingAnimationController,
+                                key: const Key('processing'),
+                              )
+                             : _isAiAudioPlaying 
+                ? Lottie.asset(
+                    'assets/images/speaking.json',
+                    width: 250,
+                    height: 250,
+                    controller: _rhythmAnimationController,
+                    key: const Key('speaking'),
+                  )
+                                : CircleAvatar(
+                                    radius: 125,
+                                    backgroundColor: Colors.transparent,
+                                    child: ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/frutamedica.png',
+                                        width: 250,
+                                        height: 250,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    key: const Key('idle'),
+                                  ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(Icons.mic, color: Colors.red, size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          _statusMessage,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        SizedBox(width: 8),
-                        AnimatedContainer(
-                          duration: Duration(milliseconds: 200),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _isRecording ? Colors.red : Colors.grey,
-                          ),
-                        ),
+                         const Spacer(),
+                         // Contenedor del Micrófono con Animación
+                         SizedBox(
+                           width: 150, // Aumentar el tamaño para que las ondas se vean mejor
+                           height: 150,
+                           child: Stack(
+                             alignment: Alignment.center,
+                             children: [
+                               // La animación de ondas mejorada
+                               SoundWaveVisualizer(isRecording: _isRecording),
+                               // Botón del Micrófono
+                               GestureDetector(
+                                 onTap: _onMicButtonPressed,
+                                 child: AnimatedContainer(
+                                   duration: const Duration(milliseconds: 200),
+                                   width: 80,
+                                   height: 80,
+                                   decoration: BoxDecoration(
+                                     color: _isRecording ? Colors.red : FrutiaColors.accent2,
+                                     shape: BoxShape.circle,
+                                     boxShadow: [
+                                       BoxShadow(
+                                         color: (_isRecording ? Colors.red : FrutiaColors.accent).withOpacity(0.5),
+                                         blurRadius: 10,
+                                         spreadRadius: 2,
+                                       )
+                                     ]
+                                   ),
+                                   child: Icon(
+                                     Icons.mic,
+                                     color: Colors.white,
+                                     size: 40,
+                                   ),
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                         const Spacer(),
+                         // Botón de Detener/Cerrar
+                         CircleAvatar(
+                           radius: 30,
+                           backgroundColor: Colors.grey.shade300,
+                           child: IconButton(
+                             icon: Icon(
+                               _isSpeaking ? Icons.stop : Icons.close,
+                               color: Colors.black54,
+                               size: 30,
+                             ),
+                             onPressed: _isSpeaking ? _stopAiSpeaking : _closeScreen,
+                           ),
+                         ),
                       ],
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: _isProcessing
-                          ? Lottie.asset(
-                              'assets/animations/animacioncirculo.json',
-                              width: 250,
-                              height: 250,
-                              controller: _thinkingAnimationController,
-                            )
-                          : AnimatedBuilder(
-                              animation: _pulseScale,
-                              builder: (context, child) {
-                                return Container(
-                                  width: _pulseScale.value,
-                                  height: _pulseScale.value,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xFFFFE5B4).withOpacity(0.7),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isCountingDown)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$_countdown',
-                              style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton(
-                              onPressed: _togglePause,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    _isPaused ? Colors.green : Colors.red,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                padding: const EdgeInsets.all(12),
-                              ),
-                              child: Text(
-                                _isPaused ? 'Reanudar' : 'Pausar',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      if (!_isCountingDown)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.blueGrey,
-                              child: IconButton(
-                                icon: Icon(Icons.mic, color: Colors.white, size: 35),
-                                onPressed: _startRecordingManually,
-                              ),
-                            ),
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.blueGrey,
-                              child: IconButton(
-                                icon: Icon(Icons.close, color: Colors.white, size: 35),
-                                onPressed: _closeScreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -653,30 +696,25 @@ class _RecordingScreenState extends State<RecordingScreen>
   @override
   void dispose() {
     _silenceTimer?.cancel();
-    _countdownTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _audioSessionSubscription?.cancel();
-
-    if (Platform.isIOS) {
-      AudioSession.instance.then((session) {
-        session.setActive(false);
-      });
-    }
-
-    _speech.stop();
+    // No es necesario llamar a _stopAllActivity() aquí, ya que los controladores
+    // y servicios se detendrán individualmente.
+    _speech.cancel();
     _flutterTts.stop();
     _elevenLabsService.dispose();
-    _pulseAnimationController.dispose();
     _thinkingAnimationController.dispose();
     _rhythmAnimationController.dispose();
-
     if (_hasVibrator) Vibration.cancel();
-
     super.dispose();
   }
 }
 
+// Los widgets ParticulasFlotantes, Particle y _ParticlesPainter no necesitan cambios
+// y se pueden dejar como estaban en la versión anterior.
 class ParticulasFlotantes extends StatefulWidget {
+  const ParticulasFlotantes({Key? key}) : super(key: key);
+
   @override
   _ParticulasFlotantesState createState() => _ParticulasFlotantesState();
 }
@@ -692,15 +730,15 @@ class _ParticulasFlotantesState extends State<ParticulasFlotantes>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 30),
+      duration: const Duration(seconds: 10),
     )..repeat();
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
       _particles.add(Particle(
         x: _random.nextDouble(),
         y: _random.nextDouble(),
-        size: _random.nextDouble() * 2 + 1,
-        speed: _random.nextDouble() * 0.15 + 0.05,
+           size: _random.nextDouble() * 3 + 2, // Tamaños más grandes
+        speed: _random.nextDouble() * 0.3 + 0.1, // Velocidades más altas
       ));
     }
   }
@@ -716,10 +754,9 @@ class _ParticulasFlotantesState extends State<ParticulasFlotantes>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return SizedBox.expand(
-          child: CustomPaint(
-            painter: _ParticlesPainter(_particles, _controller.value),
-          ),
+        return CustomPaint(
+          painter: _ParticlesPainter(_particles, _controller.value),
+          child: Container(),
         );
       },
     );
@@ -745,12 +782,13 @@ class _ParticlesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.15)
+      ..color = FrutiaColors.accent.withOpacity(0.1)
       ..style = PaintingStyle.fill;
 
     for (var particle in particles) {
-      final x = (particle.x + time * particle.speed) % 1.0 * size.width;
-      final y = (particle.y + time * particle.speed * 0.5) % 1.0 * size.height;
+      final newY = (particle.y - time * particle.speed);
+      final y = (newY < 0 ? 1.0 + newY : newY) * size.height;
+      final x = (particle.x * size.width) + sin(time * 2 * pi * particle.speed) * 20;
       canvas.drawCircle(Offset(x, y), particle.size, paint);
     }
   }

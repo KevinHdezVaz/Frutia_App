@@ -171,57 +171,87 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     }
 
     // --- LÓGICA FINAL DE GUARDADO Y GENERACIÓN DE PLAN ---
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: FrutiaColors.secondaryBackground,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+ showDialog(
+  context: context,
+  barrierDismissible: false,
+  builder: (_) => Dialog(
+    backgroundColor: Colors.transparent,
+    child: Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            FrutiaColors.secondaryBackground.withOpacity(0.9),
+            FrutiaColors.primaryBackground.withOpacity(0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            alignment: Alignment.center,
             children: [
-              Lottie.asset(
-                'assets/images/loaderFruta.json', // Asegúrate de tener esta animación en tus assets
+              SizedBox(
                 width: 150,
                 height: 150,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+                  strokeWidth: 6,
+                  backgroundColor: Colors.grey[300],
+                  value: null, // Indica progreso indefinido
+                ),
+              ),
+              Lottie.asset(
+                'assets/images/loaderFruta.json',
+                width: 120,
+                height: 120,
                 fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'estamos generando tu plan personalizado.',
-                style: GoogleFonts.lato(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: FrutiaColors.primaryText,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                'estamos generando tu plan personalizado.',
-                style: GoogleFonts.lato(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: FrutiaColors.primaryText,
-                ),
-                textAlign: TextAlign.center,
+                repeat: true,
               ),
             ],
           ),
-        ),
-      ).animate().fadeIn(duration: 300.ms),
-    );
+          const SizedBox(height: 20),
+          Text(
+            'Generando tu plan personalizado... Espere un momento.',
+            style: GoogleFonts.lato(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: FrutiaColors.primaryText,
+              letterSpacing: 0.5,
+            ),
+            textAlign: TextAlign.center,
+          )
+              .animate()
+              .fadeIn(duration: 300.ms)
+              .scale(duration: 300.ms, curve: Curves.easeOut),
+                        const SizedBox(height: 10),
+
+               Text(
+            ' Espere un momento.',
+            style: GoogleFonts.lato(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: FrutiaColors.primaryText,
+              letterSpacing: 0.5,
+            ),
+            textAlign: TextAlign.center,
+          )
+        ],
+      ),
+    ),
+  ).animate().fadeIn(duration: 400.ms),
+);
 
     try {
       // 1. Guardar el perfil del usuario con los datos del cuestionario
@@ -575,8 +605,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           const SizedBox(height: 16),
           SportSelection(
             name: 'sport',
-            initialValue: provider.sport ??
-                [], // Asegúrate que provider.sports sea List<String>
+            initialValue: provider.sport ?? [],
             onChanged: (List<String>? values) {
               provider.update(() => provider.sport = values ?? []);
             },
@@ -589,9 +618,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
           ..._buildChipOptions([
             'No entreno 🚶',
             '1-2 días/semana (ocasional)🏋️',
-            ' 3–4 veces por semana (regular) 💪',
-            ' 5–6 veces por semana (frecuente) 🔥',
-            ' Todos los días (alta frecuencia) 🏃‍♂️'
+            '3–4 veces por semana (regular) 💪',
+            '5–6 veces por semana (frecuente) 🔥',
+            'Todos los días (alta frecuencia) 🏃‍♂️'
           ], provider.trainingFrequency,
               (val) => provider.trainingFrequency = val),
           const SizedBox(height: 40),
@@ -620,15 +649,34 @@ class _RoutineScreenState extends State<RoutineScreen> {
       Wrap(
         spacing: 8.0,
         runSpacing: 4.0,
-        children: options
-            .map((opt) => OptionChip(
-                  label: opt,
-                  selected: groupValue == opt, // Changed isSelected to selected
-                  onTap: (val) => setState(() => context
-                      .read<QuestionnaireProvider>()
-                      .update(() => updateFn(val))),
-                ))
-            .toList(),
+        children: options.map((opt) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0), // Espacio vertical entre chips
+            child: GestureDetector(
+              onTap: () => setState(() => context
+                  .read<QuestionnaireProvider>()
+                  .update(() => updateFn(opt))),
+              child: Chip(
+                label: Flexible(
+                  child: Text(
+                    opt,
+                    style: TextStyle(
+                      color: groupValue == opt ? Colors.white : FrutiaColors.primaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    softWrap: true, // Permite que el texto se divida en varias líneas
+                    overflow: TextOverflow.visible, // Evita que se corte
+                  ),
+                ),
+                backgroundColor: groupValue == opt ? FrutiaColors.accent : Colors.grey[200]!,
+                side: BorderSide(
+                  color: groupValue == opt ? FrutiaColors.accent : Colors.grey[300]!,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+          );
+        }).toList(),
       )
     ];
   }

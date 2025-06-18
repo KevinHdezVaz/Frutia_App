@@ -38,7 +38,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
 
   String _statusMessage = '';
   final Color _primaryColor = const Color.fromARGB(255, 255, 255, 255);
-  final Color _backgroundColor =  FrutiaColors.accent2;
+  final Color _backgroundColor =  Colors.white;
   bool _isLoading = true;
   bool _showMicButton = false;
   bool _isSaved = false; // Track if chat is saved
@@ -340,7 +340,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                isUser ? 'Tú' : 'Lumorah',
+                isUser ? 'Tú' : 'Frutia',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isUser ? _primaryColor : Colors.black,
@@ -524,7 +524,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
                           ElevatedButton(
                             onPressed: _navigateToRecordingScreen,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueGrey,
+                              backgroundColor: FrutiaColors.accent,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15),
                               ),

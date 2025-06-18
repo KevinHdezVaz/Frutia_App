@@ -122,13 +122,11 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
     return Scaffold(
       backgroundColor: tiffanyColor,
       appBar: AppBar(
-                automaticallyImplyLeading: false,
-
-
+        automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
+              colors: [FrutiaColors.accent, FrutiaColors.accent2],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -169,43 +167,52 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
         children: [
           Column(
             children: [
-         Padding(
-  padding: const EdgeInsets.all(20.0), // Aumenté el padding externo a 20 para mejor espaciado
-  child: Column(
-    children: [
-      Card(
-        color: Colors.white,
-        elevation: 6, // Aumenté la elevation a 6 para una sombra más pronunciada
-        shadowColor: Colors.black.withOpacity(0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: FrutiaColors.accent.withOpacity(0.3), width: 1), // Añadí un borde sutil
-        ),
-        margin: const EdgeInsets.all(8.0), // Añadí padding interno al Card
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Buscar conversaciones...',
-            hintStyle: GoogleFonts.poppins(
-                color: darkTextColor.withOpacity(0.5)),
-            prefixIcon: Icon(Icons.search, color: FrutiaColors.accent),
-            filled: true,
-            fillColor: Colors.white,
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-          style: GoogleFonts.poppins(
-              color: darkTextColor, fontSize: 16),
-          onChanged: (value) => setState(() => _searchQuery = value),
-        ),
-      ),
-      if (_filteredSessions.isNotEmpty)
-        Padding(
-          padding: const EdgeInsets.only(top: 20.0), // Aumenté el padding superior a 20
-          child: _buildNewChatButtons(),
-        ),
-    ],
-  ),
-),
+              Padding(
+                padding: const EdgeInsets.all(
+                    20.0), // Aumenté el padding externo a 20 para mejor espaciado
+                child: Column(
+                  children: [
+                    Card(
+                      color: Colors.white,
+                      elevation:
+                          6, // Aumenté la elevation a 6 para una sombra más pronunciada
+                      shadowColor: Colors.black.withOpacity(0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                            color: FrutiaColors.accent.withOpacity(0.3),
+                            width: 1), // Añadí un borde sutil
+                      ),
+                      margin: const EdgeInsets.all(
+                          8.0), // Añadí padding interno al Card
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar conversaciones...',
+                          hintStyle: GoogleFonts.poppins(
+                              color: darkTextColor.withOpacity(0.5)),
+                          prefixIcon:
+                              Icon(Icons.search, color: FrutiaColors.accent),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                        ),
+                        style: GoogleFonts.poppins(
+                            color: darkTextColor, fontSize: 16),
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                      ),
+                    ),
+                    if (_filteredSessions.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: 20.0), // Aumenté el padding superior a 20
+                        child: _buildNewChatButtons(),
+                      ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: _isLoading
                     ? Center(
@@ -280,8 +287,8 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
             ),
           ),
           trailing: IconButton(
-            icon:
-                Icon(Icons.delete_outline, color: FrutiaColors.accent, size: 24),
+            icon: Icon(Icons.delete_outline,
+                color: FrutiaColors.accent, size: 24),
             onPressed: () => _showDeleteDialog(session.id),
           ),
           onTap: () => _openChat(session),
@@ -409,81 +416,120 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
   }
 
   Widget _buildNewChatButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton(
-          onPressed: () => _startNewConversation(inputMode: 'keyboard'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: FrutiaColors.accent,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            elevation: 2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.message, size: 20, color: Colors.white,),
-              SizedBox(width: 8),
-              Text(
-                'Chat Normal',
-                style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600, fontSize: 16),
-              ),
-            ],
-          ),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      // Adaptamos el diseño según el ancho disponible
+      final bool isWide = constraints.maxWidth > 600; // Tablet o pantallas anchas
+      final double buttonPadding = isWide ? 24.0 : 16.0;
+      final double iconSize = isWide ? 24.0 : 20.0;
+      final double fontSize = isWide ? 18.0 : 16.0;
+
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildChatButton(
+              context,
+              icon: Icons.message,
+              label: 'Chat Normal',
+              backgroundColor: FrutiaColors.accent,
+              textColor: Colors.white,
+              iconColor: Colors.white,
+              onPressed: () => _startNewConversation(inputMode: 'keyboard'),
+              padding: buttonPadding,
+              iconSize: iconSize,
+              fontSize: fontSize,
+            ),
+            SizedBox(height: 30),
+            _buildChatButton(
+              context,
+              icon: Icons.mic,
+              label: 'Chat de Voz',
+              backgroundColor: Colors.white,
+              textColor: FrutiaColors.accent,
+              iconColor: Colors.black,
+              borderColor: FrutiaColors.accent,
+              onPressed: _navigateToVoiceChat,
+              padding: buttonPadding,
+              iconSize: iconSize,
+              fontSize: fontSize,
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        ElevatedButton(
-       onPressed: () async {
-  try {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const VoiceChatScreen(language: "es-ES"), // Pasa el idioma estático
+      );
+    },
+  );
+}
+
+Widget _buildChatButton(
+  BuildContext context, {
+  required IconData icon,
+  required String label,
+  required Color backgroundColor,
+  required Color textColor,
+  required Color iconColor,
+  Color? borderColor,
+  required VoidCallback onPressed,
+  required double padding,
+  required double iconSize,
+  required double fontSize,
+}) {
+  return ElevatedButton(
+    onPressed: onPressed,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: backgroundColor,
+      foregroundColor: textColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: borderColor != null 
+          ? BorderSide(color: borderColor, width: 1)
+          : BorderSide.none,
       ),
-    );
-  } catch (e) {
-    print("Error al navegar a VoiceChatScreen: $e");
-    // Opcional: muestra un SnackBar o alerta al usuario
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error al iniciar el chat de voz: $e')),
-    );
-  }
-},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: FrutiaColors.accent,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            elevation: 2,
-            side: BorderSide(color: FrutiaColors.accent, width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.mic, size: 20, color: Colors.black,),
-              SizedBox(width: 8),
-              Text(
-                'Chat de Voz',
-                style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: FrutiaColors.accent),
-              ),
-            ],
+      padding: EdgeInsets.symmetric(
+        horizontal: padding, 
+        vertical: 12,
+      ),
+      elevation: 2,
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: iconSize, color: iconColor),
+        SizedBox(width: 8),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600, 
+            fontSize: fontSize,
           ),
         ),
       ],
+    ),
+  );
+}
+
+void _navigateToVoiceChat() async {
+  try {
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const VoiceChatScreen(language: "es-ES"),
+      ),
     );
+  } catch (e) {
+    debugPrint("Error al navegar a VoiceChatScreen: $e");
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al iniciar el chat de voz: ${e.toString()}')),
+      );
+    }
   }
+}
 
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.all(10.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

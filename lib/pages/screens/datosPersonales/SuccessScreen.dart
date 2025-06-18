@@ -63,8 +63,8 @@ class _SuccessScreenState extends State<SuccessScreen> {
                       ClipOval(
                         child: Image.asset(
                           'assets/images/imagenFrutia.png',
-                          width: 450,
-                          height: 450,
+                          width: 200,
+                          height: 200,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -89,8 +89,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  // Text with fade-in animation
+                   // Text with fade-in animation
                   Animate(
                     effects: [
                       FadeEffect(duration: 800.ms, curve: Curves.easeOut)
