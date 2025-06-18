@@ -18,19 +18,24 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     _HomeContent(), // Contenido principal con categorías
+    // Si tu BottomNavigationBar maneja diferentes pantallas, asegúrate de que todas estén aquí.
+    // Ej:
+    // const Text('Pantalla de Perfil'), // Índice 0
+    // const Text('Pantalla de Frutia'), // Índice 1
+    // MyPlanPage(), // Índice 2 (para "Mi Plan")
+    // const Text('Pantalla de Progreso'), // Índice 3
+    // const Text('Pantalla de Nosotros'), // Índice 4
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-  appBar: AppBar(
-            automaticallyImplyLeading: false,
-
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [  FrutiaColors.accent, FrutiaColors.accent2],
+              colors: [FrutiaColors.accent, FrutiaColors.accent2],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -47,11 +52,10 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.black),
-        
       ),
-      
       body: Container(
-        child: _screens[_currentIndex],
+        child: _screens[
+            _currentIndex], // Asumiendo que _screens se usa para el BottomNav
       ),
       bottomNavigationBar: Container(
         color: FrutiaColors.secondaryBackground,
@@ -153,7 +157,6 @@ class _HomeContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-      
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
@@ -242,7 +245,8 @@ class _InteractiveCardState extends State<_InteractiveCard>
           });
           _controller.reverse();
         },
-        onTap: () {
+        onTap: () async {
+          // <--- HACEMOS onTap ASÍNCRONO
           // Navegación a la pantalla correspondiente según la categoría
           switch (widget.category['name']) {
             case 'Mi Plan':
@@ -264,10 +268,39 @@ class _InteractiveCardState extends State<_InteractiveCard>
               );
               break;
             case 'Modificaciones':
-              Navigator.push(
+              // <--- LÓGICA DE NAVEGACIÓN PARA MODIFICACIONES ---
+              // Navegamos a ModificationsScreen y esperamos su resultado
+              final bool? modifiedSuccessfully = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ModificationsScreen()),
               );
+
+              // Si la modificación fue exitosa (el resultado es 'true')
+              if (modifiedSuccessfully == true) {
+                // Volvemos a la pantalla "Mi Plan" y limpiamos el stack de navegación
+                // Esto es ideal si MyPlanPage es la raíz o quieres que sea la nueva raíz después de modificar.
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => MyPlanPage()),
+                  (route) => false, // Elimina todas las rutas anteriores
+                );
+
+                // Opcional: Mostrar un Snackbar de éxito
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Plan modificado y generado con éxito.'),
+                    backgroundColor: FrutiaColors.accent,
+                  ),
+                );
+              } else if (modifiedSuccessfully == false) {
+                // Opcional: Mostrar un Snackbar si la modificación fue cancelada o falló
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content:
+                        Text('La modificación del plan fue cancelada o falló.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
               break;
           }
         },

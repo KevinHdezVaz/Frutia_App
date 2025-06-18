@@ -1,28 +1,27 @@
+// lib/pages/screens/datosPersonales/QuestionnaireFlow.dart
+
 import 'dart:math';
 
-import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/auth/auth_check.dart'; // Asegúrate de que esta ruta sea correcta
 import 'package:Frutia/pages/screens/datosPersonales/PlanSummaryScreen.dart';
-import 'package:Frutia/pages/screens/datosPersonales/SuccessScreen.dart';
+import 'package:Frutia/pages/screens/datosPersonales/SuccessScreen.dart'; // Asegúrate de que esta ruta sea correcta
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/services/profile_service.dart';
-import 'package:Frutia/utils/ChoiceChipCard.dart';
-import 'package:Frutia/utils/CustomTextField.dart';
-import 'package:Frutia/utils/CustomTimePickerField.dart';
-import 'package:Frutia/utils/SelectionCard.dart';
-import 'package:Frutia/utils/SportSelection.dart';
 import 'package:Frutia/utils/colors.dart';
-import 'package:Frutia/utils/gender_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart'; // Asegúrate de tener form_builder en pubspec.yaml
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
+import 'package:lottie/lottie.dart'; // Asegúrate de tener lottie en pubspec.yaml
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart'; // Para firstWhereOrNull
 
 // WIDGET PRINCIPAL CON NAVEGACIÓN Y BARRA DE PROGRESO
 class QuestionnaireFlow extends StatefulWidget {
-  const QuestionnaireFlow({super.key});
+  final Map<String, dynamic>? initialProfileData;
+
+  const QuestionnaireFlow({super.key, this.initialProfileData});
 
   @override
   State<QuestionnaireFlow> createState() => _QuestionnaireFlowState();
@@ -31,49 +30,153 @@ class QuestionnaireFlow extends StatefulWidget {
 class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
   final PageController _pageController = PageController();
   final _allergyController = TextEditingController();
+  final _otraDificultadController =
+      TextEditingController(); // Controlador para "Otra" dificultad
 
   double _progress = 0;
   final int _numPages = 7;
 
-  // Validation errors for text fields
   Map<String, String?> _validationErrors = {};
 
-  // Helper function to remove emojis from a string
+  // Función auxiliar para eliminar emojis de una cadena
   String removeEmojis(String text) {
-    // Regex to match Unicode emojis
     final emojiRegex = RegExp(
         r'[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]',
         unicode: true);
     return text.replaceAll(emojiRegex, '').trim();
   }
 
+  // Helper para parsear TimeOfDay desde string "HH:MM"
+  TimeOfDay? _parseTimeOfDay(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    try {
+      final parts = timeStr.split(':');
+      if (parts.length == 2) {
+        return TimeOfDay(
+            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      }
+    } catch (e) {
+      print('Error parsing time string "$timeStr": $e');
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
+    // <--- CAMBIO CLAVE AQUÍ ---
+    // Usamos addPostFrameCallback para ejecutar la lógica de precarga
+    // después de que el frame actual haya terminado de construirse.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeProviderData();
+    });
+
     _pageController.addListener(() {
       if (_pageController.hasClients) {
         setState(() {
           _progress = _pageController.page! / (_numPages - 1);
-          _validationErrors = {}; // Clear errors when page changes
+          _validationErrors = {};
         });
       }
     });
+  }
+
+  void _initializeProviderData() {
+    final provider = context.read<QuestionnaireProvider>();
+
+    if (widget.initialProfileData != null) {
+      final data = widget.initialProfileData!;
+      debugPrint('Pre-cargando datos de perfil: $data');
+
+      provider.update(() {
+        provider.name = data['name'] as String? ?? '';
+        provider.mainGoal = data['goal'] as String?;
+        provider.dailyActivityLevel = data['activity_level'] as String?;
+        provider.dietStyle = data['dietary_style'] as String?;
+        provider.weeklyBudget = data['budget'] as String?;
+        provider.eatsOut = data['eats_out'] as String?;
+        provider.dislikedFoods = data['disliked_foods'] as String? ?? '';
+        provider.hasAllergies = data['has_allergies'] as bool? ?? false;
+        provider.allergyDetails = data['allergies'] as String? ?? '';
+        provider.hasMedicalCondition =
+            data['has_medical_condition'] as bool? ?? false;
+        provider.medicalConditionDetails =
+            data['medical_condition'] as String? ?? '';
+        provider.communicationTone = data['communication_style'] as String?;
+        provider.preferredName = data['preferred_name'] as String? ?? '';
+
+        if (data['sport'] is String && (data['sport'] as String).isNotEmpty) {
+          provider.sport = (data['sport'] as String)
+              .split(',')
+              .map((s) => s.trim())
+              .toList();
+        } else if (data['sport'] is List) {
+          provider.sport =
+              (data['sport'] as List<dynamic>).cast<String>().toList();
+        } else {
+          provider.sport = [];
+        }
+
+        provider.trainingFrequency = data['training_frequency'] as String?;
+        provider.mealCount = data['meal_count'] as String?;
+
+        provider.breakfastTime =
+            _parseTimeOfDay(data['breakfast_time'] as String?);
+        provider.lunchTime = _parseTimeOfDay(data['lunch_time'] as String?);
+        provider.dinnerTime = _parseTimeOfDay(data['dinner_time'] as String?);
+
+        if (data['diet_difficulties'] is List) {
+          provider.dietDifficulties =
+              (data['diet_difficulties'] as List<dynamic>)
+                  .cast<String>()
+                  .toSet();
+        } else {
+          provider.dietDifficulties = {};
+        }
+
+        if (data['diet_motivations'] is List) {
+          provider.dietMotivations = (data['diet_motivations'] as List<dynamic>)
+              .cast<String>()
+              .toSet();
+        } else {
+          provider.dietMotivations = {};
+        }
+
+        final existingOtraDifficulty = provider.dietDifficulties
+            .firstWhereOrNull((d) => d.startsWith('Otra: '));
+        if (existingOtraDifficulty != null) {
+          _otraDificultadController.text =
+              existingOtraDifficulty.replaceFirst('Otra: ', '');
+          provider.dietDifficulties.remove(existingOtraDifficulty);
+          if (!provider.dietDifficulties.contains('Otra')) {
+            provider.dietDifficulties.add('Otra');
+          }
+        } else if (provider.dietDifficulties.contains('Otra')) {
+          _otraDificultadController.clear();
+        }
+      });
+
+      // Asegurarse de que los TextEditingControllers reflejen los datos cargados
+      _allergyController.text = provider.allergyDetails;
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _allergyController.dispose();
+    _otraDificultadController.dispose();
     super.dispose();
   }
 
+  // Valida los campos de la página actual antes de avanzar
   bool _validateCurrentPage() {
     final provider = context.read<QuestionnaireProvider>();
     final currentPage =
         _pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0;
 
     setState(() {
-      _validationErrors = {};
+      _validationErrors = {}; // Limpia errores previos
     });
 
     bool isValid = true;
@@ -81,7 +184,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
 
     switch (currentPage) {
       case 0: // WelcomeScreen
-        return true; // No validation needed
+        return true; // No se necesita validación en la pantalla de bienvenida
       case 1: // PersonalInfoScreen
         if (provider.name.isEmpty) {
           _validationErrors['name'] = 'Por favor, ingresa tu nombre';
@@ -97,12 +200,9 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
               'Específica tu condición médica';
           isValid = false;
         }
+        // Puedes agregar validaciones para edad, peso, altura, sexo, país aquí si los incluyes
         break;
       case 2: // RoutineScreen
-        if (provider.sport.isEmpty) {
-          errorMessages.add('Selecciona un deporte');
-          isValid = false;
-        }
         if (provider.trainingFrequency == null) {
           errorMessages.add('Selecciona tu frecuencia de entrenamiento');
           isValid = false;
@@ -128,6 +228,10 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
               'Específica tus alergias alimentarias';
           isValid = false;
         }
+        if (provider.weeklyBudget == null) {
+          errorMessages.add('Selecciona tu presupuesto semanal');
+          isValid = false;
+        }
         break;
       case 5: // PreferencesScreen
         if (provider.communicationTone == null) {
@@ -136,13 +240,21 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         }
         break;
       case 6: // PersonalizacionScreen
-        // Hacer dietDifficulties y dietMotivations opcionales, pero si "Otra" está seleccionada en dietDifficulties, validar el texto
-        if (provider.dietDifficulties.contains('Otra') &&
-            !provider.dietDifficulties
-                .any((item) => item.startsWith('Otra: '))) {
+        // Validación para "Otra" dificultad
+        final hasOtraSelected = provider.dietDifficulties.contains('Otra');
+        final hasOtraDetailed =
+            provider.dietDifficulties.any((item) => item.startsWith('Otra: '));
+
+        if (hasOtraSelected &&
+            !hasOtraDetailed &&
+            _otraDificultadController.text.isEmpty) {
           _validationErrors['otraDificultad'] =
               'Específica tu otra dificultad alimentaria';
           isValid = false;
+        } else if (!hasOtraSelected && hasOtraDetailed) {
+          provider.dietDifficulties
+              .removeWhere((item) => item.startsWith('Otra:'));
+          _otraDificultadController.clear();
         }
         break;
     }
@@ -159,103 +271,122 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     return isValid;
   }
 
+  // Maneja la navegación a la siguiente página o finaliza el cuestionario
   void _handleNextOrFinish() async {
     if (!_validateCurrentPage()) {
       return; // No avanza si la validación de la página actual falla
     }
 
-    // Si no es la última página, solo avanza
     if (_pageController.page! < _numPages - 1) {
       _pageController.nextPage(duration: 400.ms, curve: Curves.easeOut);
       return;
     }
 
     // --- LÓGICA FINAL DE GUARDADO Y GENERACIÓN DE PLAN ---
- showDialog(
-  context: context,
-  barrierDismissible: false,
-  builder: (_) => Dialog(
-    backgroundColor: Colors.transparent,
-    child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            FrutiaColors.secondaryBackground.withOpacity(0.9),
-            FrutiaColors.primaryBackground.withOpacity(0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 150,
-                height: 150,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
-                  strokeWidth: 6,
-                  backgroundColor: Colors.grey[300],
-                  value: null, // Indica progreso indefinido
-                ),
-              ),
-              Lottie.asset(
-                'assets/images/loaderFruta.json',
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
-                repeat: true,
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                FrutiaColors.secondaryBackground.withOpacity(0.9),
+                FrutiaColors.primaryBackground.withOpacity(0.7),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Generando tu plan personalizado... Espere un momento.',
-            style: GoogleFonts.lato(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: FrutiaColors.primaryText,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          )
-              .animate()
-              .fadeIn(duration: 300.ms)
-              .scale(duration: 300.ms, curve: Curves.easeOut),
-                        const SizedBox(height: 10),
-
-               Text(
-            ' Espere un momento.',
-            style: GoogleFonts.lato(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: FrutiaColors.primaryText,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          )
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 150,
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+                      strokeWidth: 6,
+                      backgroundColor: Colors.grey[300],
+                      value: null,
+                    ),
+                  ),
+                  Lottie.asset(
+                    'assets/images/loaderFruta.json',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                    repeat: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Generando tu plan personalizado... Espere un momento.',
+                style: GoogleFonts.lato(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: FrutiaColors.primaryText,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+              )
+                  .animate()
+                  .fadeIn(duration: 300.ms)
+                  .scale(duration: 300.ms, curve: Curves.easeOut),
+              const SizedBox(height: 10),
+              Text(
+                'Espere un momento.',
+                style: GoogleFonts.lato(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: FrutiaColors.primaryText,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+              )
+            ],
+          ),
+        ),
       ),
-    ),
-  ).animate().fadeIn(duration: 400.ms),
-);
+    );
 
     try {
-      // 1. Guardar el perfil del usuario con los datos del cuestionario
       final questionnaireProvider = context.read<QuestionnaireProvider>();
+
+      // --- Lógica para preparar dietDifficulties antes de guardar ---
+      final currentDietDifficultiesForSave =
+          Set<String>.from(questionnaireProvider.dietDifficulties);
+
+      // Eliminar cualquier "Otra: detalle" existente para evitar duplicados en el proceso de guardado
+      currentDietDifficultiesForSave
+          .removeWhere((item) => item.startsWith('Otra: '));
+
+      // Si 'Otra' está seleccionada Y el controlador de texto tiene contenido
+      if (questionnaireProvider.dietDifficulties.contains('Otra') &&
+          _otraDificultadController.text.isNotEmpty) {
+        currentDietDifficultiesForSave
+            .add('Otra: ${_otraDificultadController.text}');
+      } else if (questionnaireProvider.dietDifficulties.contains('Otra') &&
+          _otraDificultadController.text.isEmpty) {
+        currentDietDifficultiesForSave.remove('Otra');
+      }
+      // --- Fin Lógica para preparar dietDifficulties ---
+
       final profileData = {
         'name': questionnaireProvider.name,
         'goal': questionnaireProvider.mainGoal != null
@@ -267,7 +398,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         'dietary_style': questionnaireProvider.dietStyle != null
             ? removeEmojis(questionnaireProvider.dietStyle!)
             : '',
-        'budget': questionnaireProvider.weeklyBudget != null
+        'budget': questionnaireProvider.weeklyBudget !=
+                null // Envía 'weeklyBudget' a 'budget' del backend
             ? removeEmojis(questionnaireProvider.weeklyBudget!)
             : '',
         'eats_out': questionnaireProvider.eatsOut != null
@@ -292,36 +424,39 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         'breakfast_time': formatTimeOfDay(questionnaireProvider.breakfastTime),
         'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
         'dinner_time': formatTimeOfDay(questionnaireProvider.dinnerTime),
-        'diet_difficulties': questionnaireProvider.dietDifficulties.toList(),
+        'diet_difficulties':
+            currentDietDifficultiesForSave.toList(), // Usa el Set preparado
         'diet_motivations': questionnaireProvider.dietMotivations.toList(),
         'plan_setup_complete': true,
+        // Si tienes edad, peso, altura, sexo, país en el backend y los quieres aquí,
+        // asegúrate de añadirlos al provider y a este map.
+        // 'age': questionnaireProvider.age,
+        // 'weight': questionnaireProvider.weight,
+        // 'height': questionnaireProvider.height,
+        // 'sex': questionnaireProvider.sex,
+        // 'pais': questionnaireProvider.country,
       };
 
-      // Imprimir resumen para depuración
       questionnaireProvider.printSummary();
 
-      // 2. Guardar el perfil
       await ProfileService().saveProfile(profileData);
-
-      // 3. Generar el plan
       await PlanService().generatePlan();
 
       if (mounted) {
-        Navigator.of(context).pop(); // Cierra el diálogo de carga
+        Navigator.of(context).pop();
 
-        // 4. Navegar a PlanSummaryScreen, que usará getCurrentPlan
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const PlanSummaryScreen()),
           (route) => false,
         );
       }
     } catch (e, stackTrace) {
-      print('--- ¡ERROR ATRAPADO DURANTE LA GENERACIÓN DEL PLAN! ---');
-      print('Error: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('--- ¡ERROR ATRAPADO DURANTE LA GENERACIÓN DEL PLAN! ---');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
 
       if (mounted) {
-        Navigator.of(context).pop(); // Cierra el diálogo de carga
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -333,7 +468,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     }
   }
 
-// Asegúrate de tener estas funciones auxiliares disponibles en el scope de tu clase
+  // Formatea un objeto TimeOfDay a una cadena "HH:MM"
   String? formatTimeOfDay(TimeOfDay? time) {
     if (time == null) return null;
     final hour = time.hour.toString().padLeft(2, '0');
@@ -363,6 +498,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
             Expanded(
               child: PageView(
                 controller: _pageController,
+                physics:
+                    const NeverScrollableScrollPhysics(), // Deshabilita el deslizamiento manual
                 children: [
                   const WelcomeScreen(),
                   const PersonalInfoScreen(),
@@ -370,7 +507,9 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
                   const AlimentacionScreen(),
                   const GustosScreen(),
                   const PreferencesScreen(),
-                  const PersonalizacionScreen()
+                  PersonalizacionScreen(
+                    otraDificultadController: _otraDificultadController,
+                  ),
                 ],
               ),
             ),
@@ -474,7 +613,6 @@ class WelcomeScreen extends StatelessWidget {
                   fontSize: 18,
                   color: FrutiaColors.secondaryText,
                   height: 1.5)),
-          // Animación Lottie con efectos
           Center(
             child: Lottie.asset(
               'assets/images/animacionPlan.json',
@@ -531,8 +669,45 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             errorText: validationErrors['name'],
           ),
           const SizedBox(height: 16),
-          Row(children: []),
-          const SizedBox(height: 16),
+          // Si tienes edad, peso, altura, sexo, país en tu provider y backend,
+          // asegúrate de que sus CustomTextField, SelectionCard o GenderCard estén aquí
+          // y se sincronicen con el provider (ej. provider.age = ...).
+          // Aquí puedes agregar campos para edad, peso, altura, sexo y país.
+          // Por ejemplo:
+          // CustomTextField(
+          //   label: 'Edad',
+          //   initialValue: provider.age?.toString(),
+          //   onChanged: (val) => provider.update(() => provider.age = int.tryParse(val)),
+          //   keyboardType: TextInputType.number,
+          // ),
+          // const SizedBox(height: 16),
+          // CustomTextField(
+          //   label: 'Peso (kg)',
+          //   initialValue: provider.weight?.toStringAsFixed(1),
+          //   onChanged: (val) => provider.update(() => provider.weight = double.tryParse(val)),
+          //   keyboardType: TextInputType.number,
+          // ),
+          // const SizedBox(height: 16),
+          // CustomTextField(
+          //   label: 'Altura (cm)',
+          //   initialValue: provider.height?.toStringAsFixed(0),
+          //   onChanged: (val) => provider.update(() => provider.height = double.tryParse(val)),
+          //   keyboardType: TextInputType.number,
+          // ),
+          // const SizedBox(height: 16),
+          // GenderSelectionCard(
+          //   selectedGender: provider.sex,
+          //   onGenderSelected: (gender) => provider.update(() => provider.sex = gender),
+          // ),
+          // const SizedBox(height: 16),
+          // CustomTextField(
+          //   label: 'País',
+          //   initialValue: provider.country,
+          //   onChanged: (val) => provider.update(() => provider.country = val),
+          // ),
+          const SizedBox(
+              height:
+                  16), // Mantiene un espacio si no agregas los campos de arriba
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             title: const Text('¿Tienes alguna condición médica? 🩺'),
@@ -540,8 +715,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             onChanged: (val) => setState(() =>
                 provider.update(() => provider.hasMedicalCondition = val)),
             activeColor: FrutiaColors.accent,
-            secondary: const Text('👨‍⚕️',
-                style: TextStyle(fontSize: 24)), // Emoji de médico
+            secondary: const Text('👨‍⚕️', style: TextStyle(fontSize: 24)),
           ),
           if (provider.hasMedicalCondition)
             CustomTextField(
@@ -561,10 +735,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   List<Widget> _buildGoalOptions(QuestionnaireProvider provider) {
     const goals = {
-      '🔥  Bajar grasa',
-      '💪  Aumentar músculo',
-      '🥗  Comer más saludable',
-      '📈  Mejorar rendimiento',
+      '🔥 Bajar grasa',
+      '💪 Aumentar músculo',
+      '🥗 Comer más saludable',
+      '📈 Mejorar rendimiento',
     };
     return goals
         .map((goal) => Padding(
@@ -597,7 +771,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const QuestionnaireTitleARRIBA(title: 'Tu Rutina 🏃‍♂️'),
-          Text('¿Qué deporte practicas?  (puedes seleccionar varios)🏀',
+          Text('¿Qué deporte practicas? (puedes seleccionar varios)🏀',
               style: GoogleFonts.lato(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -605,7 +779,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           const SizedBox(height: 16),
           SportSelection(
             name: 'sport',
-            initialValue: provider.sport ?? [],
+            initialValue: provider.sport,
             onChanged: (List<String>? values) {
               provider.update(() => provider.sport = values ?? []);
             },
@@ -622,7 +796,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
             '5–6 veces por semana (frecuente) 🔥',
             'Todos los días (alta frecuencia) 🏃‍♂️'
           ], provider.trainingFrequency,
-              (val) => provider.trainingFrequency = val),
+              (val) => provider.update(() => provider.trainingFrequency = val)),
           const SizedBox(height: 40),
           const QuestionnaireTitle(
               title:
@@ -651,7 +825,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         runSpacing: 4.0,
         children: options.map((opt) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0), // Espacio vertical entre chips
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: GestureDetector(
               onTap: () => setState(() => context
                   .read<QuestionnaireProvider>()
@@ -661,18 +835,24 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   child: Text(
                     opt,
                     style: TextStyle(
-                      color: groupValue == opt ? Colors.white : FrutiaColors.primaryText,
+                      color: groupValue == opt
+                          ? Colors.white
+                          : FrutiaColors.primaryText,
                       fontWeight: FontWeight.w600,
                     ),
-                    softWrap: true, // Permite que el texto se divida en varias líneas
-                    overflow: TextOverflow.visible, // Evita que se corte
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
                   ),
                 ),
-                backgroundColor: groupValue == opt ? FrutiaColors.accent : Colors.grey[200]!,
+                backgroundColor:
+                    groupValue == opt ? FrutiaColors.accent : Colors.grey[200]!,
                 side: BorderSide(
-                  color: groupValue == opt ? FrutiaColors.accent : Colors.grey[300]!,
+                  color: groupValue == opt
+                      ? FrutiaColors.accent
+                      : Colors.grey[300]!,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
           );
@@ -706,7 +886,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
           const SizedBox(height: 24),
           const QuestionnaireTitle(
               title: '¿A qué hora sueles comer? (opcional)', isSub: true),
-          TimeSelectorCard(
+          CustomTimePickerField(
             label: 'Desayuno',
             icon: Icons.light_mode_rounded,
             selectedTime: provider.breakfastTime,
@@ -714,7 +894,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
                 provider.update(() => provider.breakfastTime = time),
           ),
           const SizedBox(height: 16),
-          TimeSelectorCard(
+          CustomTimePickerField(
             label: 'Almuerzo',
             icon: Icons.wb_sunny_rounded,
             selectedTime: provider.lunchTime,
@@ -722,7 +902,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
                 provider.update(() => provider.lunchTime = time),
           ),
           const SizedBox(height: 16),
-          TimeSelectorCard(
+          CustomTimePickerField(
             label: 'Cena',
             icon: Icons.dark_mode_rounded,
             selectedTime: provider.dinnerTime,
@@ -741,10 +921,10 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
 
   List<Widget> _buildMealCountOptions(QuestionnaireProvider provider) {
     const options = {
-      '🍽️   2 comidas principales (Ej: almuerzo y cena)',
-      '🥐   3 comidas principales (Desayuno, almuerzo y cena)',
-      '🥗   3 comidas + 1 o 2 snacks (Entre comidas o post entreno)',
-      '🤗   No tengo estructura fija',
+      '🍽️ 2 comidas principales (Ej: almuerzo y cena)',
+      '🥐 3 comidas principales (Desayuno, almuerzo y cena)',
+      '🥗 3 comidas + 1 o 2 snacks (Entre comidas o post entreno)',
+      '🤗 No tengo estructura fija',
     };
     return options
         .map((opt) => Padding(
@@ -762,10 +942,10 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
 
   List<Widget> _buildEatOutOptions(QuestionnaireProvider provider) {
     const options = {
-      '🍔  Casi todos los días', // Ensalada para alimentación saludable frecuente
-      '🍎  A veces (2 a 4 veces por semana)', // Manzana para frecuencia media
-      '🥗  Rara vez (1 vez por semana o menos)', // Hamburguesa para ocasiones especiales
-      '🚫  Nunca', // Prohibido para nunca
+      '🍔 Casi todos los días',
+      '🍎 A veces (2 a 4 veces por semana)',
+      '🥗 Rara vez (1 vez por semana o menos)',
+      '🚫 Nunca',
     };
     return options
         .map((opt) => Padding(
@@ -878,9 +1058,9 @@ class _GustosScreenState extends State<GustosScreen> {
 
   List<Widget> _buildBudgetOptions(QuestionnaireProvider provider) {
     const options = [
-      '💸  Bajo - Solo lo básico (Ej: arroz, huevo, lentejas ',
-      '💵  Medio - Balanceado y variado (Ej: frutas, yogur, pescado)',
-      '💳  Alto - Sin restricciones (Ej: salmón, proteína, superfoods) ',
+      '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)',
+      '💵 Medio - Balanceado y variado (Ej: frutas, yogur, pescado)',
+      '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)',
     ];
     return options
         .map((option) => Padding(
@@ -888,7 +1068,8 @@ class _GustosScreenState extends State<GustosScreen> {
               child: SelectionCard(
                 title: option,
                 value: option,
-                groupValue: provider.weeklyBudget,
+                groupValue:
+                    provider.weeklyBudget, // Usa weeklyBudget del provider
                 onTap: (val) => setState(
                     () => provider.update(() => provider.weeklyBudget = val)),
               ),
@@ -909,7 +1090,7 @@ class _DietaryStyleSelection extends StatelessWidget {
 
     return FormBuilderField<String>(
       name: 'dietary_style',
-      initialValue: '', // Set to empty string to default to "Otro"
+      initialValue: '',
       onChanged: (val) => context
           .read<QuestionnaireProvider>()
           .update(() => context.read<QuestionnaireProvider>().dietStyle = val),
@@ -926,7 +1107,7 @@ class _DietaryStyleSelection extends StatelessWidget {
               children: [
                 ...predefinedStyles.entries.map((entry) {
                   return ChoiceChipCard(
-                    label: entry.key, // Usamos la clave que contiene el emoji
+                    label: entry.key,
                     isSelected: field.value == entry.value,
                     onTap: () => field.didChange(entry.value),
                   );
@@ -955,19 +1136,33 @@ class _DietaryStyleSelection extends StatelessWidget {
 }
 
 class PersonalizacionScreen extends StatefulWidget {
-  const PersonalizacionScreen({super.key});
+  final TextEditingController otraDificultadController;
+  const PersonalizacionScreen(
+      {super.key, required this.otraDificultadController});
   @override
   State<PersonalizacionScreen> createState() => _PersonalizacionScreenState();
 }
 
 class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
-  final TextEditingController _otraDificultadController =
-      TextEditingController();
-
   @override
   void dispose() {
-    _otraDificultadController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<QuestionnaireProvider>();
+    final existingOtra = provider.dietDifficulties
+        .firstWhereOrNull((d) => d.startsWith('Otra: '));
+    if (existingOtra != null) {
+      widget.otraDificultadController.text =
+          existingOtra.replaceFirst('Otra: ', '');
+      provider.dietDifficulties.remove(existingOtra);
+      if (!provider.dietDifficulties.contains('Otra')) {
+        provider.dietDifficulties.add('Otra');
+      }
+    }
   }
 
   @override
@@ -983,8 +1178,6 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
         children: [
           const QuestionnaireTitleARRIBA(
               title: 'Personalización emocional (opcional) 🌟'),
-
-          // Primera pregunta (selección múltiple)
           const QuestionnaireTitle(
               title:
                   '¿Qué es lo que más te cuesta mantener en un plan de alimentación?',
@@ -1009,7 +1202,9 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
                           provider.dietDifficulties.add('Otra');
                         } else {
                           provider.dietDifficulties.remove('Otra');
-                          _otraDificultadController.clear();
+                          provider.dietDifficulties
+                              .removeWhere((item) => item.startsWith('Otra:'));
+                          widget.otraDificultadController.clear();
                         }
                       });
                     });
@@ -1020,25 +1215,28 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: CustomTextField(
-                    controller: _otraDificultadController,
+                    controller: widget.otraDificultadController,
                     label: 'Especifica',
                     onChanged: (val) => provider.update(() {
+                      provider.dietDifficulties
+                          .removeWhere((item) => item.startsWith('Otra:'));
                       if (val.isNotEmpty) {
                         provider.dietDifficulties.add('Otra: $val');
+                        if (!provider.dietDifficulties.contains('Otra')) {
+                          provider.dietDifficulties.add('Otra');
+                        }
                       } else {
-                        provider.dietDifficulties
-                            .removeWhere((item) => item.startsWith('Otra:'));
+                        // Si el texto se vacía y 'Otra' está seleccionada, la desmarcamos lógicamente para el envío
+                        // Esto se manejará en _handleNextOrFinish para el guardado final
                       }
                     }),
+                    errorText: validationErrors['otraDificultad'],
                   ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // Segunda pregunta (selección múltiple)
           const QuestionnaireTitle(
               title:
                   '¿Qué es lo que más te motiva a seguir un plan de alimentación?',
@@ -1050,7 +1248,6 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
             'Mejorar mi salud a largo plazo 🏥',
             'Aún no lo tengo claro ❓',
           }, provider.dietMotivations),
-
           const SizedBox(height: 24),
         ].animate(interval: 50.ms).fadeIn(duration: 300.ms),
       ),
@@ -1148,9 +1345,7 @@ class QuestionnaireScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background particles
         const Positioned.fill(child: _FloatingParticles()),
-        // Foreground content
         SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: child,
@@ -1190,13 +1385,13 @@ class _QuestionnaireTitleARRIBAState extends State<QuestionnaireTitleARRIBA>
       vsync: this,
     );
     _offsetAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0), // Comienza desde la derecha
-      end: Offset.zero, // Termina en la posición original
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOut,
     ));
-    _controller.forward(); // Inicia la animación al cargar el widget
+    _controller.forward();
   }
 
   @override
@@ -1241,7 +1436,7 @@ class _QuestionnaireTitleARRIBAState extends State<QuestionnaireTitleARRIBA>
             style: GoogleFonts.lato(
               fontSize: widget.isSub ? 20 : 24,
               fontWeight: widget.isSub ? FontWeight.w600 : FontWeight.bold,
-              color: Colors.black, // Letras blancas
+              color: Colors.black,
             ),
           ),
         ),
@@ -1274,12 +1469,12 @@ class QuestionnaireTitle extends StatelessWidget {
 
 class OptionChip extends StatelessWidget {
   final String label;
-  final bool selected; // Changed isSelected to selected
+  final bool selected;
   final Function(String) onTap;
   const OptionChip({
     Key? key,
     required this.label,
-    required this.selected, // Changed isSelected to selected
+    required this.selected,
     required this.onTap,
   }) : super(key: key);
 
@@ -1321,18 +1516,15 @@ class __FloatingParticlesState extends State<_FloatingParticles>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration:
-          const Duration(seconds: 10), // Reducido para movimiento más rápido
+      duration: const Duration(seconds: 10),
     )..repeat();
 
-    // Generar partículas con velocidades más visibles
     for (int i = 0; i < 20; i++) {
-      // Aumentar número de partículas
       _particles.add(Particle(
         x: _random.nextDouble(),
         y: _random.nextDouble(),
-        size: _random.nextDouble() * 3 + 2, // Tamaños más grandes
-        speed: _random.nextDouble() * 0.3 + 0.1, // Velocidades más altas
+        size: _random.nextDouble() * 3 + 2,
+        speed: _random.nextDouble() * 0.3 + 0.1,
       ));
     }
   }
@@ -1376,8 +1568,7 @@ class _ParticlesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.orange
-          .withOpacity(0.2) // Aumentar opacidad para mejor visibilidad
+      ..color = Colors.orange.withOpacity(0.2)
       ..style = PaintingStyle.fill;
 
     for (var particle in particles) {
@@ -1389,4 +1580,386 @@ class _ParticlesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ParticlesPainter oldDelegate) => true;
+}
+
+// ***************************************************************
+// Las siguientes clases son widgets de utilidad que tu código original
+// utilizaba y que se incluyen aquí para hacer el archivo autocontenido.
+// Si ya las tienes en sus propios archivos 'utils/', asegúrate de
+// no duplicar su definición.
+// ***************************************************************
+
+/// Widget para campos de texto personalizados con estilos de la aplicación.
+class CustomTextField extends StatelessWidget {
+  final String label;
+  final String? initialValue;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
+  final String? emoji;
+  final TextEditingController? controller;
+  final TextInputType keyboardType;
+
+  const CustomTextField({
+    Key? key,
+    required this.label,
+    this.initialValue,
+    this.onChanged,
+    this.errorText,
+    this.emoji,
+    this.controller,
+    this.keyboardType = TextInputType.text,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: controller ?? TextEditingController(text: initialValue),
+        onChanged: onChanged,
+        keyboardType: keyboardType,
+        style: GoogleFonts.lato(color: FrutiaColors.primaryText),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.lato(color: FrutiaColors.secondaryText),
+          errorText: errorText,
+          prefixText: emoji != null ? '$emoji ' : null,
+          prefixStyle: const TextStyle(fontSize: 20),
+          filled: true,
+          fillColor: FrutiaColors.overlay,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                BorderSide(color: FrutiaColors.disabledText.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                const BorderSide(color: FrutiaColors.accent, width: 2.0),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 2.0),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 2.0),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget para seleccionar un deporte (multi-selección).
+class SportSelection extends StatefulWidget {
+  final String name;
+  final List<String> initialValue;
+  final ValueChanged<List<String>?> onChanged;
+
+  const SportSelection({
+    Key? key,
+    required this.name,
+    required this.initialValue,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  _SportSelectionState createState() => _SportSelectionState();
+}
+
+class _SportSelectionState extends State<SportSelection> {
+  late List<String> _selectedSports;
+
+  final List<Map<String, String>> _sportOptions = const [
+    {'label': 'Fútbol ⚽', 'value': 'Fútbol'},
+    {'label': 'Baloncesto 🏀', 'value': 'Baloncesto'},
+    {'label': 'Natación 🏊‍♀️', 'value': 'Natación'},
+    {'label': 'Ciclismo 🚴‍♂️', 'value': 'Ciclismo'},
+    {'label': 'Correr 🏃‍♀️', 'value': 'Correr'},
+    {
+      'label': 'Levantamiento de pesas 🏋️‍♂️',
+      'value': 'Levantamiento de pesas'
+    },
+    {'label': 'Yoga 🧘‍♀️', 'value': 'Yoga'},
+    {'label': 'Baile 🕺', 'value': 'Baile'},
+    {'label': 'CrossFit 🤸‍♂️', 'value': 'CrossFit'},
+    {'label': 'Artes marciales 🥋', 'value': 'Artes marciales'},
+    {'label': 'Senderismo ⛰️', 'value': 'Senderismo'},
+    {'label': 'Ninguno / Otro 🚶‍♂️', 'value': 'Ninguno / Otro'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSports = List.from(widget.initialValue);
+  }
+
+  void _toggleSport(String sportValue) {
+    setState(() {
+      if (_selectedSports.contains(sportValue)) {
+        _selectedSports.remove(sportValue);
+      } else {
+        _selectedSports.add(sportValue);
+      }
+      widget.onChanged(_selectedSports);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8.0,
+      runSpacing: 8.0,
+      children: _sportOptions.map((option) {
+        final label = option['label']!;
+        final value = option['value']!;
+        final isSelected = _selectedSports.contains(value);
+
+        return ChoiceChipCard(
+          label: label,
+          isSelected: isSelected,
+          onTap: () => _toggleSport(value),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// Widget para seleccionar un horario (hora del día).
+class CustomTimePickerField extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final TimeOfDay? selectedTime;
+  final ValueChanged<TimeOfDay?> onTimeSelected;
+
+  const CustomTimePickerField({
+    Key? key,
+    required this.label,
+    required this.icon,
+    required this.selectedTime,
+    required this.onTimeSelected,
+  }) : super(key: key);
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: selectedTime ?? TimeOfDay.now(),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: FrutiaColors
+                  .accent, // Color de los botones y textos seleccionados
+              onSurface: FrutiaColors.primaryText, // Color del texto del reloj
+              surface: FrutiaColors.primaryBackground, // Fondo del dialog
+            ),
+            dialogBackgroundColor:
+                FrutiaColors.overlay, // Color de fondo del picker
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != selectedTime) {
+      onTimeSelected(picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _selectTime(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: FrutiaColors.overlay,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: FrutiaColors.disabledText.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: FrutiaColors.accent),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.lato(
+                  color: FrutiaColors.primaryText,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            Text(
+              selectedTime?.format(context) ?? 'Seleccionar hora',
+              style: GoogleFonts.lato(
+                color: selectedTime == null
+                    ? FrutiaColors.secondaryText
+                    : FrutiaColors.primaryText,
+                fontSize: 16,
+                fontWeight:
+                    selectedTime == null ? FontWeight.normal : FontWeight.w500,
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_right,
+                color: FrutiaColors.secondaryText),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tarjeta de selección simple (radio-like)
+class SelectionCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String? groupValue;
+  final ValueChanged<String> onTap;
+
+  const SelectionCard({
+    Key? key,
+    required this.title,
+    required this.value,
+    this.groupValue,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = value == groupValue;
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? FrutiaColors.accent : FrutiaColors.overlay,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? FrutiaColors.accent
+                : FrutiaColors.disabledText.withOpacity(0.3),
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: FrutiaColors.accent.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: isSelected ? Colors.white : FrutiaColors.secondaryText,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.lato(
+                  color: isSelected ? Colors.white : FrutiaColors.primaryText,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget de tipo ChoiceChipCard para selecciones múltiples o únicas con estilo de chip.
+class ChoiceChipCard extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const ChoiceChipCard({
+    Key? key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Chip(
+        label: Text(
+          label,
+          style: GoogleFonts.lato(
+            color: isSelected ? Colors.white : FrutiaColors.primaryText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: isSelected ? FrutiaColors.accent : Colors.grey[200]!,
+        side: BorderSide(
+          color: isSelected ? FrutiaColors.accent : Colors.grey[300]!,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+    );
+  }
+}
+
+/// Widget para seleccionar el género.
+class GenderSelectionCard extends StatelessWidget {
+  final String? selectedGender;
+  final ValueChanged<String> onGenderSelected;
+
+  const GenderSelectionCard({
+    Key? key,
+    required this.selectedGender,
+    required this.onGenderSelected,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            'Sexo:',
+            style: GoogleFonts.lato(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: FrutiaColors.primaryText,
+            ),
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Expanded(
+              child: SelectionCard(
+                title: 'Hombre 👨',
+                value: 'Masculino',
+                groupValue: selectedGender,
+                onTap: onGenderSelected,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SelectionCard(
+                title: 'Mujer 👩',
+                value: 'Femenino',
+                groupValue: selectedGender,
+                onTap: onGenderSelected,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

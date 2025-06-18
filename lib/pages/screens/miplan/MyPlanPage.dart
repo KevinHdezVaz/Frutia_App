@@ -27,19 +27,21 @@ class _MyPlanPageState extends State<MyPlanPage>
   List<Map<String, dynamic>> _breakfastOptions = [];
   List<Map<String, dynamic>> _lunchOptions = [];
   List<Map<String, dynamic>> _dinnerOptions = [];
+  List<Map<String, dynamic>> _snackOptions = []; // <--- NUEVA LISTA PARA SNACKS
+
   List<String> _recommendations = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController =
+        TabController(length: 5, vsync: this); // <--- CAMBIO AQUÍ: 4 -> 5
     _loadPlanData();
   }
 
   Future<void> _loadPlanData() async {
     setState(() => _isLoading = true);
     try {
-      // Llamar a PlanService.getCurrentPlan() que devuelve MealPlanData
       final mealPlanData = await _planService.getCurrentPlan();
       if (!mounted) return;
 
@@ -47,7 +49,21 @@ class _MyPlanPageState extends State<MyPlanPage>
         throw Exception('No se encontró un plan activo.');
       }
 
-      _parsePlanData(mealPlanData);
+      setState(() {
+        _breakfastOptions = mealPlanData.desayunos
+            .map((item) => item.toRecipeDataMap())
+            .toList();
+        _lunchOptions = mealPlanData.almuerzos
+            .map((item) => item.toRecipeDataMap())
+            .toList();
+        _dinnerOptions =
+            mealPlanData.cenas.map((item) => item.toRecipeDataMap()).toList();
+        // --- ASIGNA LOS SNACKS AQUÍ ---
+        _snackOptions = mealPlanData.snacks
+            .map((item) => item.toRecipeDataMap())
+            .toList(); // <--- NUEVA ASIGNACIÓN
+        _recommendations = List<String>.from(mealPlanData.recomendaciones);
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -122,6 +138,8 @@ class _MyPlanPageState extends State<MyPlanPage>
             Tab(text: 'Desayuno'),
             Tab(text: 'Almuerzo'),
             Tab(text: 'Cena'),
+            Tab(text: 'Snacks'), // <--- NUEVO TAB
+
             Tab(text: 'Consejos'),
           ],
         ),
@@ -187,6 +205,9 @@ class _MyPlanPageState extends State<MyPlanPage>
                     MealListView(items: _breakfastOptions),
                     MealListView(items: _lunchOptions),
                     MealListView(items: _dinnerOptions),
+                    MealListView(
+                        items: _snackOptions), // <--- NUEVO ITEM PARA SNACKS
+
                     RecommendationsListView(items: _recommendations),
                   ],
                 ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
@@ -232,7 +253,7 @@ class MealListView extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        final title = item['name'] ?? 'Sin nombre';
+        final title = item['opcion'] ?? 'Sin nombre';
         final imageUrl = item['image_url'] as String?;
 
         return Card(

@@ -1,24 +1,52 @@
-import 'package:Frutia/pages/screens/ProductDetailScreen.dart';
-import 'package:Frutia/services/plan_service.dart';
-import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:collection/collection.dart';
+import 'package:collection/collection.dart'; // Para agrupar
+import 'package:Frutia/services/plan_service.dart';
+import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/model/MealPlanData.dart'; // Importamos los modelos canónicos
+import 'package:shared_preferences/shared_preferences.dart'; // Importamos shared_preferences
 
+// --- Modelos de datos para la lista de compras ---
+// Estos modelos asumen que MealPlanData.dart ya contiene las clases Ingredient y PriceDetail.
+// NO DUPLICAR PriceDetail e Ingredient aquí.
+
+// Modelo para un ingrediente en la lista de compras, que envuelve el modelo Ingredient original
+// y añade propiedades específicas de la UI como 'isChecked' y 'mealType'.
+class ShoppingIngredientItem {
+  final Ingredient ingredientData;
+  bool isChecked;
+  final String mealType; // E.g., "Desayuno", "Almuerzo", "Cena", "Snacks"
+
+  ShoppingIngredientItem({
+    required this.ingredientData,
+    this.isChecked = false,
+    required this.mealType,
+  });
+
+  // Getters para acceder fácilmente a las propiedades del ingrediente subyacente
+  String get item => ingredientData.item;
+  String get quantity => ingredientData.quantity;
+  List<PriceDetail> get prices => ingredientData.prices;
+}
+
+// --- PANTALLA PRINCIPAL DE COMPRAS ---
 class ComprasScreen extends StatelessWidget {
   const ComprasScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 1, // Solo un tab: "Mi Lista"
       child: Scaffold(
         backgroundColor: FrutiaColors.primaryBackground,
         appBar: AppBar(
-          title: Text('Lista de Compras',
-              style: GoogleFonts.lato(
-                  fontWeight: FontWeight.bold,
-                  color: FrutiaColors.primaryText)),
+          title: Text(
+            'Lista de Compras',
+            style: GoogleFonts.lato(
+              fontWeight: FontWeight.bold,
+              color: FrutiaColors.primaryText,
+            ),
+          ),
           backgroundColor: FrutiaColors.primaryBackground,
           elevation: 0,
           leading: IconButton(
@@ -31,14 +59,12 @@ class ComprasScreen extends StatelessWidget {
             unselectedLabelColor: FrutiaColors.secondaryText,
             tabs: [
               Tab(icon: Icon(Icons.list_alt_rounded), text: 'Mi Lista'),
-              Tab(icon: Icon(Icons.search_rounded), text: 'Explorar'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
-            _MyListTab(),
-            _ExploreTab(),
+            _MyListTab(), // Solo la pestaña de Mi Lista
           ],
         ),
       ),
@@ -46,95 +72,108 @@ class ComprasScreen extends StatelessWidget {
   }
 }
 
+// --- PESTAÑA 1: MI LISTA DE COMPRAS ---
 class _MyListTab extends StatefulWidget {
   @override
   _MyListTabState createState() => _MyListTabState();
 }
 
-class IngredientItem {
-  final String name;
-  bool isChecked;
-  final String category;
-
-  IngredientItem({
-    required this.name,
-    this.isChecked = false,
-    required this.category,
-  });
-}
-
 class _MyListTabState extends State<_MyListTab> {
-  List<IngredientItem> _ingredients = [];
+  List<ShoppingIngredientItem> _ingredients = [];
   bool _isLoading = true;
   String? _error;
+  final PlanService _planService = PlanService();
+  late SharedPreferences _prefs; // Instancia de SharedPreferences
 
   @override
   void initState() {
     super.initState();
-    _loadIngredients();
+    _initAndLoadIngredients(); // Inicia la carga de preferencias y luego los ingredientes
   }
 
-  // Función para determinar la categoría basada en el nombre del ingrediente
-  String _determineCategory(String ingredient) {
-    final lowerIngredient = ingredient.toLowerCase();
-
-    if (lowerIngredient.contains('leche') ||
-        lowerIngredient.contains('queso') ||
-        lowerIngredient.contains('yogur')) {
-      return 'Lácteos';
-    } else if (lowerIngredient.contains('pollo') ||
-        lowerIngredient.contains('carne') ||
-        lowerIngredient.contains('pescado')) {
-      return 'Carnes';
-    } else if (lowerIngredient.contains('manzana') ||
-        lowerIngredient.contains('banana') ||
-        lowerIngredient.contains('fruta')) {
-      return 'Frutas';
-    } else if (lowerIngredient.contains('espinaca') ||
-        lowerIngredient.contains('lechuga') ||
-        lowerIngredient.contains('vegetal')) {
-      return 'Vegetales';
-    } else if (lowerIngredient.contains('arroz') ||
-        lowerIngredient.contains('pasta') ||
-        lowerIngredient.contains('pan')) {
-      return 'Granos';
-    } else if (lowerIngredient.contains('aceite') ||
-        lowerIngredient.contains('vinagre') ||
-        lowerIngredient.contains('especia')) {
-      return 'Condimentos';
-    } else {
-      return 'Otros';
-    }
+  // Inicializa SharedPreferences y luego carga los ingredientes del plan
+  Future<void> _initAndLoadIngredients() async {
+    _prefs = await SharedPreferences.getInstance();
+    await _loadIngredientsFromPlan();
   }
 
-  Future<void> _loadIngredients() async {
+  // Genera una clave única para guardar/recuperar el estado del ingrediente en SharedPreferences
+  String _getIngredientUniqueKey(ShoppingIngredientItem ingredient) {
+    return 'shopping_item_${ingredient.mealType.replaceAll(' ', '_').toLowerCase()}_${ingredient.item.replaceAll(' ', '_').toLowerCase()}_${ingredient.quantity.replaceAll(' ', '_').toLowerCase()}';
+  }
+
+  // Carga los ingredientes del plan de alimentación y les asigna su categoría
+  Future<void> _loadIngredientsFromPlan() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final ingredients = await PlanService().getShoppingListIngredients();
+      final MealPlanData? mealPlanData = await _planService.getCurrentPlan();
+
+      if (!mounted) return;
+
+      if (mealPlanData == null) {
+        throw Exception('No se encontró un plan de alimentación activo.');
+      }
+
+      final List<ShoppingIngredientItem> tempShoppingList = [];
+
+      // Función auxiliar para procesar una lista de comidas y añadir ingredientes a la lista principal
+      void addMealIngredients(List<MealItem> mealItems, String mealCategory) {
+        for (var mealItem in mealItems) {
+          for (var ingredient in mealItem.ingredients) {
+            tempShoppingList.add(
+              ShoppingIngredientItem(
+                ingredientData: ingredient,
+                mealType: mealCategory,
+              ),
+            );
+          }
+        }
+      }
+
+      // Añadir ingredientes de cada tipo de comida
+      addMealIngredients(mealPlanData.desayunos, 'Desayuno');
+      addMealIngredients(mealPlanData.almuerzos, 'Almuerzo');
+      addMealIngredients(mealPlanData.cenas, 'Cena');
+      addMealIngredients(mealPlanData.snacks, 'Snacks');
+
+      // Cargar el estado guardado de shared_preferences para cada ingrediente
+      for (var ingredient in tempShoppingList) {
+        final uniqueKey = _getIngredientUniqueKey(ingredient);
+        ingredient.isChecked = _prefs.getBool(uniqueKey) ?? false;
+      }
+
       setState(() {
-        _ingredients = ingredients
-            .map((ing) => IngredientItem(
-                  name: ing,
-                  category: _determineCategory(ing),
-                ))
-            .toList();
+        _ingredients = tempShoppingList;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
+  // Maneja el cambio de estado del checkbox de un ingrediente
   void _toggleIngredientCheck(int index) {
     setState(() {
       _ingredients[index].isChecked = !_ingredients[index].isChecked;
+      final ingredient = _ingredients[index];
+      final uniqueKey = _getIngredientUniqueKey(ingredient);
+      _prefs.setBool(uniqueKey, ingredient.isChecked);
     });
   }
 
+  // Elimina un ingrediente de la lista y de shared_preferences
   void _removeIngredient(int index) {
     setState(() {
+      final uniqueKey = _getIngredientUniqueKey(_ingredients[index]);
+      _prefs.remove(uniqueKey);
       _ingredients.removeAt(index);
     });
   }
@@ -142,7 +181,8 @@ class _MyListTabState extends State<_MyListTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return const Center(
+          child: CircularProgressIndicator(color: FrutiaColors.accent));
     }
 
     if (_error != null) {
@@ -150,14 +190,27 @@ class _MyListTabState extends State<_MyListTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error al cargar ingredientes',
-                style: TextStyle(color: Colors.red)),
-            Text(_error!),
+            Text(
+              'Error al cargar ingredientes',
+              style: GoogleFonts.lato(fontSize: 18, color: Colors.red),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lato(
+                  fontSize: 14, color: FrutiaColors.secondaryText),
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _loadIngredients,
-              child: Text('Reintentar'),
+              onPressed: _loadIngredientsFromPlan,
               style: ElevatedButton.styleFrom(
                 backgroundColor: FrutiaColors.accent,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Reintentar',
+                style: GoogleFonts.lato(fontSize: 16),
               ),
             ),
           ],
@@ -170,15 +223,50 @@ class _MyListTabState extends State<_MyListTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('No hay ingredientes en tu plan actual'),
-            SizedBox(height: 16),
+            Icon(Icons.shopping_cart_outlined,
+                size: 48, color: FrutiaColors.secondaryText.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'Tu lista de compras está vacía.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lato(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: FrutiaColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Genera un plan de alimentación para obtener tu lista de ingredientes.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lato(
+                fontSize: 14,
+                color: FrutiaColors.secondaryText.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                // Navegar a generación de plan o mostrar diálogo
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content:
+                        Text('Navegar a la pantalla de generación de plan.'),
+                    backgroundColor: FrutiaColors.accent,
+                  ),
+                );
               },
-              child: Text('Generar Plan'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: FrutiaColors.accent,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text(
+                'Generar Plan',
+                style:
+                    GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -186,16 +274,27 @@ class _MyListTabState extends State<_MyListTab> {
       );
     }
 
-    // Agrupar ingredientes por categoría
-    final groupedIngredients = groupBy(_ingredients, (item) => item.category);
-    final categories = groupedIngredients.keys.toList()..sort();
+    final groupedIngredients = groupBy(_ingredients, (item) => item.mealType);
+    final List<String> orderedCategories = [
+      'Desayuno',
+      'Almuerzo',
+      'Cena',
+      'Snacks'
+    ];
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: categories.length,
+      itemCount: orderedCategories.length,
       itemBuilder: (context, categoryIndex) {
-        final category = categories[categoryIndex];
-        final categoryItems = groupedIngredients[category]!;
+        final category = orderedCategories[categoryIndex];
+        final List<ShoppingIngredientItem>? categoryItems =
+            groupedIngredients[category];
+
+        if (categoryItems == null || categoryItems.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        categoryItems.sort((a, b) => a.item.compareTo(b.item));
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,70 +304,85 @@ class _MyListTabState extends State<_MyListTab> {
               child: Text(
                 category,
                 style: GoogleFonts.lato(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: FrutiaColors.accent,
                 ),
               ),
             ),
-            ...categoryItems
-                .map((ingredient) => _buildIngredientCard(ingredient))
-                .toList(),
+            ...categoryItems.map((ingredient) {
+              final originalIndex = _ingredients.indexOf(ingredient);
+              return _buildIngredientCard(ingredient, originalIndex);
+            }).toList(),
+            const Divider(height: 24),
           ],
         );
       },
     );
   }
 
-  Widget _buildIngredientCard(IngredientItem ingredient) {
-    final index = _ingredients.indexOf(ingredient);
-
+  Widget _buildIngredientCard(ShoppingIngredientItem ingredient, int index) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      elevation: 12,
+      shadowColor: Colors.black.withOpacity(0.5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.black.withOpacity(0.4), width: 1.0),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-        child: Row(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Checkbox(
-              value: ingredient.isChecked,
-              onChanged: (_) => _toggleIngredientCheck(index),
-              activeColor: FrutiaColors.accent,
+            Row(
+              children: [
+                Checkbox(
+                  value: ingredient.isChecked,
+                  onChanged: (_) => _toggleIngredientCheck(index),
+                  activeColor: FrutiaColors.accent,
+                ),
+                Expanded(
+                  child: Text(
+                    '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
+                    style: GoogleFonts.lato(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      decoration: ingredient.isChecked
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      color: ingredient.isChecked
+                          ? FrutiaColors.disabledText
+                          : FrutiaColors.primaryText,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon:
+                      const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () => _removeIngredient(index),
+                ),
+              ],
             ),
-            Expanded(
-              child: Text(
-                ingredient.name,
-                style: GoogleFonts.lato(
-                  fontWeight: FontWeight.w600,
-                  decoration: ingredient.isChecked
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                  color: ingredient.isChecked
-                      ? FrutiaColors.disabledText
-                      : FrutiaColors.primaryText,
+            if (ingredient.prices.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 48.0, top: 4.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: ingredient.prices.map((priceDetail) {
+                    return Text(
+                      '- ${priceDetail.store}: ${priceDetail.currency} ${priceDetail.price.toStringAsFixed(2)}',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: FrutiaColors.secondaryText,
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-              onPressed: () => _removeIngredient(index),
-            ),
           ],
         ),
       ),
     );
-  }
-}
-
-// --- PESTAÑA 2: EXPLORAR PRODUCTOS ---
-class _ExploreTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Implementación existente de la pestaña Explorar
-    return Center(child: Text('Pestaña de Explorar'));
   }
 }
