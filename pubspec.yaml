@@ -68,7 +68,6 @@ dependencies:
   video_player: ^2.8.6
   vibration: ^1.8.1
   percent_indicator: ^4.2.3 # Para la barra de progreso
-  flutter_svg: ^2.0.10+1 # O la versión más reciente
   flutter_tex: ^4.0.7  # Check for the latest version
   easy_localization: ^3.0.0  # Añade esta línea (usa la última versión disponible)
   speech_to_text: ^7.0.0
@@ -81,7 +80,7 @@ dependencies:
   firebase_auth: ^5.5.3
   country_picker: ^2.0.26
   collection: ^1.19.0
-
+  fluid_bottom_nav_bar: ^1.4.0
 
 
 flutter_localizations:
