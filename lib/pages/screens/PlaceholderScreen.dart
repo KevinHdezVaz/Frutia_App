@@ -1,5 +1,6 @@
 import 'package:Frutia/pages/screens/CompraDetailScreen.dart';
 import 'package:Frutia/pages/screens/ModificationsScreen.dart';
+import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
 import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
 import 'package:Frutia/pages/screens/RecipeDetailScreen.dart';
 import 'package:flutter/material.dart';
@@ -267,41 +268,15 @@ class _InteractiveCardState extends State<_InteractiveCard>
                 MaterialPageRoute(builder: (context) => ComprasScreen()),
               );
               break;
-            case 'Modificaciones':
-              // <--- LÓGICA DE NAVEGACIÓN PARA MODIFICACIONES ---
-              // Navegamos a ModificationsScreen y esperamos su resultado
-              final bool? modifiedSuccessfully = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ModificationsScreen()),
-              );
+         case 'Modificaciones':
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => QuestionnaireFlow(isEditing: true)),
+  );
+  break;
+       
+            
 
-              // Si la modificación fue exitosa (el resultado es 'true')
-              if (modifiedSuccessfully == true) {
-                // Volvemos a la pantalla "Mi Plan" y limpiamos el stack de navegación
-                // Esto es ideal si MyPlanPage es la raíz o quieres que sea la nueva raíz después de modificar.
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => MyPlanPage()),
-                  (route) => false, // Elimina todas las rutas anteriores
-                );
-
-                // Opcional: Mostrar un Snackbar de éxito
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Plan modificado y generado con éxito.'),
-                    backgroundColor: FrutiaColors.accent,
-                  ),
-                );
-              } else if (modifiedSuccessfully == false) {
-                // Opcional: Mostrar un Snackbar si la modificación fue cancelada o falló
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content:
-                        Text('La modificación del plan fue cancelada o falló.'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-              break;
           }
         },
         child: AnimatedBuilder(

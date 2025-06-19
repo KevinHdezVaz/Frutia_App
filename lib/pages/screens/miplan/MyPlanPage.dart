@@ -116,12 +116,21 @@ class _MyPlanPageState extends State<MyPlanPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+           flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [FrutiaColors.accent, FrutiaColors.accent2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         title: Text(
           'Mi Plan Nutricional',
           style: GoogleFonts.lato(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: FrutiaColors.primaryText,
+            color: Colors.white,
           ),
         ),
         backgroundColor: FrutiaColors.primaryBackground,
@@ -129,7 +138,7 @@ class _MyPlanPageState extends State<MyPlanPage>
         foregroundColor: FrutiaColors.primaryText,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: FrutiaColors.accent,
+          labelColor: Colors.white,
           unselectedLabelColor: FrutiaColors.secondaryText,
           indicatorColor: FrutiaColors.accent,
           labelStyle:

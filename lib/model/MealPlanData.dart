@@ -1,73 +1,8 @@
-// lib/model/MealPlanData.dart (o el nombre de tu archivo)
-
-// --- Nuevo modelo para el detalle de un precio de ingrediente ---
-class PriceDetail {
-  final String store;
-  final double price;
-  final String currency;
-
-  PriceDetail({
-    required this.store,
-    required this.price,
-    required this.currency,
-  });
-
-  factory PriceDetail.fromJson(Map<String, dynamic> json) {
-    return PriceDetail(
-      store: json['store'] as String? ?? 'Tienda Desconocida',
-      price:
-          (json['price'] as num?)?.toDouble() ?? 0.0, // Asegura que sea double
-      currency: json['currency'] as String? ?? '',
-    );
-  }
-
-  // Opcional: para convertir a Map si necesitas pasar esto directamente
-  Map<String, dynamic> toJson() {
-    return {
-      'store': store,
-      'price': price,
-      'currency': currency,
-    };
-  }
-}
-
-// --- Nuevo modelo para un ingrediente completo ---
-class Ingredient {
-  final String item;
-  final String quantity;
-  final List<PriceDetail> prices; // Ahora es una lista de PriceDetail
-
-  Ingredient({
-    required this.item,
-    this.quantity = '',
-    required this.prices,
-  });
-
-  factory Ingredient.fromJson(Map<String, dynamic> json) {
-    return Ingredient(
-      item: json['item'] as String? ?? 'Ingrediente Desconocido',
-      quantity: json['quantity'] as String? ?? '',
-      // Mapea la lista de mapas a una lista de PriceDetail
-      prices: (json['prices'] as List<dynamic>?)
-              ?.map((p) => PriceDetail.fromJson(p as Map<String, dynamic>))
-              .toList() ??
-          [],
-    );
-  }
-
-  // Opcional: para convertir a Map si necesitas pasar esto directamente
-  Map<String, dynamic> toJson() {
-    return {
-      'item': item,
-      'quantity': quantity,
-      'prices': prices
-          .map((p) => p.toJson())
-          .toList(), // Convierte cada PriceDetail a Map
-    };
-  }
-}
+ 
 
 // --- Modelo para un solo item de comida/snack (MealItem) ---
+import 'package:Frutia/model/Ingredient.dart';
+
 class MealItem {
   final String option;
   final String description;
