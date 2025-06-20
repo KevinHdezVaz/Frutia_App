@@ -271,7 +271,7 @@ class _InteractiveCardState extends State<_InteractiveCard>
          case 'Modificaciones':
   Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => QuestionnaireFlow(isEditing: true)),
+    MaterialPageRoute(builder: (context) => ModificationsScreen()),
   );
   break;
        

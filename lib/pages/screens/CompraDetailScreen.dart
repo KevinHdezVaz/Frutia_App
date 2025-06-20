@@ -455,87 +455,92 @@ class _ComprasScreenState extends State<ComprasScreen> {
     );
   }
 
-  Widget _buildIngredientCard(ShoppingIngredientItem ingredient) {
-    final String? imageUrl = ingredient.imageUrl;
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side:
-            BorderSide(color: FrutiaColors.accent.withOpacity(0.2), width: 1.0),
-      ),
-      child: Stack(
-        children: [
-          // Imagen de fondo (con bajo tono)
-          if (imageUrl != null)
-            Positioned.fill(
-              child: Opacity(
-                opacity:
-                    0.40, // Ajusta este valor para el nivel de transparencia
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  // No necesitamos placeholder ni errorWidget aquí, ya que la imagen principal los tiene
+Widget _buildIngredientCard(ShoppingIngredientItem ingredient) {
+  final String? imageUrl = ingredient.imageUrl;
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    elevation: 4,
+    shadowColor: Colors.black.withOpacity(0.3),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: BorderSide(color: FrutiaColors.accent.withOpacity(0.2), width: 1.0),
+    ),
+    child: Stack(
+      children: [
+        if (imageUrl != null)
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.40,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(
+                    color: FrutiaColors.accent,
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  child: const Icon(
+                    Icons.error_outline,
+                    color: Colors.redAccent,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
-          // Contenido principal de la tarjeta
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Checkbox(
-                      value: ingredient.isChecked,
-                      onChanged: (_) => _toggleIngredientCheck(ingredient),
-                      activeColor: FrutiaColors.accent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4)),
-                    ),
-                    Expanded(
-                      child: Text(
-                        '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
-                        style: GoogleFonts.lato(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          decoration: ingredient.isChecked
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          color: ingredient.isChecked
-                              ? FrutiaColors.disabledText
-                              : Colors.black,
-                        ),
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Checkbox(
+                    value: ingredient.isChecked,
+                    onChanged: (_) => _toggleIngredientCheck(ingredient),
+                    activeColor: FrutiaColors.accent,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4)),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
+                      style: GoogleFonts.lato(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        decoration: ingredient.isChecked
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                        color: ingredient.isChecked
+                            ? FrutiaColors.disabledText
+                            : Colors.black,
                       ),
                     ),
-                  ],
-                ),
-                if (ingredient.prices.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                        left: 50.0 + 12.0 + 48.0, top: 4.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: ingredient.prices.map((priceDetail) {
-                        return Text(
-                          '- ${priceDetail.store}: ${priceDetail.currency} ${priceDetail.price.toStringAsFixed(2)}',
-                          style: GoogleFonts.lato(
-                              fontSize: 14,
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold),
-                        );
-                      }).toList(),
-                    ),
                   ),
-              ],
-            ),
+                ],
+              ),
+              if (ingredient.prices.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 50.0 + 12.0 + 48.0, top: 4.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: ingredient.prices.map((priceDetail) {
+                      return Text(
+                        '- ${priceDetail.store}: ${priceDetail.currency} ${priceDetail.price.toStringAsFixed(2)}',
+                        style: GoogleFonts.lato(
+                            fontSize: 14,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold),
+                      );
+                    }).toList(),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
+        ),
+      ],
+    ),
+  );
+}}
