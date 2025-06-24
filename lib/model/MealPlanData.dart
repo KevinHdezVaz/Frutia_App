@@ -1,69 +1,58 @@
- 
+// En lib/model/MealPlanData.dart
 
-// --- Modelo para un solo item de comida/snack (MealItem) ---
 import 'package:Frutia/model/Ingredient.dart';
 
+// --- Modelo para un solo item de comida/snack (MealItem) ---
 class MealItem {
   final String option;
   final String description;
   final int calories;
   final int prepTimeMinutes;
-  final List<Ingredient>
-      ingredients; // <--- ¡CAMBIO CLAVE AQUÍ! Ahora es List<Ingredient>
+  final String? imageUrl;
+  final List<Ingredient> ingredients;
   final List<String> instructions;
-  final Map<String, dynamic>?
-      details; // Mantenerlo para pasar los 'details' brutos si es necesario
 
   MealItem({
     required this.option,
     required this.description,
     required this.calories,
     required this.prepTimeMinutes,
+    required this.imageUrl,
     required this.ingredients,
     required this.instructions,
-    this.details,
   });
 
   factory MealItem.fromJson(Map<String, dynamic> json) {
-    // Para los ingredientes, mapeamos la lista de objetos JSON a una lista de objetos Ingredient
+    final details = json['details'] as Map<String, dynamic>? ?? {};
+
     final List<Ingredient> parsedIngredients =
-        (json['details']?['ingredients'] as List<dynamic>?)
+        (details['ingredients'] as List<dynamic>?)
                 ?.map((itemJson) =>
                     Ingredient.fromJson(itemJson as Map<String, dynamic>))
                 .toList() ??
             [];
 
     return MealItem(
-      option: json['opcion'] ?? 'Receta sin título',
-      description:
-          json['details']?['description'] ?? 'Descubriendo una nueva receta...',
-      calories: json['details']?['calories'] ?? 0,
-      prepTimeMinutes: json['details']?['prep_time_minutes'] ?? 0,
-      ingredients:
-          parsedIngredients, // Asignamos la lista de objetos Ingredient
-      instructions: (json['details']?['instructions'] as List<dynamic>?)
-              ?.cast<String>() ??
-          [],
-      details: json[
-          'details'], // Pasamos los detalles completos si es necesario en otro lugar
+      option: json['opcion'] as String? ?? 'Receta sin título',
+      description: details['description'] as String? ?? 'Sin descripción.',
+      calories: details['calories'] as int? ?? 0,
+      prepTimeMinutes: details['prep_time_minutes'] as int? ?? 0,
+      imageUrl: details['image_url'] as String?,
+      ingredients: parsedIngredients,
+      instructions:
+          (details['instructions'] as List<dynamic>?)?.cast<String>() ?? [],
     );
   }
 
-  // Método para convertir MealItem a un Map<String, dynamic> compatible
-  // con MyPlanDetailsScreen, que espera esta estructura.
-  Map<String, dynamic> toRecipeDataMap() {
+  // Método estándar para convertir el objeto a un mapa (útil para pasar datos)
+  Map<String, dynamic> toJson() {
     return {
       'opcion': option,
-      // Aunque no hay 'image_url' en MealItem directamente,
-      // MyPlanDetailsScreen tiene un placeholder. Podrías añadirlo aquí si tu modelo
-      // lo tuviera o si lo obtuvieras de otro lado.
-      'image_url':
-          'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+Generica',
       'details': {
         'description': description,
         'calories': calories,
         'prep_time_minutes': prepTimeMinutes,
-        // Convertimos List<Ingredient> a List<Map<String, dynamic>>
+        'image_url': imageUrl,
         'ingredients': ingredients.map((i) => i.toJson()).toList(),
         'instructions': instructions,
       },
@@ -100,7 +89,6 @@ class MealPlanData {
   factory MealPlanData.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> mealPlanMap = json['meal_plan'] ?? {};
 
-    // Función auxiliar para parsear listas de MealItem
     List<MealItem> parseMealList(String key) {
       return (mealPlanMap[key] as List<dynamic>?)
               ?.map((item) => MealItem.fromJson(item as Map<String, dynamic>))
@@ -109,18 +97,18 @@ class MealPlanData {
     }
 
     return MealPlanData(
-      summaryTitle: json['summary_title'] ?? 'Resumen de tu Plan',
-      summaryText1: json['summary_text_1'] ??
-          'Hemos creado este plan basado en tus objetivos.',
-      summaryText2: json['summary_text_2'] ??
-          'Tu plan está personalizado según tus necesidades.',
-      summaryText3: json['summary_text_3'] ??
-          'Te ayudamos a superar tus retos y mantenerte motivado.',
-      summaryText4: json['summary_text_4'],
+      summaryTitle: json['summary_title'] as String? ?? 'Resumen de tu Plan',
+      summaryText1:
+          json['summary_text_1'] as String? ?? 'Plan basado en tus objetivos.',
+      summaryText2:
+          json['summary_text_2'] as String? ?? 'Personalizado para ti.',
+      summaryText3:
+          json['summary_text_3'] as String? ?? 'Motivación para el éxito.',
+      summaryText4: json['summary_text_4'] as String?,
       desayunos: parseMealList('desayuno'),
       almuerzos: parseMealList('almuerzo'),
       cenas: parseMealList('cena'),
-      snacks: parseMealList('snacks'), // Asegúrate de incluir los snacks aquí
+      snacks: parseMealList('snacks'),
       recomendaciones:
           (json['recomendaciones'] as List<dynamic>?)?.cast<String>() ?? [],
     );

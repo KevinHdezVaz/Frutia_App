@@ -6,8 +6,6 @@ import 'package:http/http.dart' as http;
 class ProfileService {
   final StorageService _storage = StorageService();
 
-
-
   Future<Map<String, dynamic>?> getProfile() async {
     print('[ProfileService] Initiating profile fetch...');
 
@@ -30,7 +28,8 @@ class ProfileService {
         },
       );
 
-      print('[ProfileService] Response received. Status code: ${response.statusCode}');
+      print(
+          '[ProfileService] Response received. Status code: ${response.statusCode}');
       print('[ProfileService] Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -46,9 +45,11 @@ class ProfileService {
         // Attempt to parse a more specific error message from the backend
         try {
           final errorBody = json.decode(response.body);
-          throw Exception(errorBody['message'] ?? 'Error fetching profile. Code: ${response.statusCode}');
+          throw Exception(errorBody['message'] ??
+              'Error fetching profile. Code: ${response.statusCode}');
         } catch (e) {
-          throw Exception('Error fetching profile. Code: ${response.statusCode}. Body: ${response.body}');
+          throw Exception(
+              'Error fetching profile. Code: ${response.statusCode}. Body: ${response.body}');
         }
       }
     } catch (e) {
@@ -57,8 +58,6 @@ class ProfileService {
     }
   }
 
-
-  
   /// Envía los datos del perfil del usuario al backend para guardarlos.
   Future<void> saveProfile(Map<String, dynamic> profileData) async {
     print('[ProfileService] Iniciando guardado de perfil...'); // Log de inicio

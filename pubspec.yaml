@@ -80,7 +80,7 @@ dependencies:
   firebase_auth: ^5.5.3
   country_picker: ^2.0.26
   collection: ^1.19.0
-  fluid_bottom_nav_bar: ^1.4.0
+  animated_bottom_navigation_bar: ^1.4.0
 
 
 flutter_localizations:

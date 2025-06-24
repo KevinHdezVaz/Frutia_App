@@ -8,6 +8,7 @@ import 'package:Frutia/services/ChatServiceApi.dart';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:clipboard/clipboard.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
@@ -60,20 +61,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ChatServiceApi _chatService = ChatServiceApi();
 
   final Color frutia_background = Colors.white; // Un crema suave y cálido
-  final Color frutia_accent = Color(0xFFFF8A65);     // Durazno/Coral como acento principal
-  final Color frutia_primary_text = Color(0xFF5D4037); // Marrón oscuro para texto
- 
+  final Color frutia_accent =
+      Color(0xFFFF8A65); // Durazno/Coral como acento principal
+  final Color frutia_primary_text =
+      Color(0xFF5D4037); // Marrón oscuro para texto
 
 // Colores mejorados para los bubbles
-final Color user_bubble_color = const Color.fromARGB(255, 236, 112, 67); // Color principal para el usuario
- 
- final Color bot_bubble_color = FrutiaColors.accent;    // Gris oscuro elegante para el bot
+  final Color user_bubble_color = const Color.fromARGB(
+      255, 236, 112, 67); // Color principal para el usuario
 
+  final Color bot_bubble_color =
+      FrutiaColors.accent; // Gris oscuro elegante para el bot
 
-final Color user_text_color = Colors.white;         // Texto blanco para mejor contraste
-final Color bot_text_color = Colors.white;          // Texto blanco también para el bot
-final Color time_text_color = Colors.white70;       // Color más suave para la hora
-
+  final Color user_text_color =
+      Colors.white; // Texto blanco para mejor contraste
+  final Color bot_text_color = Colors.white; // Texto blanco también para el bot
+  final Color time_text_color = Colors.white70; // Color más suave para la hora
 
   List<ChatMessage> _messages = [];
   int? _currentSessionId;
@@ -86,7 +89,6 @@ final Color time_text_color = Colors.white70;       // Color más suave para la 
   // Lógica para conteo de tokens y resumen
   final int _tokenLimit = 500;
   int _totalTokens = 0;
- 
 
   List<TextSpan> _parseTextToSpans(String text) {
     final List<TextSpan> spans = [];
@@ -243,13 +245,8 @@ final Color time_text_color = Colors.white70;       // Color más suave para la 
     setState(() {
       _totalTokens += tokens;
     });
-    if (_totalTokens > _tokenLimit) {
-     }
+    if (_totalTokens > _tokenLimit) {}
   }
-
-   
-
- 
 
   void _startNewChatWithSummary(String summary) {
     Navigator.pushReplacement(
@@ -267,9 +264,6 @@ final Color time_text_color = Colors.white70;       // Color más suave para la 
     final token = await _storageService.getToken();
     return token != null && token.isNotEmpty;
   }
-
- 
- 
 
   Future<void> _startNewSession() async {
     setState(() {
@@ -303,7 +297,9 @@ final Color time_text_color = Colors.white70;       // Color más suave para la 
         id: -1,
         chatSessionId: response['session_id'] ?? -1,
         userId: 0,
-text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta válida.',        isUser: false,
+        text: response['ai_message']?['text'] ??
+            'Error: No se recibió una respuesta válida.',
+        isUser: false,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -362,7 +358,6 @@ text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta v�
     });
     _controller.clear();
 
- 
     try {
       print('Sending message with session_id: $_currentSessionId');
       final response = isTemporary
@@ -378,7 +373,7 @@ text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta v�
             );
 
       if (!mounted) {
-         return;
+        return;
       }
 
       print('Received response: $response');
@@ -402,16 +397,16 @@ text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta v�
         _updateTokenCount(aiMessage.text);
       });
 
-       Vibration.vibrate(duration: 200);
+      Vibration.vibrate(duration: 200);
     } catch (e) {
       if (!mounted) {
-         return;
+        return;
       }
       setState(() {
         _isTyping = false;
         _typingTimer.cancel();
       });
-       print('Error sending message: $e');
+      print('Error sending message: $e');
       _showErrorSnackBar('Error al enviar el mensaje: $e');
     }
   }
@@ -502,65 +497,67 @@ text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta v�
 
   // Elimina esta línea:
 // String _transcribedText = '';
- Future<void> _startListening() async {
-  if (_isListening) return;
+  Future<void> _startListening() async {
+    if (_isListening) return;
 
-  final permissionService = PermissionService();
-  final micStatus = await permissionService.checkOrRequest(Permission.microphone);
-  debugPrint('Microphone permission status: $micStatus');
+    final permissionService = PermissionService();
+    final micStatus =
+        await permissionService.checkOrRequest(Permission.microphone);
+    debugPrint('Microphone permission status: $micStatus');
 
-  if (!micStatus.isGranted) {
-    if (micStatus.isPermanentlyDenied) {
-      _showErrorSnackBar('Por favor habilita los permisos de micrófono en Configuración');
-      await openAppSettings();
-    }
-    return;
-  }
-
-  if (!_isSpeechInitialized || !_isSpeechAvailable) {
-    _showErrorSnackBar('El reconocimiento de voz no está disponible');
-    await _initializeSpeech();
-    if (!_isSpeechInitialized || !_isSpeechAvailable) {
+    if (!micStatus.isGranted) {
+      if (micStatus.isPermanentlyDenied) {
+        _showErrorSnackBar(
+            'Por favor habilita los permisos de micrófono en Configuración');
+        await openAppSettings();
+      }
       return;
     }
+
+    if (!_isSpeechInitialized || !_isSpeechAvailable) {
+      _showErrorSnackBar('El reconocimiento de voz no está disponible');
+      await _initializeSpeech();
+      if (!_isSpeechInitialized || !_isSpeechAvailable) {
+        return;
+      }
+    }
+
+    try {
+      setState(() {
+        _isListening = true;
+        _controller.clear();
+      });
+
+      const localeId = 'es_ES'; // Valor fijo para español (España)
+      debugPrint('Starting speech recognition with locale: $localeId');
+
+      await _speech.listen(
+        onResult: (result) {
+          debugPrint('Recognized words: ${result.recognizedWords}');
+          setState(() {
+            _controller.text = result.recognizedWords;
+            _controller.selection = TextSelection.collapsed(
+              offset: _controller.text.length,
+            );
+          });
+        },
+        localeId: localeId,
+        listenFor: const Duration(minutes: 5),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
+        onSoundLevelChange: (level) {
+          debugPrint('Sound level: $level');
+          setState(() {
+            _soundLevel = level;
+          });
+        },
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Error starting speech recognition: $e\n$stackTrace');
+      setState(() => _isListening = false);
+      _showErrorSnackBar('Error al iniciar: $e');
+    }
   }
-
-  try {
-    setState(() {
-      _isListening = true;
-      _controller.clear();
-    });
-
-    const localeId = 'es_ES'; // Valor fijo para español (España)
-    debugPrint('Starting speech recognition with locale: $localeId');
-
-    await _speech.listen(
-      onResult: (result) {
-        debugPrint('Recognized words: ${result.recognizedWords}');
-        setState(() {
-          _controller.text = result.recognizedWords;
-          _controller.selection = TextSelection.collapsed(
-            offset: _controller.text.length,
-          );
-        });
-      },
-      localeId: localeId,
-      listenFor: const Duration(minutes: 5),
-      pauseFor: const Duration(seconds: 3),
-      partialResults: true,
-      onSoundLevelChange: (level) {
-        debugPrint('Sound level: $level');
-        setState(() {
-          _soundLevel = level;
-        });
-      },
-    );
-  } catch (e, stackTrace) {
-    debugPrint('Error starting speech recognition: $e\n$stackTrace');
-    setState(() => _isListening = false);
-    _showErrorSnackBar('Error al iniciar: $e');
-  }
-}
 
   Future<void> _stopListening() async {
     if (!_isListening) return;
@@ -600,105 +597,123 @@ text: response['ai_message']?['text'] ?? 'Error: No se recibió una respuesta v�
       ),
     );
   }
- 
-Widget _buildMessageBubble(ChatMessage message) {
-  final time = DateFormat('HH:mm').format(message.createdAt); // Formato más limpio
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    child: Column(
-      crossAxisAlignment:
-          message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          child: PhysicalModel(
-            color: Colors.transparent,
-            elevation: 2,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(message.isUser ? 16 : 4),
-              topRight: Radius.circular(message.isUser ? 4 : 16),
-              bottomLeft: Radius.circular(16),
-              bottomRight: Radius.circular(16),
-            ),
+  Widget _buildMessageBubble(ChatMessage message) {
+    final time = DateFormat('HH:mm').format(message.createdAt);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Column(
+        crossAxisAlignment:
+            message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onLongPress: () {
+              FlutterClipboard.copy(message.text).then((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Texto copiado'),
+                    duration: Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              });
+            },
             child: Container(
-              decoration: BoxDecoration(
-                color: message.isUser ? user_bubble_color : bot_bubble_color,
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              child: PhysicalModel(
+                color: Colors.transparent,
+                elevation: 2,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(message.isUser ? 16 : 4),
                   topRight: Radius.circular(message.isUser ? 4 : 16),
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 2,
-                    offset: Offset(0, 2),
-                  )
-                ],
-              ),
-              padding: EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: message.isUser 
-                    ? CrossAxisAlignment.end 
-                    : CrossAxisAlignment.start,
-                children: [
-                  if (message.imageUrl != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          message.imageUrl!,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color:
+                        message.isUser ? user_bubble_color : bot_bubble_color,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(message.isUser ? 16 : 4),
+                      topRight: Radius.circular(message.isUser ? 4 : 16),
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 2,
+                        offset: Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: message.isUser
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      if (message.imageUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              message.imageUrl!,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      SelectableText.rich(
+                        TextSpan(
+                          children: _parseTextToSpans(message.text).map((span) {
+                            return TextSpan(
+                              text: span.text,
+                              style: span.style?.copyWith(
+                                    color: message.isUser
+                                        ? user_text_color
+                                        : bot_text_color,
+                                  ) ??
+                                  TextStyle(
+                                    color: message.isUser
+                                        ? user_text_color
+                                        : bot_text_color,
+                                  ),
+                            );
+                          }).toList(),
+                        ),
+                        textAlign:
+                            message.isUser ? TextAlign.end : TextAlign.start,
+                        style: TextStyle(
+                          color:
+                              message.isUser ? user_text_color : bot_text_color,
+                          fontSize: 16,
+                          height: 1.4,
                         ),
                       ),
-                    ),
-                  
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: message.isUser ? user_text_color : bot_text_color,
-                        fontSize: 16,
-                        height: 1.4,
+                      SizedBox(height: 4),
+                      Text(
+                        time,
+                        style: TextStyle(
+                          color: time_text_color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w300,
+                        ),
                       ),
-                      children: _parseTextToSpans(message.text).map((span) {
-                        return TextSpan(
-                          text: span.text,
-                          style: span.style?.copyWith(
-                            color: message.isUser ? user_text_color : bot_text_color,
-                          ) ?? TextStyle(
-                            color: message.isUser ? user_text_color : bot_text_color,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    textAlign: message.isUser ? TextAlign.end : TextAlign.start,
+                    ],
                   ),
-                  
-                  SizedBox(height: 4),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: time_text_color,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   String _getEmotionalStateText(String? state) {
     switch (state) {
@@ -751,8 +766,6 @@ Widget _buildMessageBubble(ChatMessage message) {
     );
   }
 
-   
- 
   Widget _buildInput() {
     switch (widget.inputMode) {
       case 'keyboard':
@@ -837,7 +850,8 @@ Widget _buildMessageBubble(ChatMessage message) {
                         IconButton(
                           icon: Icon(
                             _isListening ? Icons.stop_circle : Icons.mic_none,
-                            color: _isListening ? Colors.red : FrutiaColors.accent,
+                            color:
+                                _isListening ? Colors.red : FrutiaColors.accent,
                             size: _isListening ? 30 : 24,
                           ),
                           tooltip: _isListening
@@ -886,9 +900,8 @@ Widget _buildMessageBubble(ChatMessage message) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => VoiceChatScreen(
-                                      language:"es"
-                                    ),
+                                    builder: (context) =>
+                                        VoiceChatScreen(language: "es"),
                                   ),
                                 );
                               },
@@ -978,7 +991,8 @@ Widget _buildMessageBubble(ChatMessage message) {
             if (_isLoading)
               Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(   FrutiaColors.accent), // Color is here
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      FrutiaColors.accent), // Color is here
                   strokeWidth: 6.0,
                   backgroundColor: Colors.white.withOpacity(0.3),
                 ),
@@ -987,7 +1001,7 @@ Widget _buildMessageBubble(ChatMessage message) {
               Column(
                 children: [
                   AppBar(
-                    backgroundColor:FrutiaColors.accent,
+                    backgroundColor: FrutiaColors.accent,
                     elevation: 0,
                     leading: IconButton(
                       icon: Icon(Icons.arrow_back, color: Colors.black),
@@ -1018,7 +1032,6 @@ Widget _buildMessageBubble(ChatMessage message) {
                         ),
                     ],
                   ),
-                  
                   Expanded(
                     child: Stack(
                       children: [

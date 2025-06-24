@@ -1,11 +1,13 @@
 import 'package:Frutia/model/MealPlanData.dart';
+import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:Frutia/utils/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/pages/screens/ModificationsScreen.dart';
 import 'package:Frutia/pages/screens/miplan/MyPlanDetailsScreen.dart';
-import 'package:Frutia/services/plan_service.dart'; // Asegúrate de importar PlanService
+import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 
@@ -22,20 +24,19 @@ class _MyPlanPageState extends State<MyPlanPage>
   bool _isLoading = true;
   String _errorMessage = '';
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final PlanService _planService = PlanService(); // Instancia de PlanService
+  final PlanService _planService = PlanService();
 
   List<Map<String, dynamic>> _breakfastOptions = [];
   List<Map<String, dynamic>> _lunchOptions = [];
   List<Map<String, dynamic>> _dinnerOptions = [];
-  List<Map<String, dynamic>> _snackOptions = []; // <--- NUEVA LISTA PARA SNACKS
+  List<Map<String, dynamic>> _snackOptions = [];
 
   List<String> _recommendations = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 5, vsync: this); // <--- CAMBIO AQUÍ: 4 -> 5
+    _tabController = TabController(length: 5, vsync: this);
     _loadPlanData();
   }
 
@@ -50,25 +51,21 @@ class _MyPlanPageState extends State<MyPlanPage>
       }
 
       setState(() {
-        _breakfastOptions = mealPlanData.desayunos
-            .map((item) => item.toRecipeDataMap())
-            .toList();
-        _lunchOptions = mealPlanData.almuerzos
-            .map((item) => item.toRecipeDataMap())
-            .toList();
+        _breakfastOptions =
+            mealPlanData.desayunos.map((item) => item.toJson()).toList();
+        _lunchOptions =
+            mealPlanData.almuerzos.map((item) => item.toJson()).toList();
         _dinnerOptions =
-            mealPlanData.cenas.map((item) => item.toRecipeDataMap()).toList();
-        // --- ASIGNA LOS SNACKS AQUÍ ---
-        _snackOptions = mealPlanData.snacks
-            .map((item) => item.toRecipeDataMap())
-            .toList(); // <--- NUEVA ASIGNACIÓN
+            mealPlanData.cenas.map((item) => item.toJson()).toList();
+        _snackOptions =
+            mealPlanData.snacks.map((item) => item.toJson()).toList();
         _recommendations = List<String>.from(mealPlanData.recomendaciones);
       });
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage =
-              'No se pudo cargar el plan. Por favor, intenta de nuevo. Error: $e';
+              '¡Aún no tienes un plan nutricional! Crea uno para comenzar tu viaje saludable.';
         });
       }
     } finally {
@@ -79,13 +76,12 @@ class _MyPlanPageState extends State<MyPlanPage>
   }
 
   void _parsePlanData(MealPlanData mealPlanData) {
-    // Convertir listas de MealItem a Map para compatibilidad con MealListView
     List<Map<String, dynamic>> convertMealItems(List<MealItem> items) {
       return items.map((mealItem) {
         return {
           'name': mealItem.option,
           'image_url':
-              'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+Generica', // Placeholder, ajustar si el backend provee image_url
+              'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+Generica',
           'details': {
             'description': mealItem.description,
             'calories': mealItem.calories,
@@ -116,7 +112,7 @@ class _MyPlanPageState extends State<MyPlanPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-           flexibleSpace: Container(
+        flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [FrutiaColors.accent, FrutiaColors.accent2],
@@ -147,8 +143,7 @@ class _MyPlanPageState extends State<MyPlanPage>
             Tab(text: 'Desayuno'),
             Tab(text: 'Almuerzo'),
             Tab(text: 'Cena'),
-            Tab(text: 'Snacks'), // <--- NUEVO TAB
-
+            Tab(text: 'Snacks'),
             Tab(text: 'Consejos'),
           ],
         ),
@@ -171,52 +166,95 @@ class _MyPlanPageState extends State<MyPlanPage>
               ),
             ).animate().fadeIn(duration: 400.ms)
           : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 48,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage,
-                        style: GoogleFonts.lato(
-                          fontSize: 18,
-                          color: FrutiaColors.primaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _loadPlanData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: FrutiaColors.accent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: Text(
-                          'Reintentar',
-                          style: GoogleFonts.lato(
-                              fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        FrutiaColors.primaryBackground,
+                        FrutiaColors.secondaryBackground.withOpacity(0.8),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
-                ).animate().fadeIn(duration: 400.ms)
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.restaurant_menu_outlined,
+                          color: FrutiaColors.accent,
+                          size: 80,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.lato(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: FrutiaColors.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Personaliza tu dieta con opciones saludables adaptadas a ti.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.lato(
+                            fontSize: 16,
+                            color: FrutiaColors.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const QuestionnaireFlow(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: FrutiaColors.accent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            elevation: 5,
+                          ),
+                          child: Text(
+                            'Crear Mi Plan',
+                            style: GoogleFonts.lato(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ).animate().scale(delay: 200.ms, duration: 300.ms),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _loadPlanData,
+                          child: Text(
+                            'Reintentar',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              color: FrutiaColors.accent2,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate().fadeIn(duration: 600.ms)
               : TabBarView(
                   controller: _tabController,
                   children: [
                     MealListView(items: _breakfastOptions),
                     MealListView(items: _lunchOptions),
                     MealListView(items: _dinnerOptions),
-                    MealListView(
-                        items: _snackOptions), // <--- NUEVO ITEM PARA SNACKS
-
+                    MealListView(items: _snackOptions),
                     RecommendationsListView(items: _recommendations),
                   ],
                 ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
@@ -257,73 +295,75 @@ class MealListView extends StatelessWidget {
       ).animate().fadeIn(duration: 400.ms);
     }
 
+    // --> CAMBIO 3: CONSTRUIMOS LA URL COMPLETA AQUÍ DENTRO
+    const String baseUrlApp =
+        "https://frutia.aftconta.mx"; // <-- URL Base SIN /api
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
+
+        // El mapa 'item' ahora viene del método .toJson() corregido
         final title = item['opcion'] ?? 'Sin nombre';
-        final imageUrl = item['image_url'] as String?;
+        final imagePath = item['image_url']
+            as String?; // Ahora esta clave contiene la URL real
+
+        // Construimos la URL absoluta y completa
+        final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
+            ? baseUrlApp + imagePath
+            : null;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           clipBehavior: Clip.antiAlias,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 3,
           child: InkWell(
             onTap: () {
-              final recipeDetails = item['details'];
-              if (recipeDetails != null &&
-                  recipeDetails is Map<String, dynamic>) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => MyPlanDetailsScreen(recipeData: item)),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => MyPlanDetailsScreen(recipeData: item)),
+              );
             },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
+                SizedBox(
                   height: 150,
                   width: double.infinity,
-                  color: Colors.grey[200],
-                  child: (imageUrl != null)
+                  child: fullImageUrl != null
                       ? Image.network(
-                          imageUrl,
+                          fullImageUrl, // Usamos la URL completa
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) {
-                            return progress == null
-                                ? child
-                                : const Center(
-                                    child: CircularProgressIndicator());
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.no_photography_outlined,
-                                color: Colors.grey, size: 40);
-                          },
+                          loadingBuilder: (context, child, progress) =>
+                              progress == null
+                                  ? child
+                                  : const Center(
+                                      child: CircularProgressIndicator()),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.no_photography_outlined,
+                                  color: Colors.grey, size: 40),
                         )
-                      : const Center(
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: FrutiaColors.accent)),
+                      // Si no hay imagen, muestra un ícono de error
+                      : Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image_not_supported,
+                              color: Colors.grey, size: 40),
+                        ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(12.0),
-                  child: Text(
-                    title,
-                    style: GoogleFonts.lato(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: Text(title,
+                      style: GoogleFonts.lato(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
           ),
-        )
-            .animate()
-            .fadeIn(delay: (100 * index).ms)
-            .slideY(begin: 0.5, curve: Curves.easeOut);
+        ).animate().fadeIn(delay: (100 * index).ms).slideY(begin: 0.5);
       },
     );
   }
@@ -351,8 +391,6 @@ class RecommendationsListView extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 28),
-
-          // Lista de items con efecto de onda
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -406,16 +444,14 @@ class RecommendationsListView extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          // Podrías añadir alguna interacción aquí
-        },
+        onTap: () {},
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 FrutiaColors.accent.withOpacity(0.05),
-                FrutiaColors.accent.withOpacity(0.15),
+                FrutiaColors.accent2.withOpacity(0.15),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -427,7 +463,7 @@ class RecommendationsListView extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: FrutiaColors.shadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -436,7 +472,6 @@ class RecommendationsListView extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Número de recomendación con estilo
               Container(
                 width: 28,
                 height: 28,
@@ -455,7 +490,6 @@ class RecommendationsListView extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              // Texto de la recomendación
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,7 +503,6 @@ class RecommendationsListView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Tags opcionales podrían ir aquí
                     Wrap(
                       spacing: 8,
                       runSpacing: 4,
@@ -496,7 +529,7 @@ class RecommendationsListView extends StatelessWidget {
           curve: Curves.easeOutQuart,
         )
         .then()
-        .shake(delay: 200.ms, hz: 2); // Pequeña animación después de aparecer
+        .shake(delay: 200.ms, hz: 2);
   }
 
   Widget _buildTag(String text, IconData icon) {

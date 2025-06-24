@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:ui';
+
+import 'package:Frutia/services/RachaProgreso.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-// Clase para definir los temas de color e imagen de fondo
 class DynamicTheme {
   final String imagePath;
   final Color accentTextColor;
-
   DynamicTheme({
     required this.imagePath,
     required this.accentTextColor,
@@ -25,8 +26,15 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  // Simulación de Datos del Usuario
-  final int _currentStreak = 23;
+  int _currentStreak = 0;
+  DateTime? _lastStreakUpdateDate;
+  bool _isLoading = true;
+  bool _isButtonLoading = false;
+  String? _errorMessage;
+  bool _hasActivePlan = false;
+  // CAMBIO: Se añade estado para los días de inactividad
+  int _daysSinceLastStreak = 0;
+
   final double _startWeight = 85.0;
   final double _currentWeight = 78.5;
 
@@ -37,35 +45,106 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('es_ES', null);
     _scrollController = ScrollController();
     _setCurrentTheme();
+    _fetchProfileData();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _animateToCurrentStreak();
-    });
+  Future<void> _fetchProfileData() async {
+    try {
+      final response = await RachaProgresoService.getProgresoWithUser();
+      final profile = response['profile'];
+
+      if (profile != null) {
+        setState(() {
+          _currentStreak = profile['racha_actual'] ?? 0;
+          if (profile['ultima_fecha_racha'] != null) {
+            _lastStreakUpdateDate =
+                DateTime.parse(profile['ultima_fecha_racha']);
+            // CAMBIO: Calculamos y guardamos los días de inactividad
+            final todayUTC = DateTime.now().toUtc();
+            _daysSinceLastStreak =
+                todayUTC.difference(_lastStreakUpdateDate!).inDays;
+          } else {
+            _daysSinceLastStreak = 0;
+          }
+
+          _hasActivePlan = (profile['plan_setup_complete'] == true ||
+              profile['plan_setup_complete'] == 1);
+        });
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _animateToCurrentStreak();
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "Error al cargar tu progreso: ${e.toString()}";
+      });
+    }
+  }
+
+  Future<void> _completeDay() async {
+    if (!mounted) return;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    setState(() => _isButtonLoading = true);
+
+    try {
+      await RachaProgresoService.marcarDiaCompleto();
+      if (!mounted) return;
+      await _fetchProfileData(); // Recargamos para actualizar todo
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content:
+              Text('¡Felicidades! Tu racha ahora es de $_currentStreak días.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isButtonLoading = false);
+    }
+  }
+
+  bool _canCompleteToday() {
+    if (_lastStreakUpdateDate == null) return true;
+    final todayUTC = DateTime.now().toUtc();
+    final lastUpdateUTC = _lastStreakUpdateDate!;
+    return lastUpdateUTC.year != todayUTC.year ||
+        lastUpdateUTC.month != todayUTC.month ||
+        lastUpdateUTC.day != todayUTC.day;
   }
 
   void _setCurrentTheme() {
     final hour = DateTime.now().hour;
     if (hour >= 5 && hour < 12) {
       _currentTheme = DynamicTheme(
-        imagePath: 'assets/images/dia.png',
-        accentTextColor: const Color(0xFFF9A825), // Sol
-      );
+          imagePath: 'assets/images/dia.png',
+          accentTextColor: const Color(0xFFF9A825));
     } else if (hour >= 12 && hour < 19) {
       _currentTheme = DynamicTheme(
-        imagePath: 'assets/images/mediatarde.png',
-        accentTextColor: const Color(0xFFD35400), // Atardecer
-      );
+          imagePath: 'assets/images/mediatarde.png',
+          accentTextColor: const Color(0xFFD35400));
     } else {
       _currentTheme = DynamicTheme(
-        imagePath: 'assets/images/noche.png',
-        accentTextColor: const Color(0xFFF1C40F), // Luna
-      );
+          imagePath: 'assets/images/noche.png',
+          accentTextColor: const Color(0xFFF1C40F));
     }
   }
 
   void _animateToCurrentStreak() {
+    if (!mounted || !_scrollController.hasClients) return;
     final targetOffset =
         (_currentStreak * _stepHeight) - (context.size!.height * 0.4);
     _scrollController.animateTo(
@@ -100,16 +179,22 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           _AnimatedParallaxBackground(imagePath: _currentTheme.imagePath),
           SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                _buildHeaderInfo(),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _buildProgressTimeline(),
-                ),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white))
+                : _errorMessage != null
+                    ? Center(
+                        child: Text(_errorMessage!,
+                            style: const TextStyle(color: Colors.white)))
+                    : Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          _buildHeaderInfo(),
+                          const SizedBox(height: 16),
+                          Expanded(child: _buildProgressTimeline()),
+                          const SizedBox(height: 130),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -118,36 +203,72 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Widget _buildHeaderInfo() {
     double weightChange = _currentWeight - _startWeight;
+    bool canComplete = _canCompleteToday();
+    // CAMBIO: La racha que se muestra visualmente se reinicia si hay 4 o más días de inactividad
+    int displayedStreak = (_daysSinceLastStreak >= 4) ? 0 : _currentStreak;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                spreadRadius: 5)
-          ]),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildStreakIndicator(),
-          const SizedBox(width: 24),
-          Container(width: 1, height: 60, color: Colors.grey.shade300),
-          const SizedBox(width: 24),
-          _buildWeightIndicator(weightChange),
-        ],
-      ),
-    )
-        .animate()
-        .fadeIn(duration: 400.ms)
-        .slideY(begin: 0.5, curve: Curves.easeOut);
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    spreadRadius: 5)
+              ]),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // CAMBIO: Se pasa la racha visual
+              _buildStreakIndicator(displayedStreak),
+              const SizedBox(width: 24),
+              Container(width: 1, height: 60, color: Colors.grey.shade300),
+              const SizedBox(width: 24),
+              _buildWeightIndicator(weightChange),
+            ],
+          ),
+        )
+            .animate()
+            .fadeIn(duration: 400.ms)
+            .slideY(begin: 0.5, curve: Curves.easeOut),
+        const SizedBox(height: 20),
+        if (_hasActivePlan)
+          _isButtonLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : ElevatedButton.icon(
+                  icon: Icon(
+                      canComplete
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.check_circle_rounded,
+                      color:
+                          canComplete ? Colors.white : Colors.green.shade200),
+                  label: Text(
+                      canComplete ? "¡Cumplí mi día!" : "¡Ya cumpliste hoy!",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: canComplete
+                        ? _currentTheme.accentTextColor
+                        : Colors.grey.shade600,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 15),
+                    elevation: 8,
+                    shadowColor: Colors.black.withOpacity(0.5),
+                  ),
+                  onPressed: canComplete ? _completeDay : null,
+                ).animate().scale(delay: 500.ms),
+      ],
+    );
   }
 
-  Widget _buildStreakIndicator() {
+  Widget _buildStreakIndicator(int displayedStreak) {
     return Column(
       children: [
         Text("Racha Actual",
@@ -157,11 +278,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('🔥', style: TextStyle(fontSize: 28))
+            Text('🔥', style: const TextStyle(fontSize: 28))
                 .animate(onComplete: (c) => c.repeat(reverse: true))
                 .scaleXY(end: 1.3, duration: 280.ms, curve: Curves.easeInOut),
             const SizedBox(width: 4),
-            Text('$_currentStreak',
+            Text('$displayedStreak',
                 style: GoogleFonts.poppins(
                     fontSize: 42,
                     fontWeight: FontWeight.bold,
@@ -204,36 +325,35 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _buildProgressTimeline() {
+    // CAMBIO: La racha que se usa para dibujar la línea de tiempo también respeta la regla de los 4 días.
+    final displayedStreak = (_daysSinceLastStreak >= 4) ? 0 : _currentStreak;
+
     return Stack(
       alignment: Alignment.center,
       children: [
-        // La línea vertical
         Container(
-          width: 4,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.4),
-                Colors.white.withOpacity(0.1)
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
+            width: 4,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(colors: [
+                  Colors.white.withOpacity(0.4),
+                  Colors.white.withOpacity(0.1)
+                ], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
         ListView.builder(
           reverse: true,
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(vertical: 20),
-          itemCount: _currentStreak + 10,
+          // CAMBIO: El tamaño de la lista se basa en la racha visual.
+          itemCount: displayedStreak + 10,
           itemBuilder: (context, index) {
             final stepNumber = index + 1;
             return _TimelineStepWidget(
               stepNumber: stepNumber,
-              currentStreak: _currentStreak,
+              // CAMBIO: Se pasan ambos valores de racha y los días de inactividad.
+              currentStreak: displayedStreak,
+              daysSinceLastStreak: _daysSinceLastStreak,
               isMilestone: stepNumber % 7 == 0,
-              isCurrent: stepNumber == _currentStreak,
+              isCurrent: stepNumber == displayedStreak,
               isLeftAligned: index.isEven,
               stepHeight: _stepHeight,
               accentColor: _currentTheme.accentTextColor,
@@ -253,6 +373,8 @@ class _TimelineStepWidget extends StatefulWidget {
   final bool isLeftAligned;
   final double stepHeight;
   final Color accentColor;
+  // CAMBIO: Se añade para la lógica de la imagen triste.
+  final int daysSinceLastStreak;
 
   const _TimelineStepWidget({
     required this.stepNumber,
@@ -262,6 +384,7 @@ class _TimelineStepWidget extends StatefulWidget {
     required this.isLeftAligned,
     required this.stepHeight,
     required this.accentColor,
+    required this.daysSinceLastStreak,
   });
 
   @override
@@ -280,27 +403,21 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       onTap: () {
-        if (!isFuture) {
-          setState(() {
-            _isExpanded = !_isExpanded;
-          });
-        }
+        if (!isFuture) setState(() => _isExpanded = !_isExpanded);
       },
-      child: Container(
+      child: SizedBox(
         height: widget.stepHeight,
         child: Row(
           children: [
             Expanded(
-              child: widget.isLeftAligned
-                  ? _buildStepCard(isPast, isFuture)
-                  : const SizedBox(),
-            ),
+                child: widget.isLeftAligned
+                    ? _buildStepCard(isPast, isFuture)
+                    : const SizedBox()),
             _buildNode(),
             Expanded(
-              child: !widget.isLeftAligned
-                  ? _buildStepCard(isPast, isFuture)
-                  : const SizedBox(),
-            ),
+                child: !widget.isLeftAligned
+                    ? _buildStepCard(isPast, isFuture)
+                    : const SizedBox()),
           ],
         ),
       ),
@@ -308,43 +425,50 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   }
 
   Widget _buildNode() {
-    // Determinar la imagen según la racha actual
+    // CAMBIO: Lógica de imagen actualizada para mostrar la versión "triste".
     String imagePath;
+    bool isSad = widget.isCurrent &&
+        (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3);
+
     if (widget.currentStreak >= 30) {
-      imagePath = 'assets/images/frutaProgreso3.png'; // 30+ días
+      imagePath = isSad
+          ? 'assets/images/frutaProgresoSad3.png'
+          : 'assets/images/frutaProgreso3.png';
     } else if (widget.currentStreak >= 7) {
-      imagePath = 'assets/images/frutaProgreso2.png'; // 7+ días
+      imagePath = isSad
+          ? 'assets/images/frutaProgresoSad2.png'
+          : 'assets/images/frutaProgreso2.png';
     } else if (widget.currentStreak >= 2) {
-      imagePath = 'assets/images/frutaProgreso4.png'; // 2+ días
+      imagePath = isSad
+          ? 'assets/images/frutaProgresoSad4.png'
+          : 'assets/images/frutaProgreso4.png';
     } else {
-      imagePath = 'assets/images/frutaProgreso1.png'; // Inicio (0 días)
+      imagePath =
+          'assets/images/frutaProgreso1.png'; // No hay versión triste para el día 1
     }
 
     return Stack(
       alignment: Alignment.center,
       children: [
         Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: widget.isMilestone ? Colors.yellow.shade600 : Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
-          ),
-        ),
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+                color:
+                    widget.isMilestone ? Colors.yellow.shade600 : Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.5), width: 1))),
         if (widget.isCurrent)
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.accentColor.withOpacity(0.3),
-            ),
-            child: Image.asset(
-              imagePath,
-              width: 150,
-              height: 150,
-            ).animate().scale(
-                delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
+                shape: BoxShape.circle,
+                color: widget.accentColor.withOpacity(0.3)),
+            child: Image.asset(imagePath, width: 150, height: 150)
+                .animate()
+                .scale(
+                    delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
           ),
       ],
     );
@@ -354,7 +478,6 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
     final DateFormat formatter = DateFormat('EEEE d', 'es_ES');
     final date = DateTime.now()
         .subtract(Duration(days: widget.currentStreak - widget.stepNumber));
-
     return Align(
       alignment:
           widget.isLeftAligned ? Alignment.centerRight : Alignment.centerLeft,
@@ -371,13 +494,12 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                 : Colors.black.withOpacity(0.25),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: widget.isCurrent
-                  ? Colors.red
-                  : (widget.isMilestone
-                      ? Colors.yellow.shade700
-                      : Colors.white.withOpacity(0.2)),
-              width: widget.isCurrent ? 2.0 : 1.0,
-            ),
+                color: widget.isCurrent
+                    ? widget.accentColor
+                    : (widget.isMilestone
+                        ? Colors.yellow.shade700
+                        : Colors.white.withOpacity(0.2)),
+                width: widget.isCurrent ? 2.0 : 1.0),
             boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
           ),
           child: Column(
@@ -392,13 +514,12 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                   else
                     Text('Día ${widget.stepNumber}',
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: const [
-                            Shadow(color: Colors.black26, blurRadius: 2)
-                          ],
-                        )),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: const [
+                              Shadow(color: Colors.black26, blurRadius: 2)
+                            ])),
                   if (widget.isMilestone) const SizedBox(width: 4),
                   if (widget.isMilestone)
                     Text('Hito',
@@ -410,7 +531,8 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
                             ])),
                   const Spacer(),
                   if (isPast)
-                    Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const Icon(Icons.check_circle,
+                        color: Colors.greenAccent, size: 18),
                 ],
               ),
               AnimatedSize(

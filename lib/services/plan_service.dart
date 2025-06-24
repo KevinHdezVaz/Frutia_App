@@ -61,7 +61,6 @@ class PlanService {
   }
 
   Future<MealPlanData> generatePlan() async {
-    // Cambiado el tipo de retorno a MealPlanData
     final token = await _storage.getToken();
     if (token == null) throw AuthException('No autenticado.');
 
@@ -73,9 +72,11 @@ class PlanService {
       },
     );
 
+    print('Código de estado: ${response.statusCode}');
+    print('Cuerpo de la respuesta: ${response.body}');
+
     if (response.statusCode == 201) {
-      final Map<String, dynamic> responseData = json.decode(response.body);
-      // Asumiendo que el 'data' del backend ahora contiene directamente el plan_data
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
       if (responseData.containsKey('data')) {
         return MealPlanData.fromJson(responseData['data']);
       } else {
@@ -83,7 +84,7 @@ class PlanService {
       }
     } else {
       throw Exception(
-          'Error al generar el plan. Código: ${response.statusCode}. Mensaje: ${json.decode(response.body)['message'] ?? 'Error desconocido'}');
+          'Error al generar el plan. Código: ${response.statusCode}. Cuerpo: ${response.body}');
     }
   }
 

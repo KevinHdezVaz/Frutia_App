@@ -48,8 +48,7 @@ class PlanSummaryScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context)
-                            .pop(); // Go back to previous screen
+                        Navigator.of(context).pop();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: FrutiaColors.primary,
@@ -81,57 +80,68 @@ class PlanSummaryScreen extends StatelessWidget {
                   expandedHeight: 220.0,
                   pinned: true,
                   flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            FrutiaColors.accent.withOpacity(0.9),
-                            FrutiaColors.accentLight,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/images/fondoPantalla1.png',
+                          fit: BoxFit.cover,
+                          color: Colors.black.withOpacity(0.3),
+                          colorBlendMode: BlendMode.darken,
                         ),
-                        borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(30)),
-                      ),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(left: 20.0, bottom: 20.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Image.asset(
-                                'assets/images/frutaProgreso4.png',
-                                width: 48,
-                                height: 48,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Tu Plan Frutia",
-                                style: GoogleFonts.lato(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 6.0,
-                                      color: Colors.black.withOpacity(0.4),
-                                      offset: const Offset(2.0, 2.0),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                FrutiaColors.accent.withOpacity(0.9),
+                                FrutiaColors.accentLight,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(30)),
+                          ),
+                          child: Align(
+                            alignment: Alignment.bottomLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 20.0, bottom: 20.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/frutaProgreso4.png',
+                                    width: 48,
+                                    height: 48,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Tu Plan Frutia",
+                                    style: GoogleFonts.lato(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [
+                                        Shadow(
+                                          blurRadius: 6.0,
+                                          color: Colors.black.withOpacity(0.4),
+                                          offset: const Offset(2.0, 2.0),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              )
-                                  .animate()
-                                  .fadeIn(duration: 800.ms)
-                                  .slideY(begin: 0.2, end: 0),
-                            ],
+                                  )
+                                      .animate()
+                                      .fadeIn(duration: 800.ms)
+                                      .slideY(begin: 0.2, end: 0),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                     stretchModes: const [StretchMode.zoomBackground],
                   ),
@@ -401,20 +411,6 @@ class PlanSummaryScreen extends StatelessWidget {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          leading: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: FrutiaColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Image.asset(
-              'assets/images/meal_icon.png',
-              width: 30,
-              height: 30,
-              color: FrutiaColors.primary,
-            ),
-          ),
           title: Text(
             item.option,
             style: GoogleFonts.lato(

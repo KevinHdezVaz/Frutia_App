@@ -15,6 +15,8 @@ class MyPlanDetailsScreen extends StatelessWidget {
     final details = recipeData['details'] as Map<String, dynamic>? ?? {};
     final title = recipeData['opcion'] as String? ?? 'Receta sin título';
 
+    final imagePath = details['image_url'] as String?;
+
     final imageUrl = details['image_url'] as String? ??
         'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+No Disponible';
     final description =
@@ -24,7 +26,8 @@ class MyPlanDetailsScreen extends StatelessWidget {
 
     // *** LA PARTE CRÍTICA: EXTRACCIÓN SÚPER ROBUSTA DE INGREDIENTES ***
     final List<Map<String, dynamic>> ingredients = [];
-    final dynamic rawIngredients = details['ingredients']; // Obtenemos como dynamic
+    final dynamic rawIngredients =
+        details['ingredients']; // Obtenemos como dynamic
     print('MyPlanDetailsScreen: Raw ingredients data = $rawIngredients');
 
     if (rawIngredients is List) {
@@ -36,7 +39,11 @@ class MyPlanDetailsScreen extends StatelessWidget {
             ingredients.add({'item': item, 'quantity': '', 'prices': []});
           }
         } else if (item == null) {
-          ingredients.add({'item': 'Ingrediente no especificado', 'quantity': '', 'prices': []});
+          ingredients.add({
+            'item': 'Ingrediente no especificado',
+            'quantity': '',
+            'prices': []
+          });
         }
         // Cualquier otro tipo inesperado será ignorado con un mensaje de depuración
         else {
@@ -44,7 +51,8 @@ class MyPlanDetailsScreen extends StatelessWidget {
         }
       }
     } else {
-      print('MyPlanDetailsScreen: ingredients no es una lista, es: $rawIngredients');
+      print(
+          'MyPlanDetailsScreen: ingredients no es una lista, es: $rawIngredients');
     }
 
     final instructions = List<String>.from(details['instructions'] ?? []);
@@ -56,7 +64,7 @@ class MyPlanDetailsScreen extends StatelessWidget {
       backgroundColor: FrutiaColors.primaryBackground,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(title, imageUrl),
+          _buildSliverAppBar(title, imagePath),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -65,27 +73,21 @@ class MyPlanDetailsScreen extends StatelessWidget {
                 children: [
                   _buildInfoRow(calories, prepTime),
                   const SizedBox(height: 20),
-                  Text(
-                    description,
-                    style: GoogleFonts.lato(
-                        fontSize: 16,
-                        color: FrutiaColors.secondaryText,
-                        height: 1.5),
-                  ),
+                  Text(description,
+                      style: GoogleFonts.lato(
+                          fontSize: 16,
+                          color: FrutiaColors.secondaryText,
+                          height: 1.5)),
                   const Divider(height: 40),
                   _buildSectionTitle('Ingredientes'),
                   const SizedBox(height: 16),
-                  // Mostrar mensaje si no hay ingredientes
                   if (ingredients.isEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Text(
-                        'No se especificaron ingredientes.',
-                        style: GoogleFonts.lato(
-                            fontSize: 14, color: FrutiaColors.secondaryText),
-                      ),
+                      child: Text('No se especificaron ingredientes.',
+                          style: GoogleFonts.lato(
+                              fontSize: 14, color: FrutiaColors.secondaryText)),
                     ),
-                  // Pasa cada Map de ingrediente al _buildIngredientTile
                   ...ingredients
                       .map((itemData) => _buildIngredientTile(itemData))
                       .toList(),
@@ -104,8 +106,22 @@ class MyPlanDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSliverAppBar(String title, String imageUrl) {
+  Widget _buildSliverAppBar(String title, String? imagePath) {
     print('MyPlanDetailsScreen: Construyendo SliverAppBar para $title');
+
+    const String baseUrlApp = "https://frutia.aftconta.mx";
+
+    // --- ESTA ES LA LÍNEA A CORREGIR ---
+    // El backend devuelve algo como "/storage/meal_images/uuid.png"
+    // Esta URL ya es relativa al dominio base, por lo que solo necesitamos concatenarla.
+    // Si el backend devolviera solo "meal_images/uuid.png", necesitaríamos añadir "/storage/".
+    // Por ahora, asumimos que el backend ya incluye "/storage/".
+    final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
+        ? baseUrlApp + imagePath
+        : null;
+
+    print('MyPlanDetailsScreen: URL completa construida: $fullImageUrl');
+
     return SliverAppBar(
       expandedHeight: 250.0,
       pinned: true,
@@ -121,21 +137,30 @@ class MyPlanDetailsScreen extends StatelessWidget {
               fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
           textAlign: TextAlign.center,
         ),
-        background: Image.network(
-          imageUrl,
-          fit: BoxFit.cover,
-          color: Colors.black.withOpacity(0.4),
-          colorBlendMode: BlendMode.darken,
-          errorBuilder: (context, error, stackTrace) {
-            print('MyPlanDetailsScreen: Error cargando imagen: $error');
-            return Container(
-              color: Colors.grey,
-              child: const Center(
-                  child: Icon(Icons.image_not_supported,
-                      color: Colors.white, size: 50)),
-            );
-          },
-        ),
+        background: fullImageUrl != null
+            ? Image.network(
+                fullImageUrl, // Usamos la URL completa corregida
+                fit: BoxFit.cover,
+                color: Colors.black.withOpacity(0.4),
+                colorBlendMode: BlendMode.darken,
+                errorBuilder: (context, error, stackTrace) {
+                  print(
+                      'MyPlanDetailsScreen: Error cargando imagen desde $fullImageUrl: $error');
+                  return Container(
+                    color: Colors.grey,
+                    child: const Center(
+                        child: Icon(Icons.broken_image,
+                            color: Colors.white, size: 50)),
+                  );
+                },
+              )
+            // Si no hay URL, muestra un placeholder
+            : Container(
+                color: Colors.grey,
+                child: const Center(
+                    child: Icon(Icons.image_not_supported,
+                        color: Colors.white, size: 50)),
+              ),
       ),
     );
   }

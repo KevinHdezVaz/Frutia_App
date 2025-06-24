@@ -186,17 +186,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(
-                          'Cancelar',
-                          style: GoogleFonts.lato(
-                            fontSize: 14,
-                            color: FrutiaColors.secondaryText,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -223,11 +213,13 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
             },
           ]),
           builder: (FormFieldState<double> field) {
+            // Calculate height in meters for display
+            final double heightInMeters = _height / 100.0;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Estatura: ${_height.round()} cm',
+                  'Estatura: ${heightInMeters.toStringAsFixed(2)} mts', // Display in meters
                   style: GoogleFonts.lato(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -236,7 +228,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.remove, color: FrutiaColors.accent),
+                      icon:
+                          const Icon(Icons.remove, color: FrutiaColors.accent),
                       onPressed: () {
                         setState(() {
                           _height = (_height - 1).clamp(120.0, 220.0);
@@ -278,8 +271,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     padding: const EdgeInsets.only(top: 8.0, left: 12.0),
                     child: Text(
                       field.errorText ?? '',
-                      style:
-                          const TextStyle(color: Colors.redAccent, fontSize: 12),
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 12),
                     ),
                   ),
               ],
@@ -297,8 +290,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         FormBuilderField<double>(
           name: 'weight',
           validator: FormBuilderValidators.compose([
-            FormBuilderValidators.required(
-                errorText: 'El peso es requerido.'),
+            FormBuilderValidators.required(errorText: 'El peso es requerido.'),
             (value) {
               if (value == null) return 'El peso es requerido.';
               if (value < 30 || value > 180) {
@@ -321,7 +313,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.remove, color: FrutiaColors.accent),
+                      icon:
+                          const Icon(Icons.remove, color: FrutiaColors.accent),
                       onPressed: () {
                         setState(() {
                           _weight = (_weight - 0.5).clamp(30.0, 180.0);
@@ -364,8 +357,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     padding: const EdgeInsets.only(top: 8.0, left: 12.0),
                     child: Text(
                       field.errorText ?? '',
-                      style:
-                          const TextStyle(color: Colors.redAccent, fontSize: 12),
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 12),
                     ),
                   ),
               ],
@@ -383,8 +376,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         FormBuilderField<double>(
           name: 'age',
           validator: FormBuilderValidators.compose([
-            FormBuilderValidators.required(
-                errorText: 'La edad es requerida.'),
+            FormBuilderValidators.required(errorText: 'La edad es requerida.'),
             (value) {
               if (value == null) return 'La edad es requerida.';
               if (value < 16 || value > 90) {
@@ -407,7 +399,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.remove, color: FrutiaColors.accent),
+                      icon:
+                          const Icon(Icons.remove, color: FrutiaColors.accent),
                       onPressed: () {
                         setState(() {
                           _age = (_age - 1).clamp(16.0, 90.0);
@@ -417,8 +410,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     ),
                     Expanded(
                       child: SfSlider(
-                        min: 16.0,
-                        max: 60.0,
+                        min: 15.0,
+                        max: 45.0,
                         value: _age,
                         interval: 20,
                         showTicks: true,
@@ -450,8 +443,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     padding: const EdgeInsets.only(top: 8.0, left: 12.0),
                     child: Text(
                       field.errorText ?? '',
-                      style:
-                          const TextStyle(color: Colors.redAccent, fontSize: 12),
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 12),
                     ),
                   ),
               ],

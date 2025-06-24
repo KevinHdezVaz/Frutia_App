@@ -37,6 +37,31 @@ class QuestionnaireProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reset() {
+    name = '';
+    hasMedicalCondition = false;
+    medicalConditionDetails = '';
+    mainGoal = null;
+    sport = [];
+    trainingFrequency = null;
+    dailyActivityLevel = null;
+    breakfastTime = null;
+    lunchTime = null;
+    dinnerTime = null;
+    eatsOut = null;
+    dislikedFoods = '';
+    hasAllergies = false;
+    allergyDetails = '';
+    dietStyle = null;
+    weeklyBudget = null;
+    mealCount = null;
+    communicationTone = null;
+    preferredName = null;
+    dietDifficulties = {};
+    dietMotivations = {};
+    notifyListeners(); // Important: Notify listeners after resetting
+  }
+
   // Para debugging
   void printSummary() {
     debugPrint('----- RESUMEN COMPLETO DEL CUESTIONARIO -----');
