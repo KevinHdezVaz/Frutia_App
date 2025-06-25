@@ -76,14 +76,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _completeDayFromHome() async {
+    // Guardamos las referencias antes de cualquier 'await'
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     if (!mounted) return;
+
     setState(() => _isStreakButtonLoading = true);
 
     try {
+      // 1. Llama al servicio para marcar el día
       await RachaProgresoService.marcarDiaCompleto();
       if (!mounted) return;
+
+      // 2. NAVEGA INMEDIATAMENTE a la pantalla de progreso
+      //    Usamos 'await' para esperar a que el usuario regrese de esta pantalla
+      await navigator.push(
+        MaterialPageRoute(builder: (context) => const ProgressScreen()),
+      );
+
+      // 3. CUANDO EL USUARIO REGRESA, refresca los datos de la página principal
+      if (!mounted) return;
       await _fetchAndCheckProfile();
+
+      // 4. Muestra el mensaje de éxito
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('¡Día completado! Tu racha continúa.'),
@@ -91,14 +106,17 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isStreakButtonLoading = false);
+      if (mounted) {
+        setState(() => _isStreakButtonLoading = false);
+      }
     }
   }
 
@@ -392,18 +410,7 @@ class _DashboardView extends StatelessWidget {
                         value: mainGoal,
                         label: 'Objetivo',
                         color: Colors.green)),
-                Expanded(
-                    child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ProgressScreen()));
-                        },
-                        child: Container(
-                            color: Colors.transparent,
-                            child: const SizedBox(width: 12, height: 60))))
+           
               ])
             ]))
         .animate()

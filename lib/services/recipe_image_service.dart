@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 class RecipeImageService {
   final StorageService _storage = StorageService();
 
-  // Pide al backend que genere una imagen para un texto de comida y devuelve la URL final
   Future<String> generateImage(String optionText) async {
     print('RecipeImageService: Iniciando generateImage para optionText="$optionText"');
     

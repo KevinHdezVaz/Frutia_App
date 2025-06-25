@@ -1,3 +1,4 @@
+import 'package:Frutia/utils/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:collection/collection.dart';
@@ -111,6 +112,12 @@ class _ComprasScreenState extends State<ComprasScreen> {
         final uniqueKey = _getIngredientUniqueKey(ingredient);
         ingredient.isChecked = _prefs.getBool(uniqueKey) ?? false;
       }
+
+      print('--- [LOG 1] Datos cargados en la lista _ingredients ---');
+      for (var ing in tempShoppingList) {
+        print('Item: ${ing.item}, ImageUrl: ${ing.imageUrl}');
+      }
+      print('----------------------------------------------------');
 
       setState(() {
         _ingredients = tempShoppingList;
@@ -455,92 +462,98 @@ class _ComprasScreenState extends State<ComprasScreen> {
     );
   }
 
-Widget _buildIngredientCard(ShoppingIngredientItem ingredient) {
-  final String? imageUrl = ingredient.imageUrl;
-  return Card(
-    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-    elevation: 4,
-    shadowColor: Colors.black.withOpacity(0.3),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: BorderSide(color: FrutiaColors.accent.withOpacity(0.2), width: 1.0),
-    ),
-    child: Stack(
-      children: [
-        if (imageUrl != null)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.40,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(
-                    color: FrutiaColors.accent,
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
+  Widget _buildIngredientCard(ShoppingIngredientItem ingredient) {
+    print('--- [LOG 2] Construyendo Card para: ${ingredient.item} ---');
+    print('URL de la imagen recibida: ${ingredient.imageUrl}');
+    print('----------------------------------------------------');
+
+    final String imageUrl =
+        '$baseUrl/ingredient-image/${Uri.encodeComponent(ingredient.item)}';
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      elevation: 4,
+      shadowColor: Colors.black.withOpacity(0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side:
+            BorderSide(color: FrutiaColors.accent.withOpacity(0.2), width: 1.0),
+      ),
+      child: Stack(
+        children: [
+          if (imageUrl != null)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.40,
+                child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(color: Colors.grey[200]),
+              errorWidget: (context, url, error) {
+                // Este error ahora nos dirá si nuestro propio servidor falla
+                print('Error al cargar imagen DESDE NUESTRO SERVIDOR: $url, Error: $error');
+                return Container(
                   color: Colors.grey[200],
-                  child: const Icon(
-                    Icons.error_outline,
-                    color: Colors.redAccent,
-                    size: 40,
-                  ),
-                ),
+                  child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                );
+              },
+            ),
               ),
             ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Checkbox(
-                    value: ingredient.isChecked,
-                    onChanged: (_) => _toggleIngredientCheck(ingredient),
-                    activeColor: FrutiaColors.accent,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4)),
-                  ),
-                  Expanded(
-                    child: Text(
-                      '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
-                      style: GoogleFonts.lato(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        decoration: ingredient.isChecked
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                        color: ingredient.isChecked
-                            ? FrutiaColors.disabledText
-                            : Colors.black,
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Checkbox(
+                      value: ingredient.isChecked,
+                      onChanged: (_) => _toggleIngredientCheck(ingredient),
+                      activeColor: FrutiaColors.accent,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
+                        style: GoogleFonts.lato(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          decoration: ingredient.isChecked
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          color: ingredient.isChecked
+                              ? FrutiaColors.disabledText
+                              : Colors.black,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              if (ingredient.prices.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(left: 50.0 + 12.0 + 48.0, top: 4.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: ingredient.prices.map((priceDetail) {
-                      return Text(
-                        '- ${priceDetail.store}: ${priceDetail.currency} ${priceDetail.price.toStringAsFixed(2)}',
-                        style: GoogleFonts.lato(
-                            fontSize: 14,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold),
-                      );
-                    }).toList(),
-                  ),
+                  ],
                 ),
-            ],
+                if (ingredient.prices.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        left: 50.0 + 12.0 + 48.0, top: 4.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: ingredient.prices.map((priceDetail) {
+                        return Text(
+                          '- ${priceDetail.store}: ${priceDetail.currency} ${priceDetail.price.toStringAsFixed(2)}',
+                          style: GoogleFonts.lato(
+                              fontSize: 14,
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}}
+        ],
+      ),
+    );
+  }
+}

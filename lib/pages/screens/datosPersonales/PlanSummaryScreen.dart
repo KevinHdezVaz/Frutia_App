@@ -77,18 +77,13 @@ class PlanSummaryScreen extends StatelessWidget {
               slivers: [
                 SliverAppBar(
                   backgroundColor: Colors.transparent,
-                  expandedHeight: 220.0,
+                  expandedHeight: 150.0,
                   pinned: true,
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.asset(
-                          'assets/images/fondoPantalla1.png',
-                          fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(0.3),
-                          colorBlendMode: BlendMode.darken,
-                        ),
+                       
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -152,6 +147,7 @@ class PlanSummaryScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        
                         _buildSummarySection(context, planData),
                         const SizedBox(height: 30),
                         Text(

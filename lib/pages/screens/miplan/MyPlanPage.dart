@@ -75,31 +75,7 @@ class _MyPlanPageState extends State<MyPlanPage>
     }
   }
 
-  void _parsePlanData(MealPlanData mealPlanData) {
-    List<Map<String, dynamic>> convertMealItems(List<MealItem> items) {
-      return items.map((mealItem) {
-        return {
-          'name': mealItem.option,
-          'image_url':
-              'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+Generica',
-          'details': {
-            'description': mealItem.description,
-            'calories': mealItem.calories,
-            'prep_time_minutes': mealItem.prepTimeMinutes,
-            'ingredients': mealItem.ingredients,
-            'instructions': mealItem.instructions,
-          },
-        };
-      }).toList();
-    }
-
-    setState(() {
-      _breakfastOptions = convertMealItems(mealPlanData.desayunos);
-      _lunchOptions = convertMealItems(mealPlanData.almuerzos);
-      _dinnerOptions = convertMealItems(mealPlanData.cenas);
-      _recommendations = List<String>.from(mealPlanData.recomendaciones ?? []);
-    });
-  }
+ 
 
   @override
   void dispose() {
@@ -307,8 +283,15 @@ class MealListView extends StatelessWidget {
 
         // El mapa 'item' ahora viene del método .toJson() corregido
         final title = item['opcion'] ?? 'Sin nombre';
-        final imagePath = item['image_url']
-            as String?; // Ahora esta clave contiene la URL real
+    
+
+
+                  // --- ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE! ---
+        // 1. Obtenemos el mapa 'details' de forma segura.
+        final details = item['details'] as Map<String, dynamic>? ?? {};
+        // 2. Buscamos 'image_url' DENTRO de 'details'.
+        final imagePath = details['image_url'] as String?;
+        
 
         // Construimos la URL absoluta y completa
         final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)

@@ -82,7 +82,7 @@ class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
               child: Text(
                 text,
                 style: TextStyle(
-                  fontSize: getResponsiveText(15),
+                  fontSize: getResponsiveText(17),
                   color: Colors.black87,
                   fontWeight: FontWeight.bold,
                   height: 1.4,
