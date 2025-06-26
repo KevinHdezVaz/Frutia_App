@@ -13,6 +13,8 @@ import 'package:clipboard/clipboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter/painting.dart'
     as painting; // Import explícito para TextDirection
@@ -149,6 +151,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return spans;
   }
 
+  final GlobalKey _saveButtonKey = GlobalKey();
+
+
   @override
   void initState() {
     super.initState();
@@ -172,7 +177,33 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     _initializeSpeech();
     _typingTimer = Timer.periodic(Duration.zero, (_) {});
+ 
   }
+
+// MODIFICADO: Usaremos el context de la GlobalKey para más seguridad
+Future<void> _showShowcase() async {
+  if (_saveButtonKey.currentContext == null) {
+    print("Showcase DEBUG: El contexto del botón es nulo. No se puede mostrar.");
+    return;
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+  final bool showcaseShown = prefs.getBool('chatShowcaseShown') ?? false;
+
+  // Imprime los valores para saber por qué no entra al if
+  print("========= Showcase DEBUG =========");
+  print("¿La guía ya fue mostrada? (showcaseShown): $showcaseShown");
+  print("¿El chat está guardado? (_isSaved): $_isSaved");
+  print("Condición final (!showcaseShown && !_isSaved): ${!showcaseShown && !_isSaved}");
+  print("==================================");
+
+
+  if (!showcaseShown && !_isSaved) {
+    print("Showcase DEBUG: ¡Entrando a mostrar el showcase!");
+    ShowCaseWidget.of(_saveButtonKey.currentContext!).startShowCase([_saveButtonKey]);
+    await prefs.setBool('chatShowcaseShown', true);
+  }
+}
 
   Future<void> _initializeSpeech() async {
     try {
@@ -976,9 +1007,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
+
   @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
+Widget build(BuildContext context) {
+  // CORRECCIÓN: La propiedad 'builder' recibe una función (context) => Widget,
+  // no un widget 'Builder'.
+  return ShowCaseWidget(
+    builder: (context) => WillPopScope(
       onWillPop: () async {
         _navigateBack(context);
         return false;
@@ -991,8 +1026,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             if (_isLoading)
               Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      FrutiaColors.accent), // Color is here
+                  valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
                   strokeWidth: 6.0,
                   backgroundColor: Colors.white.withOpacity(0.3),
                 ),
@@ -1007,30 +1041,50 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       icon: Icon(Icons.arrow_back, color: Colors.black),
                       onPressed: () => _navigateBack(context),
                     ),
-                    actions: [
-                      if (!_isSaved)
-                        Padding(
-                          padding: EdgeInsets.only(right: 10),
-                          child: TextButton.icon(
-                            icon:
-                                Icon(Icons.save, color: Colors.white, size: 22),
-                            label: Text(
-                              "Guardar Chat",
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 14),
-                            ),
-                            onPressed: _saveChat,
-                            style: TextButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                            ),
-                          ),
-                        ),
-                    ],
+                   actions: [
+  if (!_isSaved)
+    // CORRECCIÓN: Reemplaza solo este widget Showcase
+    Showcase(
+      key: _saveButtonKey,
+      title: 'Guardar Chat',
+      description: 'Usa este botón para guardar la conversación. Si no lo haces, el historial se perderá al salir.',
+      
+      // PARÁMETROS CORREGIDOS SEGÚN TU VERSIÓN:
+      tooltipBackgroundColor: FrutiaColors.accent,
+      targetShapeBorder: const CircleBorder(), // Para hacer circular el resalte sobre el botón
+      
+      // ESTILOS QUE YA TENÍAS (Y SON CORRECTOS):
+      titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold),
+      descTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 14),
+
+      child: Padding(
+        padding: EdgeInsets.only(right: 10),
+        child: TextButton.icon(
+          icon: Icon(Icons.save,
+              color: Colors.white, size: 22),
+          label: Text(
+            "Guardar Chat",
+            style: TextStyle(
+                color: Colors.white, fontSize: 14),
+          ),
+          onPressed: _saveChat,
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.white.withOpacity(0.2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: EdgeInsets.symmetric(
+                horizontal: 12, vertical: 6),
+          ),
+        ),
+      ),
+    ),
+],
                   ),
                   Expanded(
                     child: Stack(
@@ -1064,8 +1118,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+  
 }
 
 class _FloatingParticles extends StatefulWidget {

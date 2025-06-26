@@ -37,8 +37,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
             _pageController.position.maxScrollExtent * (currentPage / 3)) {
       _lastPage = currentPage;
       _playSwipeSound();
-      _triggerVibration();
-    }
+     }
   }
 
   Future<void> _playSwipeSound() async {
@@ -50,16 +49,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper> {
       print('Error al reproducir sonido: $e');
     }
   }
-
-  Future<void> _triggerVibration() async {
-    if (await Vibration.hasVibrator() ?? false) {
-      if (Theme.of(context).platform == TargetPlatform.iOS) {
-        Vibration.vibrate(duration: 1, amplitude: 10);
-      } else {
-        Vibration.vibrate(duration: 1, amplitude: 10);
-      }
-    }
-  }
+ 
 
   @override
   void dispose() {

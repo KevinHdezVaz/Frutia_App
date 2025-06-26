@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/model/MealPlanData.dart';
 import 'package:Frutia/model/Recipe.dart';
@@ -87,6 +88,34 @@ class PlanService {
           'Error al generar el plan. Código: ${response.statusCode}. Cuerpo: ${response.body}');
     }
   }
+
+
+   Future<Uint8List> getIngredientImage(String ingredientName) async {
+    final token = await _storage.getToken();
+    if (token == null) {
+      throw AuthException('No autenticado.');
+    }
+
+    // Construimos la URL al endpoint del IngredientController
+    final url = Uri.parse('$baseUrl/ingredient-image/${Uri.encodeComponent(ingredientName)}');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'image/png,image/jpeg', // Indicamos que esperamos una imagen
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Si la respuesta es exitosa, devolvemos los bytes de la imagen
+      return response.bodyBytes;
+    } else {
+      // Si el servidor devuelve un error (ej. 404), lanzamos una excepción
+      throw Exception('No se pudo cargar la imagen del ingrediente. Status: ${response.statusCode}');
+    }
+  }
+  
 
   Future<MealPlanData> getCurrentPlan() async {
     // <--- NUEVA FUNCIÓN

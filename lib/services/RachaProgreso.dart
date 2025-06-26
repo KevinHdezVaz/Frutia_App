@@ -29,6 +29,11 @@ class RachaProgresoService {
       print(
           '[RachaProgresoService] Respuesta recibida. Status code: ${response.statusCode}');
       if (response.statusCode == 200) {
+
+         // ---------- AÑADE ESTA LÍNEA AQUÍ ----------
+      print('>>> CUERPO DE LA RESPUESTA JSON: ${response.body}');
+      // ------------------------------------------
+      
         print(
             '[RachaProgresoService] Progreso completo obtenido exitosamente.');
         // Devuelve el objeto JSON completo: {'user': ..., 'profile': ...}

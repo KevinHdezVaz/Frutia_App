@@ -74,51 +74,68 @@ class _HomePageState extends State<HomePage> {
       _canCompleteStreakToday = difference >= 1;
     });
   }
+// En _HomePageState dentro de HomePage.dart
 
-  Future<void> _completeDayFromHome() async {
-    // Guardamos las referencias antes de cualquier 'await'
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
+Future<void> _completeDayFromHome() async {
+  // Guardamos las referencias al Navigator y ScaffoldMessenger antes de cualquier 'await'
+  // para evitar advertencias del linter sobre usar el BuildContext en un flujo asíncrono.
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  final navigator = Navigator.of(context);
+  if (!mounted) return;
+
+  // Inicia el estado de carga para el botón/tarjeta de la racha.
+  setState(() => _isStreakButtonLoading = true);
+
+  try {
+    // ------------------- INICIO DE LA CORRECCIÓN -------------------
+
+    // PASO 1: Llama al servicio para que el backend guarde el día como completo.
+    // La respuesta de esta función no contiene el historial de rachas, por lo que no la capturamos.
+    await RachaProgresoService.marcarDiaCompleto();
     if (!mounted) return;
 
-    setState(() => _isStreakButtonLoading = true);
+    // PASO 2: Llama inmediatamente a la función que obtiene el perfil completo del usuario.
+    // Esta función SÍ obtendrá el 'streak_history' actualizado desde el backend
+    // y llamará a setState internamente para reconstruir la UI, mostrando el check en el calendario.
+    await _fetchAndCheckProfile();
+    if (!mounted) return;
 
-    try {
-      // 1. Llama al servicio para marcar el día
-      await RachaProgresoService.marcarDiaCompleto();
-      if (!mounted) return;
+    // ------------------- FIN DE LA CORRECCIÓN -------------------
 
-      // 2. NAVEGA INMEDIATAMENTE a la pantalla de progreso
-      //    Usamos 'await' para esperar a que el usuario regrese de esta pantalla
-      await navigator.push(
-        MaterialPageRoute(builder: (context) => const ProgressScreen()),
-      );
+    // PASO 3: Ahora que la UI ya está actualizada, navega a la pantalla de progreso.
+    // El 'await' aquí es para esperar a que el usuario regrese de esta pantalla.
+    await navigator.push(
+      MaterialPageRoute(builder: (context) => const ProgressScreen()),
+    );
 
-      // 3. CUANDO EL USUARIO REGRESA, refresca los datos de la página principal
-      if (!mounted) return;
-      await _fetchAndCheckProfile();
+    // PASO 4: (Opcional pero recomendado) Al regresar, vuelve a refrescar por si algo cambió en la pantalla de progreso.
+    if (!mounted) return;
+    await _fetchAndCheckProfile();
 
-      // 4. Muestra el mensaje de éxito
+    // PASO 5: Muestra el mensaje de éxito al usuario.
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(
+        content: Text('¡Día completado! Tu racha continúa.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    // Si ocurre un error en cualquiera de los pasos, muéstrale un mensaje al usuario.
+    if (mounted) {
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text('¡Día completado! Tu racha continúa.'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(
+            content: Text('Error al completar el día: ${e.toString()}'),
+            backgroundColor: Colors.red),
       );
-    } catch (e) {
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-              content: Text('Error: ${e.toString()}'),
-              backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isStreakButtonLoading = false);
-      }
+    }
+  } finally {
+    // Se ejecuta siempre, haya éxito o error.
+    // Asegura que el estado de carga se desactive para que el usuario pueda volver a intentarlo.
+    if (mounted) {
+      setState(() => _isStreakButtonLoading = false);
     }
   }
+}
 
   Future<void> _fetchAndCheckProfile() async {
     if (!mounted) return;

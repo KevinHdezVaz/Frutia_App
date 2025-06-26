@@ -222,10 +222,7 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   onPressed: () async {
                     // Reproducir sonido y vibrar
                     await _playButtonSound();
-                    if (await Vibration.hasVibrator() ?? false) {
-                      Vibration.vibrate(duration: 5, amplitude: 50);
-                    }
-
+                 
                     await _storeOnboardInfo();
                     Navigator.push(
                       context,
@@ -251,10 +248,8 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   alignment: Alignment.topRight,
                   child: TextButton(
                     onPressed: () async {
-                      // Trigger vibration on button press
-                      if (await Vibration.hasVibrator() ?? false) {
-                        Vibration.vibrate(duration: 50); // Short vibration
-                      }
+                  
+                    
                       await _storeOnboardInfo();
                       Navigator.push(
                         context,
