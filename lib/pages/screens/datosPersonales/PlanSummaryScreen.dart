@@ -77,19 +77,18 @@ class PlanSummaryScreen extends StatelessWidget {
               slivers: [
                 SliverAppBar(
                   backgroundColor: Colors.transparent,
-                  expandedHeight: 150.0,
+                  expandedHeight: 170.0,
                   pinned: true,
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                       
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
                                 FrutiaColors.accent.withOpacity(0.9),
-                                FrutiaColors.accentLight,
+                                FrutiaColors.accent2,
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -108,9 +107,8 @@ class PlanSummaryScreen extends StatelessWidget {
                                 children: [
                                   Image.asset(
                                     'assets/images/frutaProgreso4.png',
-                                    width: 48,
-                                    height: 48,
-                                    color: Colors.white.withOpacity(0.8),
+                                    width: 120,
+                                    height: 120,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
@@ -147,7 +145,6 @@ class PlanSummaryScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        
                         _buildSummarySection(context, planData),
                         const SizedBox(height: 30),
                         Text(
@@ -481,7 +478,7 @@ class PlanSummaryScreen extends StatelessWidget {
                     ...item.ingredients.map((ing) => Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text(
-                            "• $ing",
+                            "• ${ing.item}",
                             style: GoogleFonts.lato(
                                 fontSize: 14,
                                 color: FrutiaColors.secondaryText),

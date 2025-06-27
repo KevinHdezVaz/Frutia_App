@@ -38,7 +38,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
 
   String _statusMessage = '';
   final Color _primaryColor = const Color.fromARGB(255, 255, 255, 255);
-  final Color _backgroundColor =  Colors.white;
+  final Color _backgroundColor = Colors.white;
   bool _isLoading = true;
   bool _showMicButton = false;
   bool _isSaved = false; // Track if chat is saved
@@ -322,7 +322,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black12,
+            color: Colors.red,
             blurRadius: 3,
             offset: Offset(0, 2),
           ),
@@ -353,7 +353,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
             message.text,
             style: const TextStyle(
               fontSize: 16,
-              color: Colors.black87,
+              color: Colors.black,
             ),
           ),
           const SizedBox(height: 4),
@@ -420,32 +420,29 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
-      if (didPop) return; // Si ya se permitió el pop, no hacer nada
-      // Navegar a AuthCheckMain
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const AuthCheckMain()),
-      );
-    },
+        if (didPop) return; // Si ya se permitió el pop, no hacer nada
+        // Navegar a AuthCheckMain
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthCheckMain()),
+        );
+      },
       child: Scaffold(
-        backgroundColor: _backgroundColor,
         appBar: AppBar(
-          backgroundColor: _backgroundColor,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-      onPressed: () {
-            // Mantener la misma lógica de navegación para el botón de retroceso de la AppBar
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const AuthCheckMain()),
-            );
-          },
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () {
+              // Mantener la misma lógica de navegación para el botón de retroceso de la AppBar
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const AuthCheckMain()),
+              );
+            },
           ),
           title: const Text(
             'Chat de voz',
             style: TextStyle(
-              color: Colors.black,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -454,14 +451,14 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
               Padding(
                 padding: EdgeInsets.only(right: 10),
                 child: TextButton.icon(
-                  icon: Icon(Icons.save, color: Colors.white, size: 22),
+                  icon: Icon(Icons.save, color: Colors.black, size: 22),
                   label: Text(
                     'Guardar'.tr(),
                     style: TextStyle(color: Colors.black, fontSize: 14),
                   ),
                   onPressed: _saveChat,
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.white.withOpacity(0.8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -471,78 +468,87 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
               ),
           ],
         ),
-        body: _isLoading
-            ? Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 6.0,
-                  valueColor: AlwaysStoppedAnimation<Color>(ivoryColor),
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                ),
-              )
-            : Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      _statusMessage,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+        body: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(
+                  'assets/images/fondoPantalla1.png'), // Ruta de la imagen
+              fit: BoxFit.cover, // Ajustar la imagen para cubrir todo el fondo
+            ),
+          ),
+          child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 6.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(ivoryColor),
+                    backgroundColor: Colors.white.withOpacity(0.3),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          if (_conversationState.isThinking)
-                            const LinearProgressIndicator(),
-                          Expanded(
-                            child: ListView.builder(
-                              reverse: true,
-                              itemCount: _conversationState.messages.length,
-                              itemBuilder: (context, index) {
-                                return _buildMessageBubble(
-                                    _conversationState.messages[index]);
-                              },
-                            ),
-                          ),
-                        ],
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        _statusMessage,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Visibility(
-                      visible: _showMicButton,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton(
-                            onPressed: _navigateToRecordingScreen,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: FrutiaColors.accent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            if (_conversationState.isThinking)
+                              const LinearProgressIndicator(),
+                            Expanded(
+                              child: ListView.builder(
+                                reverse: true,
+                                itemCount: _conversationState.messages.length,
+                                itemBuilder: (context, index) {
+                                  return _buildMessageBubble(
+                                      _conversationState.messages[index]);
+                                },
                               ),
-                              padding: const EdgeInsets.all(20),
-                              minimumSize: const Size(50, 50),
                             ),
-                            child: const Icon(
-                              Icons.mic,
-                              size: 30,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Visibility(
+                        visible: _showMicButton,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: _navigateToRecordingScreen,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: FrutiaColors.accent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                padding: const EdgeInsets.all(20),
+                                minimumSize: const Size(50, 50),
+                              ),
+                              child: const Icon(
+                                Icons.mic,
+                                size: 30,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

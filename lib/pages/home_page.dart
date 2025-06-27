@@ -76,66 +76,66 @@ class _HomePageState extends State<HomePage> {
   }
 // En _HomePageState dentro de HomePage.dart
 
-Future<void> _completeDayFromHome() async {
-  // Guardamos las referencias al Navigator y ScaffoldMessenger antes de cualquier 'await'
-  // para evitar advertencias del linter sobre usar el BuildContext en un flujo asíncrono.
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
-  final navigator = Navigator.of(context);
-  if (!mounted) return;
-
-  // Inicia el estado de carga para el botón/tarjeta de la racha.
-  setState(() => _isStreakButtonLoading = true);
-
-  try {
-    // ------------------- INICIO DE LA CORRECCIÓN -------------------
-
-    // PASO 1: Llama al servicio para que el backend guarde el día como completo.
-    // La respuesta de esta función no contiene el historial de rachas, por lo que no la capturamos.
-    await RachaProgresoService.marcarDiaCompleto();
+  Future<void> _completeDayFromHome() async {
+    // Guardamos las referencias al Navigator y ScaffoldMessenger antes de cualquier 'await'
+    // para evitar advertencias del linter sobre usar el BuildContext en un flujo asíncrono.
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     if (!mounted) return;
 
-    // PASO 2: Llama inmediatamente a la función que obtiene el perfil completo del usuario.
-    // Esta función SÍ obtendrá el 'streak_history' actualizado desde el backend
-    // y llamará a setState internamente para reconstruir la UI, mostrando el check en el calendario.
-    await _fetchAndCheckProfile();
-    if (!mounted) return;
+    // Inicia el estado de carga para el botón/tarjeta de la racha.
+    setState(() => _isStreakButtonLoading = true);
 
-    // ------------------- FIN DE LA CORRECCIÓN -------------------
+    try {
+      // ------------------- INICIO DE LA CORRECCIÓN -------------------
 
-    // PASO 3: Ahora que la UI ya está actualizada, navega a la pantalla de progreso.
-    // El 'await' aquí es para esperar a que el usuario regrese de esta pantalla.
-    await navigator.push(
-      MaterialPageRoute(builder: (context) => const ProgressScreen()),
-    );
+      // PASO 1: Llama al servicio para que el backend guarde el día como completo.
+      // La respuesta de esta función no contiene el historial de rachas, por lo que no la capturamos.
+      await RachaProgresoService.marcarDiaCompleto();
+      if (!mounted) return;
 
-    // PASO 4: (Opcional pero recomendado) Al regresar, vuelve a refrescar por si algo cambió en la pantalla de progreso.
-    if (!mounted) return;
-    await _fetchAndCheckProfile();
+      // PASO 2: Llama inmediatamente a la función que obtiene el perfil completo del usuario.
+      // Esta función SÍ obtendrá el 'streak_history' actualizado desde el backend
+      // y llamará a setState internamente para reconstruir la UI, mostrando el check en el calendario.
+      await _fetchAndCheckProfile();
+      if (!mounted) return;
 
-    // PASO 5: Muestra el mensaje de éxito al usuario.
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(
-        content: Text('¡Día completado! Tu racha continúa.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  } catch (e) {
-    // Si ocurre un error en cualquiera de los pasos, muéstrale un mensaje al usuario.
-    if (mounted) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-            content: Text('Error al completar el día: ${e.toString()}'),
-            backgroundColor: Colors.red),
+      // ------------------- FIN DE LA CORRECCIÓN -------------------
+
+      // PASO 3: Ahora que la UI ya está actualizada, navega a la pantalla de progreso.
+      // El 'await' aquí es para esperar a que el usuario regrese de esta pantalla.
+      await navigator.push(
+        MaterialPageRoute(builder: (context) => const ProgressScreen()),
       );
-    }
-  } finally {
-    // Se ejecuta siempre, haya éxito o error.
-    // Asegura que el estado de carga se desactive para que el usuario pueda volver a intentarlo.
-    if (mounted) {
-      setState(() => _isStreakButtonLoading = false);
+
+      // PASO 4: (Opcional pero recomendado) Al regresar, vuelve a refrescar por si algo cambió en la pantalla de progreso.
+      if (!mounted) return;
+      await _fetchAndCheckProfile();
+
+      // PASO 5: Muestra el mensaje de éxito al usuario.
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('¡Día completado! Tu racha continúa.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // Si ocurre un error en cualquiera de los pasos, muéstrale un mensaje al usuario.
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+              content: Text('Error al completar el día: ${e.toString()}'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      // Se ejecuta siempre, haya éxito o error.
+      // Asegura que el estado de carga se desactive para que el usuario pueda volver a intentarlo.
+      if (mounted) {
+        setState(() => _isStreakButtonLoading = false);
+      }
     }
   }
-}
 
   Future<void> _fetchAndCheckProfile() async {
     if (!mounted) return;
@@ -340,9 +340,7 @@ class _DashboardView extends StatelessWidget {
           _buildWeekCalendar(context, streakHistory),
           const SizedBox(height: 24),
           _buildStatsRow(context, streakDays, currentWeight, mainGoal),
-          const SizedBox(height: 24),
-          _buildUpcomingMealCard(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(hasPlan ? 'Tu plan de hoy' : 'Crea tu plan',
@@ -357,6 +355,8 @@ class _DashboardView extends StatelessWidget {
           ),
           if (hasPlan) const SizedBox(height: 16),
           const SizedBox(height: 40),
+          _buildUpcomingMealCard(),
+          const SizedBox(height: 24),
           MembershipStatusWidget(isPremium: false, onUpgradePressed: () {}),
           const SizedBox(height: 40),
           _buildAchievementsSection(),
@@ -427,7 +427,6 @@ class _DashboardView extends StatelessWidget {
                         value: mainGoal,
                         label: 'Objetivo',
                         color: Colors.green)),
-           
               ])
             ]))
         .animate()
@@ -530,7 +529,7 @@ class _DashboardView extends StatelessWidget {
                       didComply ? Icons.check_circle : Icons.circle_outlined,
                       size: 16,
                       color: isToday
-                          ? Colors.white.withOpacity(0.8)
+                          ? Colors.green.withOpacity(0.8)
                           : (didComply ? Colors.green : Colors.grey.shade400),
                     ),
                   ],

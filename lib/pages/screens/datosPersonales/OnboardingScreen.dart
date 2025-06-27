@@ -7,6 +7,7 @@ import 'package:Frutia/services/profile_service.dart';
 import 'package:Frutia/utils/ChoiceChipCard.dart';
 import 'package:Frutia/utils/CustomTextField.dart';
 import 'package:Frutia/utils/CustomTimePickerField.dart';
+import 'package:Frutia/utils/LoadingMessagesWidget.dart';
 import 'package:Frutia/utils/SelectionCard.dart';
 import 'package:Frutia/utils/SportSelection.dart';
 import 'package:Frutia/utils/colors.dart';
@@ -552,17 +553,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
                       duration: 300.ms,
                       curve: Curves.easeOut,
                     ),
-                const SizedBox(height: 10),
-                Text(
-                  'Espere un momento, no salgas de la app.',
-                  style: GoogleFonts.lato(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: FrutiaColors.primaryText,
-                    letterSpacing: 0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                const SizedBox(height: 16),
+                const LoadingMessagesWidget(), //
               ],
             ),
           ),

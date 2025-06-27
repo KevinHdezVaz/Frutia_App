@@ -64,7 +64,8 @@ class MyPlanDetailsScreen extends StatelessWidget {
       backgroundColor: FrutiaColors.primaryBackground,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(title, imagePath),
+          // LÍNEA NUEVA
+          _buildSliverAppBar(context, title, imagePath),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -106,21 +107,119 @@ class MyPlanDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSliverAppBar(String title, String? imagePath) {
+  void _showFullScreenImageFromUrl(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Visor interactivo para zoom y paneo
+              InteractiveViewer(
+                panEnabled: true,
+                boundaryMargin: const EdgeInsets.all(20),
+                minScale: 0.5,
+                maxScale: 4,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  // Muestra un indicador de carga mientras la imagen se descarga
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child:
+                        Icon(Icons.broken_image, color: Colors.white, size: 50),
+                  ),
+                ),
+              ),
+              // Botón para cerrar
+              Positioned(
+                top: 10,
+                right: 10,
+                child: CircleAvatar(
+                  backgroundColor: Colors.black.withOpacity(0.6),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+// --- [MÉTODO MODIFICADO] ---
+  Widget _buildSliverAppBar(
+      BuildContext context, String title, String? imagePath) {
+    // Parámetro de context añadido
     print('MyPlanDetailsScreen: Construyendo SliverAppBar para $title');
 
     const String baseUrlApp = "https://frutia.aftconta.mx";
 
-    // --- ESTA ES LA LÍNEA A CORREGIR ---
-    // El backend devuelve algo como "/storage/meal_images/uuid.png"
-    // Esta URL ya es relativa al dominio base, por lo que solo necesitamos concatenarla.
-    // Si el backend devolviera solo "meal_images/uuid.png", necesitaríamos añadir "/storage/".
-    // Por ahora, asumimos que el backend ya incluye "/storage/".
     final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
         ? baseUrlApp + imagePath
         : null;
 
     print('MyPlanDetailsScreen: URL completa construida: $fullImageUrl');
+
+    // Widget para la imagen de fondo, ahora interactivo
+    Widget backgroundImageWidget;
+    if (fullImageUrl != null) {
+      backgroundImageWidget = GestureDetector(
+        // --- NUEVO: GestureDetector para hacer la imagen tappable
+        onTap: () => _showFullScreenImageFromUrl(context,
+            fullImageUrl), // --- NUEVO: Llama a la función de pantalla completa
+        child: Stack(
+          // --- NUEVO: Stack para superponer el icono
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              fullImageUrl,
+              fit: BoxFit.cover,
+              color: Colors.black.withOpacity(0.4),
+              colorBlendMode: BlendMode.darken,
+              errorBuilder: (context, error, stackTrace) {
+                print(
+                    'MyPlanDetailsScreen: Error cargando imagen desde $fullImageUrl: $error');
+                return Container(
+                  color: Colors.grey,
+                  child: const Center(
+                      child: Icon(Icons.broken_image,
+                          color: Colors.white, size: 50)),
+                );
+              },
+            ),
+            // --- NUEVO: Icono de pantalla completa para dar una pista visual
+            const Positioned(
+              bottom: 10,
+              right: 10,
+              child: Icon(Icons.fullscreen, color: Colors.white70, size: 28),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Si no hay URL, el placeholder no es interactivo
+      backgroundImageWidget = Container(
+        color: Colors.grey,
+        child: const Center(
+            child:
+                Icon(Icons.image_not_supported, color: Colors.white, size: 50)),
+      );
+    }
 
     return SliverAppBar(
       expandedHeight: 250.0,
@@ -137,30 +236,8 @@ class MyPlanDetailsScreen extends StatelessWidget {
               fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
           textAlign: TextAlign.center,
         ),
-        background: fullImageUrl != null
-            ? Image.network(
-                fullImageUrl, // Usamos la URL completa corregida
-                fit: BoxFit.cover,
-                color: Colors.black.withOpacity(0.4),
-                colorBlendMode: BlendMode.darken,
-                errorBuilder: (context, error, stackTrace) {
-                  print(
-                      'MyPlanDetailsScreen: Error cargando imagen desde $fullImageUrl: $error');
-                  return Container(
-                    color: Colors.grey,
-                    child: const Center(
-                        child: Icon(Icons.broken_image,
-                            color: Colors.white, size: 50)),
-                  );
-                },
-              )
-            // Si no hay URL, muestra un placeholder
-            : Container(
-                color: Colors.grey,
-                child: const Center(
-                    child: Icon(Icons.image_not_supported,
-                        color: Colors.white, size: 50)),
-              ),
+        // --- MODIFICADO: Se usa el nuevo widget interactivo
+        background: backgroundImageWidget,
       ),
     );
   }

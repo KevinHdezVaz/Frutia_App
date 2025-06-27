@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert'; // For jsonDecode
 import 'dart:io';
+import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/services/storage_service.dart'; // To get authentication token
 import 'package:Frutia/utils/constantes.dart'; // To get baseUrl
 import 'package:flutter/material.dart'; // For debugPrint
@@ -81,6 +82,71 @@ class PlanService {
     }
   }
 
+  // --- AÑADE ESTA NUEVA FUNCIÓN ---
+  Future<Map<String, dynamic>> generateAlternativeRecipe({
+    required String originalRecipeName,
+    required String mealType,
+    required String dietaryStyle,
+    required List<dynamic> ingredients,
+  }) async {
+    final token = await _storage.getToken();
+    if (token == null) throw AuthException('No autenticado.');
+
+    final url = Uri.parse('$baseUrl/recipes/generate-alternative');
+
+    final body = json.encode({
+      'original_recipe_name': originalRecipeName,
+      'meal_type': mealType,
+      'dietary_style': dietaryStyle,
+      'ingredients': ingredients,
+    });
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(
+          'Error al generar la receta alternativa. Código: ${response.statusCode}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getCurrentPlan() async {
+    final token = await _storage.getToken();
+    if (token == null) throw AuthException('No autenticado.');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/plan/current'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      // El backend devuelve el plan completo dentro de una clave 'data'
+      if (responseData.containsKey('data')) {
+        return responseData['data'];
+      } else {
+        throw Exception('Respuesta inesperada del servidor.');
+      }
+    } else if (response.statusCode == 404) {
+      throw Exception('No se encontró un plan activo.');
+    } else {
+      throw Exception(
+          'Error al obtener el plan. Código: ${response.statusCode}');
+    }
+  }
+
   /// Fetches the current active meal plan for the authenticated user.
   /// This does NOT call the AI and is cheaper.
   Future<Map<String, dynamic>> getCurrentMealPlan() async {
@@ -93,6 +159,32 @@ class PlanService {
     } catch (e) {
       debugPrint('Error en getCurrentMealPlan: $e');
       rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> generateNewPlan() async {
+    final token = await _storage.getToken();
+    if (token == null) throw AuthException('No autenticado.');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/plan/generate'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 201) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      // El backend devuelve el plan completo dentro de una clave 'data'
+      if (responseData.containsKey('data')) {
+        return responseData['data'];
+      } else {
+        throw Exception('Respuesta inesperada del servidor.');
+      }
+    } else {
+      throw Exception(
+          'Error al generar el plan. Código: ${response.statusCode}');
     }
   }
 

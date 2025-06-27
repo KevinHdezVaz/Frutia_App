@@ -75,8 +75,6 @@ class _MyPlanPageState extends State<MyPlanPage>
     }
   }
 
- 
-
   @override
   void dispose() {
     _tabController?.dispose();
@@ -283,15 +281,12 @@ class MealListView extends StatelessWidget {
 
         // El mapa 'item' ahora viene del método .toJson() corregido
         final title = item['opcion'] ?? 'Sin nombre';
-    
 
-
-                  // --- ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE! ---
+        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN CLAVE! ---
         // 1. Obtenemos el mapa 'details' de forma segura.
         final details = item['details'] as Map<String, dynamic>? ?? {};
         // 2. Buscamos 'image_url' DENTRO de 'details'.
         final imagePath = details['image_url'] as String?;
-        
 
         // Construimos la URL absoluta y completa
         final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
@@ -320,7 +315,7 @@ class MealListView extends StatelessWidget {
                   child: fullImageUrl != null
                       ? Image.network(
                           fullImageUrl, // Usamos la URL completa
-                          fit: BoxFit.cover,
+                          fit: BoxFit.fitWidth,
                           loadingBuilder: (context, child, progress) =>
                               progress == null
                                   ? child
