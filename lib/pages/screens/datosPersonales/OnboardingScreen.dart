@@ -97,8 +97,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         // The `removeEmojis` function will be used to clean `DB_VALUE` for comparison.
         final Map<String, String> goalMap = {
           '🔥 Bajar grasa': 'Bajar grasa',
-          '💪 Aumentar músculo': 'Aumentar musculo',
-          '🥗 Comer más saludable': 'Comer mas saludable',
+          '💪 Aumentar músculo': 'Aumentar músculo',
+          '🥗 Comer más saludable': 'Comer más saludable',
           '📈 Mejorar rendimiento': 'Mejorar rendimiento',
         };
         final Map<String, String> activityLevelMap = {
@@ -116,7 +116,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           '5–6 veces por semana (frecuente) 🔥':
               '5–6 veces por semana (frecuente)', // Matches DB value from SQL dump
           'Todos los días (alta frecuencia) 🏃‍♂️':
-              'Todos los dias (alta frecuencia)',
+              'Todos los días (alta frecuencia)',
         };
         final Map<String, String> mealCountMap = {
           '🍽️ 2 comidas principales (Ej: almuerzo y cena)':
@@ -963,7 +963,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           const QuestionnaireTitleARRIBA(
             title: 'Sobre ti 👤',
           ),
-          const QuestionnaireTitle(
+
+          /*   const QuestionnaireTitle(
               title: 'Primero lo primero. Escribe tu nombre. ', isSub: true),
           CustomTextField(
             label: 'Nombre',
@@ -971,6 +972,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             onChanged: (val) => provider.update(() => provider.name = val),
             errorText: validationErrors['name'],
           ),
+          */
           const SizedBox(height: 16),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,

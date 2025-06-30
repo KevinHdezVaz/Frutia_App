@@ -3,9 +3,10 @@ import 'dart:io';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // Importa si no lo tienes
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:onesignal_flutter/onesignal_flutter.dart'; // ¡Importa OneSignal!
 
 import '../model/User.dart' as frutia;
 
@@ -55,9 +56,10 @@ class AuthService {
 
     if (response.statusCode == 201) {
       await _storage.saveToken(data['token']);
+      // Despúes de un registro exitoso, intenta enviar el Player ID
+      await _sendOneSignalPlayerIdToBackend(); // <--- Llamada aquí
       return data;
     } else {
-      // Laravel validation errors (422) a menudo vienen con un mapa de errores
       String errorMessage = data['message'] ?? 'Ocurrió un error desconocido.';
       if (data['errors'] != null) {
         errorMessage = data['errors'].values.first[0];
@@ -88,7 +90,11 @@ class AuthService {
         throw AuthException("No se obtuvo token de Firebase");
       }
 
-      return await _sendTokenToBackend(firebaseToken, 'google');
+      final success = await _sendTokenToBackend(firebaseToken, 'google');
+      if (success) {
+        await _sendOneSignalPlayerIdToBackend(); // <--- Llamada aquí
+      }
+      return success;
     } on AuthException catch (e) {
       debugPrint('Error de autenticación: ${e.message}');
       rethrow;
@@ -111,17 +117,13 @@ class AuthService {
       final data = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        // Guardar token como en el registro/login normal
         await _storage.saveToken(data['token']);
 
-        // Guardar usuario si viene en la respuesta
         if (data['user'] != null) {
           await _storage.saveUser(frutia.User.fromJson(data['user']));
         }
-
         return true;
       } else {
-        // Manejar otros códigos de estado (401, 422, etc.)
         String errorMessage =
             data['message'] ?? 'Error en autenticación con Google';
         if (data['errors'] != null) {
@@ -152,6 +154,7 @@ class AuthService {
 
     if (response.statusCode == 200) {
       await _storage.saveToken(data['token']);
+      await _sendOneSignalPlayerIdToBackend(); // <--- Llamada aquí
       return data;
     } else {
       throw AuthException(data['message'] ?? 'Credenciales inválidas.');
@@ -174,6 +177,7 @@ class AuthService {
     } finally {
       // Siempre elimina el token local, incluso si la llamada a la API falla.
       await _storage.removeToken();
+      // Opcional: Remover External ID de OneSignal al cerrar sesión
     }
   }
 
@@ -193,4 +197,62 @@ class AuthService {
       throw AuthException('No se pudo obtener el perfil.');
     }
   }
+
+  // --- NUEVO MÉTODO: Obtener y Enviar OneSignal Player ID ---
+  Future<void> _sendOneSignalPlayerIdToBackend() async {
+    try {
+      // Obtén el Player ID de OneSignal
+      // Puede tomar un momento para que OneSignal lo inicialice,
+      // por eso el pequeño retraso o la verificación de que no sea nulo.
+      String? playerId = OneSignal.User.pushSubscription.id;
+
+      if (playerId == null) {
+        print('OneSignal Player ID no disponible. Intentando de nuevo...');
+        // Opcional: Esperar un poco más o reintentar
+        await Future.delayed(const Duration(seconds: 2));
+        playerId = OneSignal.User.pushSubscription.id;
+        if (playerId == null) {
+          print(
+              'OneSignal Player ID sigue sin estar disponible. No se enviará al backend.');
+          return;
+        }
+      }
+
+      print('OneSignal Player ID obtenido: $playerId');
+
+      final String apiUrl =
+          '$baseUrl/user/update-onesignal-id'; // URL de tu API
+      final String? token = await _storage.getToken();
+
+      if (token == null) {
+        print(
+            'No hay token de autenticación disponible para enviar el Player ID.');
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'onesignal_player_id': playerId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print(
+            'OneSignal Player ID enviado y guardado en el backend con éxito.');
+      } else {
+        print(
+            'Error al enviar OneSignal Player ID al backend: ${response.statusCode}');
+        print('Respuesta del backend: ${response.body}');
+      }
+    } catch (e) {
+      print('Excepción al intentar enviar OneSignal Player ID al backend: $e');
+    }
+  }
+  // --- FIN NUEVO MÉTODO ---
 }

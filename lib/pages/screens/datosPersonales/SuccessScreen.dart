@@ -55,11 +55,9 @@ class _SuccessScreenState extends State<SuccessScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Stack para la imagen de fondo y la animación Lottie
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Imagen de fondo detrás de la animación Lottie con efecto circular
                       ClipOval(
                         child: Image.asset(
                           'assets/images/imagenFrutia.png',
@@ -68,7 +66,6 @@ class _SuccessScreenState extends State<SuccessScreen> {
                           fit: BoxFit.cover,
                         ),
                       ),
-                      // Lottie animation with scaling effect
                       Animate(
                         effects: [
                           ScaleEffect(
@@ -89,7 +86,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                       ),
                     ],
                   ),
-                   // Text with fade-in animation
+                  // Text with fade-in animation
                   Animate(
                     effects: [
                       FadeEffect(duration: 800.ms, curve: Curves.easeOut)

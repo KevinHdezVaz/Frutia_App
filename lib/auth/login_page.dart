@@ -4,7 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/auth/forget_pass_page.dart';
-import 'package:Frutia/utils/colors.dart'; // Import FrutiaColors
+import 'package:Frutia/utils/colors.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart'; // Import FrutiaColors
 
 class LoginPage extends StatefulWidget {
   final VoidCallback showLoginPage;
@@ -61,6 +62,35 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> _requestNotificationPermissions() async {
+    try {
+      // Verificar si ya tiene permisos
+      final bool hasPermission = await OneSignal.Notifications.permission;
+
+      if (!hasPermission) {
+        // Solicitar permiso
+        final bool permissionGranted =
+            await OneSignal.Notifications.requestPermission(true);
+
+        if (permissionGranted) {
+          print("Permisos de notificación concedidos");
+          // Opcional: mostrar mensaje al usuario
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Notificaciones activadas")),
+          );
+        } else {
+          print("Permisos de notificación denegados");
+          // Opcional: mostrar mensaje al usuario
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Notificaciones desactivadas")),
+          );
+        }
+      }
+    } catch (e) {
+      print("Error al verificar permisos de notificación: $e");
+    }
+  }
+
   // Email/Password Sign-In Logic
   Future<void> signIn() async {
     // if (!validateLogin()) return; // Se asume que la validación se hace antes.
@@ -82,6 +112,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       );
 
       Navigator.of(context).pop(); // Cierra el diálogo de carga
+
+      await _requestNotificationPermissions();
 
       // Navega a la pantalla principal si el login es exitoso
       Navigator.of(context).pushReplacement(
@@ -431,10 +463,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                         if (!mounted) return;
                                         Navigator.pop(
                                             context); // Cierra el diálogo de carga
+
+                                        if (success) {
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    AuthCheckMain()),
+                                          );
+                                        }
                                       } catch (e) {
                                         if (!mounted) return;
                                         Navigator.pop(
                                             context); // Cierra el diálogo de carga
+                                        showErrorSnackBar(
+                                            "Error al iniciar sesión con Google");
                                       }
                                     },
                                     style: OutlinedButton.styleFrom(

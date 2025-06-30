@@ -62,10 +62,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
           if (profile['ultima_fecha_racha'] != null) {
             _lastStreakUpdateDate =
                 DateTime.parse(profile['ultima_fecha_racha']);
-            // CAMBIO: Calculamos y guardamos los días de inactividad
             final todayUTC = DateTime.now().toUtc();
             _daysSinceLastStreak =
                 todayUTC.difference(_lastStreakUpdateDate!).inDays;
+            print('--- DEBUG Racha ---');
+            print('Racha actual: $_currentStreak');
+            print(
+                'Última fecha racha: $_lastStreakUpdateDate (UTC: ${_lastStreakUpdateDate?.toUtc()})');
+            print('Hoy UTC: $todayUTC');
+            print('Días sin racha: $_daysSinceLastStreak');
+            print('-------------------');
           } else {
             _daysSinceLastStreak = 0;
           }
@@ -427,7 +433,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   Widget _buildNode() {
     // CAMBIO: Lógica de imagen actualizada para mostrar la versión "triste".
     String imagePath;
-    bool isSad = widget.isCurrent &&
+    bool isSad =
         (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3);
 
     if (widget.currentStreak >= 30) {
@@ -443,8 +449,9 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
           ? 'assets/images/frutaProgresoSad4.png'
           : 'assets/images/frutaProgreso4.png';
     } else {
-      imagePath =
-          'assets/images/frutaProgreso1.png'; // No hay versión triste para el día 1
+      imagePath = isSad
+          ? 'assets/images/frutaProgresoSad1.png'
+          : 'assets/images/frutaProgreso1.png';
     }
 
     return Stack(

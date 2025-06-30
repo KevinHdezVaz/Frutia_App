@@ -68,7 +68,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final Color frutia_primary_text =
       Color(0xFF5D4037); // Marrón oscuro para texto
 
-// Colores mejorados para los bubbles
+  // Colores mejorados para los bubbles
   final Color user_bubble_color = const Color.fromARGB(
       255, 236, 112, 67); // Color principal para el usuario
 
@@ -151,15 +151,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return spans;
   }
 
-  final GlobalKey _saveButtonKey = GlobalKey();
-
+  // --- NEW: GlobalKeys for the new showcase targets ---
+  final GlobalKey _saveButtonKey = GlobalKey(debugLabel: 'saveButtonShowcase');
+  final GlobalKey _micButtonKey = GlobalKey(debugLabel: 'micButtonShowcase');
+  final GlobalKey _voiceChatButtonKey =
+      GlobalKey(debugLabel: 'voiceChatButtonShowcase');
 
   @override
   void initState() {
     super.initState();
     _messages = widget.initialMessages?.reversed.toList() ?? [];
     _currentSessionId = widget.sessionId;
-    _isSaved = widget.sessionId != null && widget.initialMessages != null;
+    // For testing, force _isSaved to false to ensure showcase runs
+    _isSaved =
+        false; // widget.sessionId != null && widget.initialMessages != null;
 
     for (var message in _messages) {
       _updateTokenCount(message.text);
@@ -171,39 +176,61 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     )..repeat(reverse: true);
 
     _sunAnimation = Tween<double>(begin: 30.0, end: 40.0).animate(
-      // Reduced size
       CurvedAnimation(parent: _sunController, curve: Curves.easeInOut),
     );
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        debugPrint('¿Widget montado?: $mounted');
+        debugPrint('¿Context disponible?: ${context != null}');
+        debugPrint(
+            '¿ShowCaseWidget disponible?: ${ShowCaseWidget.of(context) != null}');
+
+        // Give the UI a bit more time to render after post-frame callback
+        Future.delayed(const Duration(milliseconds: 500), () {
+          // Reduced from 1000ms
+          if (mounted) {
+            _showShowcase();
+          }
+        });
+      }
+    });
+
     _initializeSpeech();
     _typingTimer = Timer.periodic(Duration.zero, (_) {});
- 
   }
 
-// MODIFICADO: Usaremos el context de la GlobalKey para más seguridad
-Future<void> _showShowcase() async {
-  if (_saveButtonKey.currentContext == null) {
-    print("Showcase DEBUG: El contexto del botón es nulo. No se puede mostrar.");
-    return;
+  Future<void> _showShowcase() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Set this to false for testing, or true if you want it to show only once
+      // Currently, it's always false, so it will show every time the screen loads
+      final bool showcaseShown = false;
+
+      if (!showcaseShown && !_isSaved && mounted) {
+        // Collect all the keys you want to showcase in order
+        final List<GlobalKey> keysToShow = [
+          _saveButtonKey,
+          _micButtonKey,
+          _voiceChatButtonKey,
+        ];
+
+        // Ensure the ShowCaseWidget context is available before starting
+        if (ShowCaseWidget.of(context).mounted) {
+          ShowCaseWidget.of(context).startShowCase(keysToShow);
+          await prefs.setBool('chatShowcaseShown', true);
+        } else {
+          debugPrint(
+              'Showcase DEBUG: ShowCaseWidget is not mounted in context.');
+        }
+      } else {
+        debugPrint(
+            'Showcase DEBUG: Showcase conditions not met or already shown.');
+      }
+    } catch (e) {
+      debugPrint('Error showing showcase: $e');
+    }
   }
-
-  final prefs = await SharedPreferences.getInstance();
-  final bool showcaseShown = prefs.getBool('chatShowcaseShown') ?? false;
-
-  // Imprime los valores para saber por qué no entra al if
-  print("========= Showcase DEBUG =========");
-  print("¿La guía ya fue mostrada? (showcaseShown): $showcaseShown");
-  print("¿El chat está guardado? (_isSaved): $_isSaved");
-  print("Condición final (!showcaseShown && !_isSaved): ${!showcaseShown && !_isSaved}");
-  print("==================================");
-
-
-  if (!showcaseShown && !_isSaved) {
-    print("Showcase DEBUG: ¡Entrando a mostrar el showcase!");
-    ShowCaseWidget.of(_saveButtonKey.currentContext!).startShowCase([_saveButtonKey]);
-    await prefs.setBool('chatShowcaseShown', true);
-  }
-}
 
   Future<void> _initializeSpeech() async {
     try {
@@ -526,8 +553,6 @@ Future<void> _showShowcase() async {
     }
   }
 
-  // Elimina esta línea:
-// String _transcribedText = '';
   Future<void> _startListening() async {
     if (_isListening) return;
 
@@ -831,6 +856,119 @@ Future<void> _showShowcase() async {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        _navigateBack(context);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: frutia_background,
+        body: Builder(
+          builder: (innerContext) => Stack(
+            children: [
+              _FloatingParticles(),
+              if (_isLoading)
+                Center(
+                  child: CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+                    strokeWidth: 6.0,
+                    backgroundColor: Colors.white.withOpacity(0.3),
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    AppBar(
+                      backgroundColor: FrutiaColors.accent,
+                      elevation: 0,
+                      leading: IconButton(
+                        icon: Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () => _navigateBack(innerContext),
+                      ),
+                      actions: [
+                        if (!_isSaved)
+                          Showcase(
+                            key: _saveButtonKey,
+                            title: 'Guardar Chat',
+                            description:
+                                'Usa este botón para guardar la conversación, si no la guardas se perdera.',
+                            tooltipBackgroundColor: FrutiaColors.accent,
+                            targetShapeBorder: const CircleBorder(),
+                            titleTextStyle: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            descTextStyle: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            disableMovingAnimation: true,
+                            disableScaleAnimation: true,
+                            child: Padding(
+                              padding: EdgeInsets.only(right: 10),
+                              child: TextButton.icon(
+                                icon: Icon(Icons.save,
+                                    color: Colors.white, size: 22),
+                                label: Text(
+                                  "Guardar Chat",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 14),
+                                ),
+                                onPressed: _saveChat,
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      Colors.white.withOpacity(0.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Column(
+                            children: [
+                              Expanded(
+                                child: ListView.builder(
+                                  reverse: true,
+                                  itemCount:
+                                      _messages.length + (_isTyping ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (_isTyping && index == 0) {
+                                      return _buildTypingIndicator();
+                                    }
+                                    final messageIndex =
+                                        _isTyping ? index - 1 : index;
+                                    return _buildMessageBubble(
+                                        _messages[messageIndex]);
+                                  },
+                                ),
+                              ),
+                              _buildInput(),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildKeyboardInput() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -840,7 +978,6 @@ Future<void> _showShowcase() async {
           const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
-              // Calcular la altura basada en el contenido
               final textPainter = TextPainter(
                 text: TextSpan(
                   text: _controller.text.isEmpty ? ' ' : _controller.text,
@@ -878,23 +1015,41 @@ Future<void> _showShowcase() async {
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            _isListening ? Icons.stop_circle : Icons.mic_none,
-                            color:
-                                _isListening ? Colors.red : FrutiaColors.accent,
-                            size: _isListening ? 30 : 24,
+                        // --- SHOWCASE FOR MIC ICON ---
+                        Showcase(
+                          key: _micButtonKey,
+                          title: 'Entrada de Voz',
+                          description:
+                              'Si no qiueres escribir, puedes tocar aqui para grabar tu mensaje o detener la grabación.',
+                          tooltipBackgroundColor: FrutiaColors.accent,
+                          targetShapeBorder: const CircleBorder(),
+                          titleTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
+                          descTextStyle: const TextStyle(
+                              color: Colors.white, fontSize: 14),
+                          disableMovingAnimation: true,
+                          disableScaleAnimation: true,
+                          child: IconButton(
+                            icon: Icon(
+                              _isListening ? Icons.stop_circle : Icons.mic_none,
+                              color: _isListening
+                                  ? Colors.red
+                                  : FrutiaColors.accent,
+                              size: _isListening ? 30 : 24,
+                            ),
+                            tooltip: _isListening
+                                ? 'Detener grabación'
+                                : 'Iniciar grabación',
+                            onPressed: () async {
+                              if (_isListening) {
+                                await _stopListening();
+                              } else {
+                                await _startListening();
+                              }
+                            },
                           ),
-                          tooltip: _isListening
-                              ? 'Detener grabación'
-                              : 'Iniciar grabación',
-                          onPressed: () async {
-                            if (_isListening) {
-                              await _stopListening();
-                            } else {
-                              await _startListening();
-                            }
-                          },
                         ),
                         if (_controller.text.isNotEmpty)
                           IconButton(
@@ -907,35 +1062,52 @@ Future<void> _showShowcase() async {
                             },
                           ),
                         if (_controller.text.isEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.record_voice_over,
-                                color: FrutiaColors.accent,
-                                size: 22,
-                              ),
-                              tooltip: 'Chat de voz avanzado',
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        VoiceChatScreen(language: "es"),
+                          // --- SHOWCASE FOR VOICE CHAT ICON ---
+                          Showcase(
+                            key: _voiceChatButtonKey,
+                            title: 'Chat de Voz Avanzado',
+                            description:
+                                'Inicia una conversación de voz fluida con la IA.',
+                            tooltipBackgroundColor: FrutiaColors.accent,
+                            targetShapeBorder: const CircleBorder(),
+                            titleTextStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                            descTextStyle: const TextStyle(
+                                color: Colors.white, fontSize: 14),
+                            disableMovingAnimation: true,
+                            disableScaleAnimation: true,
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
                                   ),
-                                );
-                              },
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.record_voice_over,
+                                  color: FrutiaColors.accent,
+                                  size: 22,
+                                ),
+                                tooltip: 'Chat de voz avanzado',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          VoiceChatScreen(language: "es"),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                       ],
@@ -1006,122 +1178,6 @@ Future<void> _showShowcase() async {
       ],
     );
   }
-
-
-  @override
-Widget build(BuildContext context) {
-  // CORRECCIÓN: La propiedad 'builder' recibe una función (context) => Widget,
-  // no un widget 'Builder'.
-  return ShowCaseWidget(
-    builder: (context) => WillPopScope(
-      onWillPop: () async {
-        _navigateBack(context);
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: frutia_background,
-        body: Stack(
-          children: [
-            _FloatingParticles(),
-            if (_isLoading)
-              Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
-                  strokeWidth: 6.0,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                ),
-              )
-            else
-              Column(
-                children: [
-                  AppBar(
-                    backgroundColor: FrutiaColors.accent,
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () => _navigateBack(context),
-                    ),
-                   actions: [
-  if (!_isSaved)
-    // CORRECCIÓN: Reemplaza solo este widget Showcase
-    Showcase(
-      key: _saveButtonKey,
-      title: 'Guardar Chat',
-      description: 'Usa este botón para guardar la conversación. Si no lo haces, el historial se perderá al salir.',
-      
-      // PARÁMETROS CORREGIDOS SEGÚN TU VERSIÓN:
-      tooltipBackgroundColor: FrutiaColors.accent,
-      targetShapeBorder: const CircleBorder(), // Para hacer circular el resalte sobre el botón
-      
-      // ESTILOS QUE YA TENÍAS (Y SON CORRECTOS):
-      titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold),
-      descTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 14),
-
-      child: Padding(
-        padding: EdgeInsets.only(right: 10),
-        child: TextButton.icon(
-          icon: Icon(Icons.save,
-              color: Colors.white, size: 22),
-          label: Text(
-            "Guardar Chat",
-            style: TextStyle(
-                color: Colors.white, fontSize: 14),
-          ),
-          onPressed: _saveChat,
-          style: TextButton.styleFrom(
-            backgroundColor: Colors.white.withOpacity(0.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: EdgeInsets.symmetric(
-                horizontal: 12, vertical: 6),
-          ),
-        ),
-      ),
-    ),
-],
-                  ),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Column(
-                          children: [
-                            Expanded(
-                              child: ListView.builder(
-                                reverse: true,
-                                itemCount:
-                                    _messages.length + (_isTyping ? 1 : 0),
-                                itemBuilder: (context, index) {
-                                  if (_isTyping && index == 0) {
-                                    return _buildTypingIndicator();
-                                  }
-                                  final messageIndex =
-                                      _isTyping ? index - 1 : index;
-                                  return _buildMessageBubble(
-                                      _messages[messageIndex]);
-                                },
-                              ),
-                            ),
-                            _buildInput(),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-  
 }
 
 class _FloatingParticles extends StatefulWidget {

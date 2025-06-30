@@ -11,6 +11,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import for SharedPreferences
+import 'package:showcaseview/showcaseview.dart'; // Import for ShowcaseView
 
 enum PageState { loading, error, needsOnboarding, needsPlan, hasPlan }
 
@@ -74,45 +76,28 @@ class _HomePageState extends State<HomePage> {
       _canCompleteStreakToday = difference >= 1;
     });
   }
-// En _HomePageState dentro de HomePage.dart
 
   Future<void> _completeDayFromHome() async {
-    // Guardamos las referencias al Navigator y ScaffoldMessenger antes de cualquier 'await'
-    // para evitar advertencias del linter sobre usar el BuildContext en un flujo asíncrono.
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     if (!mounted) return;
 
-    // Inicia el estado de carga para el botón/tarjeta de la racha.
     setState(() => _isStreakButtonLoading = true);
 
     try {
-      // ------------------- INICIO DE LA CORRECCIÓN -------------------
-
-      // PASO 1: Llama al servicio para que el backend guarde el día como completo.
-      // La respuesta de esta función no contiene el historial de rachas, por lo que no la capturamos.
       await RachaProgresoService.marcarDiaCompleto();
       if (!mounted) return;
 
-      // PASO 2: Llama inmediatamente a la función que obtiene el perfil completo del usuario.
-      // Esta función SÍ obtendrá el 'streak_history' actualizado desde el backend
-      // y llamará a setState internamente para reconstruir la UI, mostrando el check en el calendario.
       await _fetchAndCheckProfile();
       if (!mounted) return;
 
-      // ------------------- FIN DE LA CORRECCIÓN -------------------
-
-      // PASO 3: Ahora que la UI ya está actualizada, navega a la pantalla de progreso.
-      // El 'await' aquí es para esperar a que el usuario regrese de esta pantalla.
       await navigator.push(
         MaterialPageRoute(builder: (context) => const ProgressScreen()),
       );
 
-      // PASO 4: (Opcional pero recomendado) Al regresar, vuelve a refrescar por si algo cambió en la pantalla de progreso.
       if (!mounted) return;
       await _fetchAndCheckProfile();
 
-      // PASO 5: Muestra el mensaje de éxito al usuario.
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('¡Día completado! Tu racha continúa.'),
@@ -120,7 +105,6 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     } catch (e) {
-      // Si ocurre un error en cualquiera de los pasos, muéstrale un mensaje al usuario.
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
@@ -129,8 +113,6 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } finally {
-      // Se ejecuta siempre, haya éxito o error.
-      // Asegura que el estado de carga se desactive para que el usuario pueda volver a intentarlo.
       if (mounted) {
         setState(() => _isStreakButtonLoading = false);
       }
@@ -223,14 +205,19 @@ class _HomePageState extends State<HomePage> {
         return const SizedBox.shrink(key: ValueKey('onboarding'));
       case PageState.needsPlan:
       case PageState.hasPlan:
+        // Pass a key to _DashboardView so it can be reconstructed if needed
         return _DashboardView(
-          key: const ValueKey('dashboard'),
+          key: ValueKey(
+              'dashboard_${_pageState == PageState.hasPlan ? "hasPlan" : "needsPlan"}'),
           userData: _userData!,
           canCompleteStreakToday: _canCompleteStreakToday,
           isStreakButtonLoading: _isStreakButtonLoading,
           onCompleteStreak: _completeDayFromHome,
           streakHistory: _streakHistory,
           daysSinceLastStreak: _daysSinceLastStreak,
+          // Propiedad para indicar si se debe mostrar el showcase
+          shouldShowShowcase:
+              true, // Puedes controlar esto con una bandera real de SharedPreferences
         );
       case PageState.error:
         return _buildErrorUI(key: const ValueKey('error'));
@@ -278,13 +265,15 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _DashboardView extends StatelessWidget {
+// --- Convert _DashboardView to StatefulWidget ---
+class _DashboardView extends StatefulWidget {
   final Map<String, dynamic> userData;
   final bool canCompleteStreakToday;
   final bool isStreakButtonLoading;
   final VoidCallback onCompleteStreak;
   final Set<String> streakHistory;
   final int daysSinceLastStreak;
+  final bool shouldShowShowcase; // New property to control showcase
 
   const _DashboardView({
     super.key,
@@ -294,7 +283,99 @@ class _DashboardView extends StatelessWidget {
     required this.onCompleteStreak,
     required this.streakHistory,
     required this.daysSinceLastStreak,
+    this.shouldShowShowcase = false, // Default to false
   });
+
+  @override
+  State<_DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<_DashboardView> {
+  // GlobalKeys for showcase targets in Dashboard
+  final GlobalKey _streakReminderKey =
+      GlobalKey(debugLabel: 'homepageStreakReminderShowcase');
+  final GlobalKey _weekCalendarKey =
+      GlobalKey(debugLabel: 'homepageWeekCalendarShowcase');
+  final GlobalKey _streakStatKey =
+      GlobalKey(debugLabel: 'homepageStreakStatShowcase');
+  final GlobalKey _weightStatKey =
+      GlobalKey(debugLabel: 'homepageWeightStatShowcase');
+  final GlobalKey _goalStatKey =
+      GlobalKey(debugLabel: 'homepageGoalStatShowcase');
+  final GlobalKey _createPlanCardKey =
+      GlobalKey(debugLabel: 'homepageCreatePlanCardShowcase');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return; // Add this check immediately
+      if (widget.shouldShowShowcase) {
+        _showHomePageShowcase();
+      }
+    });
+  }
+
+  Future<void> _showHomePageShowcase() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Re-check mounted after the first async operation
+    if (!mounted) {
+      debugPrint(
+          'HomePage: Showcase skipped as DashboardView is unmounted after prefs load.');
+      return;
+    }
+
+    final bool homePageShowcaseShown =
+        prefs.getBool('homePageShowcaseShown') ?? false;
+
+    if (!homePageShowcaseShown) {
+      // No need for `&& mounted` here, handled above
+      await Future.delayed(const Duration(milliseconds: 800));
+      // Crucial: Check mounted *again* after the delay
+      if (!mounted) {
+        debugPrint(
+            'HomePage: Showcase skipped as DashboardView is unmounted after delay.');
+        return;
+      }
+
+      List<GlobalKey> keysToShow = [];
+
+      final bool hasPlan = widget.userData['profile'] != null &&
+          (widget.userData['profile']['plan_setup_complete'] == true ||
+              widget.userData['profile']['plan_setup_complete'] == 1);
+
+      if (hasPlan) {
+        if (widget.canCompleteStreakToday) {
+          keysToShow.add(_streakReminderKey);
+        }
+      }
+
+      keysToShow.add(_weekCalendarKey);
+      keysToShow.add(_streakStatKey);
+
+      if (!hasPlan) {
+        keysToShow.add(_createPlanCardKey);
+      }
+
+      // Final check before using context to start showcase
+      if (keysToShow.isNotEmpty &&
+          mounted &&
+          ShowCaseWidget.of(context).mounted) {
+        ShowCaseWidget.of(context).startShowCase(keysToShow);
+        await prefs.setBool('homePageShowcaseShown', true);
+        debugPrint('HomePage: Showcase started!');
+      } else {
+        debugPrint(
+            'HomePage: No keys to show or ShowCaseWidget is not mounted or DashboardView is unmounted before starting showcase.');
+        if (!mounted) debugPrint('DashboardView was unmounted.');
+        if (!ShowCaseWidget.of(context).mounted)
+          debugPrint('ShowCaseWidget context was unmounted.');
+      }
+    } else {
+      debugPrint(
+          'HomePage: Showcase conditions not met or already shown for HomePage.');
+    }
+  }
 
   String _getUpcomingMeal() {
     final hour = DateTime.now().hour;
@@ -306,8 +387,8 @@ class _DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> user = userData['user'] ?? {};
-    final Map<String, dynamic> profileData = userData['profile'] ?? {};
+    final Map<String, dynamic> user = widget.userData['user'] ?? {};
+    final Map<String, dynamic> profileData = widget.userData['profile'] ?? {};
     final String userName = user['name'] ?? 'Usuario';
     final bool hasPlan = profileData.isNotEmpty &&
         (profileData['plan_setup_complete'] == true ||
@@ -315,9 +396,9 @@ class _DashboardView extends StatelessWidget {
     final String currentWeight = profileData['weight']?.toString() ?? '--';
     final String mainGoal = profileData['goal'] ?? 'No definido';
 
-    // CAMBIO: El valor de la racha ahora depende de si se perdió o no.
-    final int streakDays =
-        (daysSinceLastStreak >= 4) ? 0 : (profileData['racha_actual'] ?? 0);
+    final int streakDays = (widget.daysSinceLastStreak >= 4)
+        ? 0
+        : (profileData['racha_actual'] ?? 0);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -326,20 +407,57 @@ class _DashboardView extends StatelessWidget {
         children: [
           _buildProfileHeader(userName, context),
           const SizedBox(height: 24),
-          if (hasPlan) ...[
-            // CAMBIO: Se muestra el recordatorio siempre que haya plan, y su contenido cambia.
-            _StreakReminderCard(
-              streakCount: streakDays,
-              isLoading: isStreakButtonLoading,
-              onPressed: onCompleteStreak,
-              daysSinceLastStreak: daysSinceLastStreak,
-              canCompleteToday: canCompleteStreakToday,
+          // --- Showcase for _StreakReminderCard ---
+          if (hasPlan &&
+              widget
+                  .canCompleteStreakToday) // Only show if has plan and can complete today
+            Showcase(
+              key: _streakReminderKey,
+              title: 'Completa tu día',
+              description:
+                  'Toca aquí para marcar tu día como completado y mantener o iniciar tu racha. ¡Hazlo diario!',
+              tooltipBackgroundColor: FrutiaColors.accent,
+              targetShapeBorder: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12))),
+              titleTextStyle: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
+              descTextStyle:
+                  GoogleFonts.lato(color: Colors.white, fontSize: 14),
+              disableMovingAnimation: true,
+              disableScaleAnimation: true,
+              child: _StreakReminderCard(
+                streakCount: streakDays,
+                isLoading: widget.isStreakButtonLoading,
+                onPressed: widget.onCompleteStreak,
+                daysSinceLastStreak: widget.daysSinceLastStreak,
+                canCompleteToday: widget.canCompleteStreakToday,
+              ),
             ),
-            const SizedBox(height: 24),
-          ],
-          _buildWeekCalendar(context, streakHistory),
           const SizedBox(height: 24),
-          _buildStatsRow(context, streakDays, currentWeight, mainGoal),
+          // --- Showcase for Week Calendar ---
+          Showcase(
+            key: _weekCalendarKey,
+            title: 'Tu progreso semanal',
+            description:
+                'Aquí puedes ver los días que has completado tu plan y el estado de tu racha diaria.',
+            tooltipBackgroundColor: FrutiaColors.accent,
+            targetShapeBorder: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16))),
+            titleTextStyle: GoogleFonts.poppins(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            descTextStyle: GoogleFonts.lato(color: Colors.white, fontSize: 14),
+            disableMovingAnimation: true,
+            disableScaleAnimation: true,
+            child: _buildWeekCalendar(context, widget.streakHistory),
+          ),
+          const SizedBox(height: 24),
+          // --- Showcase for Stats Row (the whole row, for the first stat) ---
+          // The key is on the first StatCard, which will highlight that card specifically.
+          // If you wanted to highlight the entire row as one block, you'd wrap the Row itself.
+          _buildStatsRow(context, streakDays, currentWeight,
+              mainGoal), // This method now handles individual showcases
           const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -350,8 +468,27 @@ class _DashboardView extends StatelessWidget {
           const SizedBox(height: 30),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child:
-                hasPlan ? const PlanCarousel() : _buildCreatePlanCard(context),
+            // --- Showcase for Create Plan Card (if no plan) ---
+            child: hasPlan
+                ? const PlanCarousel()
+                : Showcase(
+                    key: _createPlanCardKey,
+                    title: 'Crea tu plan de alimentación',
+                    description:
+                        'Toca aquí para iniciar tu viaje con un plan totalmente personalizado. ¡Es tu primer paso!',
+                    tooltipBackgroundColor: FrutiaColors.accent,
+                    targetShapeBorder: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12))),
+                    titleTextStyle: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                    descTextStyle:
+                        GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                    disableMovingAnimation: true,
+                    disableScaleAnimation: true,
+                    child: _buildCreatePlanCard(context),
+                  ),
           ),
           if (hasPlan) const SizedBox(height: 16),
           const SizedBox(height: 40),
@@ -399,6 +536,7 @@ class _DashboardView extends StatelessWidget {
         .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
+  // --- _buildStatsRow now wraps individual StatCards with Showcase ---
   Widget _buildStatsRow(BuildContext context, int streakDays,
       String currentWeight, String mainGoal) {
     return Padding(
@@ -406,27 +544,77 @@ class _DashboardView extends StatelessWidget {
             child: Column(children: [
               Row(children: [
                 Expanded(
-                    child: _StatCard(
-                        icon: Icons.local_fire_department_rounded,
-                        value: '$streakDays días',
-                        label: 'Racha',
-                        color: Colors.orange)),
+                  child: Showcase(
+                      key: _streakStatKey, // Highlight individual stat card
+                      title: 'Tu racha actual',
+                      description:
+                          'Los días consecutivos que has completado tu plan.',
+                      tooltipBackgroundColor: FrutiaColors.accent,
+                      targetShapeBorder: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12))),
+                      titleTextStyle: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
+                      descTextStyle:
+                          GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                      disableMovingAnimation: true,
+                      disableScaleAnimation: true,
+                      child: _StatCard(
+                          icon: Icons.local_fire_department_rounded,
+                          value: '$streakDays días',
+                          label: 'Racha',
+                          color: Colors.orange)),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: _StatCard(
-                        icon: Icons.monitor_weight_rounded,
-                        value: '$currentWeight kg',
-                        label: 'Peso actual',
-                        color: Colors.blue))
+                    child: Showcase(
+                        key: _weightStatKey,
+                        title: 'Tu peso',
+                        description:
+                            'Consulta tu peso actual para seguir tu progreso.',
+                        tooltipBackgroundColor: FrutiaColors.accent,
+                        targetShapeBorder: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12))),
+                        titleTextStyle: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        descTextStyle:
+                            GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                        disableMovingAnimation: true,
+                        disableScaleAnimation: true,
+                        child: _StatCard(
+                            icon: Icons.monitor_weight_rounded,
+                            value: '$currentWeight kg',
+                            label: 'Peso actual',
+                            color: Colors.blue)))
               ]),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(
-                    child: _StatCard(
-                        icon: Icons.flag_rounded,
-                        value: mainGoal,
-                        label: 'Objetivo',
-                        color: Colors.green)),
+                    child: Showcase(
+                        key: _goalStatKey,
+                        title: 'Tu objetivo',
+                        description: 'Tu meta de salud principal. ¡A por ella!',
+                        tooltipBackgroundColor: FrutiaColors.accent,
+                        targetShapeBorder: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12))),
+                        titleTextStyle: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        descTextStyle:
+                            GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                        disableMovingAnimation: true,
+                        disableScaleAnimation: true,
+                        child: _StatCard(
+                            icon: Icons.flag_rounded,
+                            value: mainGoal,
+                            label: 'Objetivo',
+                            color: Colors.green)))
               ])
             ]))
         .animate()
@@ -622,10 +810,10 @@ class _DashboardView extends StatelessWidget {
                   child: ElevatedButton(
                       onPressed: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const QuestionnaireFlow()));
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const QuestionnaireFlow()),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
@@ -698,10 +886,10 @@ class _StreakReminderCard extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onPressed;
   final int daysSinceLastStreak;
-  // CAMBIO: Se añade este booleano para decidir si el botón debe ser visible.
   final bool canCompleteToday;
 
   const _StreakReminderCard({
+    super.key, // Added super.key for consistency
     required this.streakCount,
     required this.isLoading,
     required this.onPressed,
@@ -711,9 +899,8 @@ class _StreakReminderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // CAMBIO: El widget entero se oculta si no se puede completar la racha hoy.
     if (!canCompleteToday) {
-      return const SizedBox.shrink(); // No muestra nada si ya se cumplió hoy.
+      return const SizedBox.shrink();
     }
 
     String title;
@@ -721,7 +908,6 @@ class _StreakReminderCard extends StatelessWidget {
     List<Color> gradientColors;
     IconData icon;
 
-    // Lógica para determinar el mensaje y estilo según los días de inactividad
     if (daysSinceLastStreak >= 4) {
       title = '¡Oh, no! Perdiste tu racha';
       subtitle = 'Llevabas $streakCount días. ¡Empieza una nueva hoy!';
@@ -734,7 +920,7 @@ class _StreakReminderCard extends StatelessWidget {
       icon = Icons.warning_amber_rounded;
     } else if (daysSinceLastStreak == 2) {
       title = '¡No te olvides de tu racha!';
-      subtitle = 'Te está esperando. ¡Sigue así!';
+      subtitle = 'Te está esperando. Llevas 2 dias sin racha';
       gradientColors = [Colors.amber.shade600, Colors.orange.shade800];
       icon = Icons.notification_important_rounded;
     } else {
@@ -881,7 +1067,8 @@ class _StatCard extends StatelessWidget {
   final String label;
   final Color color;
   const _StatCard(
-      {required this.icon,
+      {super.key, // Added super.key for consistency
+      required this.icon,
       required this.value,
       required this.label,
       required this.color});

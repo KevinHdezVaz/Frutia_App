@@ -81,6 +81,7 @@ dependencies:
   country_picker: ^2.0.26
   collection: ^1.19.0
   showcaseview: ^4.0.1
+  onesignal_flutter: ^5.3.3
 
 
 flutter_localizations:
@@ -102,7 +103,7 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icons/logoapp.webp"
+  image_path: "assets/images/fondoFrutia.png"
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

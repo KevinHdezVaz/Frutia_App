@@ -1,11 +1,10 @@
-// lib/main.dart
-
 import 'dart:async';
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/providers/ShoppingProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
@@ -15,9 +14,8 @@ import 'package:Frutia/services/settings/theme_data.dart';
 import 'package:Frutia/services/settings/theme_provider.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'firebase_options.dart';
-
-// --- AÑADE ESTA IMPORTACIÓN ---
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 // Llaves globales
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -38,9 +36,34 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // --- LÍNEA ELIMINADA ---
-  // Ya no necesitas la llamada manual a initializeDateFormatting.
-  // await initializeDateFormatting('es_ES', null);
+  // --- CONFIGURACIÓN CORRECTA PARA ONESIGNAL 5.3.3+ ---
+
+// Habilitar logs de depuración
+  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+  OneSignal.Debug.setAlertLevel(OSLogLevel.none);
+
+// Inicializa OneSignal con tu App ID
+  OneSignal.initialize("5fad8140-b31f-4893-b00f-5f896e38b7d6");
+
+// Configuración de manejadores de notificaciones:
+
+// 1. Manejador para cuando se abre una notificación
+  OneSignal.Notifications.addClickListener((event) {
+    print('NOTIFICATION OPENED HANDLER: ${event.notification.body}');
+    // Aquí puedes manejar la navegación basada en la notificación
+  });
+
+// 2. Manejador para notificaciones en primer plano
+  OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+    print(
+        'NOTIFICATION WILL DISPLAY IN FOREGROUND: ${event.notification.body}');
+    // Para mostrar la notificación, debes llamar a event.preventDefault() y luego mostrar manualmente
+    // o dejar que OneSignal la muestre automáticamente
+    event.preventDefault(); // Si quieres manejar la visualización manualmente
+    // event.notification.display(); // Para mostrar la notificación
+  });
+
+// Solicitar permisos
 
   runApp(
     MultiProvider(
@@ -49,15 +72,23 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => QuestionnaireProvider()),
       ],
-      child: MyApp(isviewed: isviewed),
+      child: ShowCaseWidget(
+        builder: (context) => MyApp(isviewed: isviewed),
+        autoPlay: false, // Desactiva el autoplay para control manual
+        enableAutoScroll: true, // Permite scroll automático a los elementos
+        blurValue: 1.5, // Valor del desenfoque del fondo
+      ),
     ),
   );
 }
 
-// ... El resto de tu código de main.dart permanece igual ...
-
 void _showPaymentMessage(String message, Color color) {
-  // ...
+  scaffoldMessengerKey.currentState?.showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: color,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -73,24 +104,25 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
           scaffoldMessengerKey: scaffoldMessengerKey,
-
-          // --- AÑADE ESTAS LÍNEAS PARA LA LOCALIZACIÓN ---
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [
-            Locale('es', 'ES'), // Español
-            Locale('en', 'US'), // Inglés (opcional)
+            Locale('es', 'ES'),
+            Locale('en', 'US'),
           ],
-          locale: const Locale('es', 'ES'), // Establece el idioma por defecto
-          // ---------------------------------------------
-
+          locale: const Locale('es', 'ES'),
           themeMode: themeProvider.currentTheme,
           theme: lightTheme,
           darkTheme: darkTheme,
           home: SplashScreen(isviewed: isviewed),
+          builder: (context, child) {
+            return ShowCaseWidget(
+              builder: (ctx) => child!,
+            );
+          },
         );
       },
     );
