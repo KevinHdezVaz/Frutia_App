@@ -2,6 +2,7 @@ import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/onscreen/QuestionnairePage.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
 import 'package:Frutia/services/RachaProgreso.dart';
 import 'package:Frutia/utils/PlanCarousel.dart';
@@ -171,7 +172,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         flexibleSpace: Container(
             decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -186,11 +186,189 @@ class _HomePageState extends State<HomePage> {
         elevation: 4,
         shadowColor: Colors.black.withOpacity(0.2),
       ),
+      drawer: _buildDrawer(context),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
         transitionBuilder: (child, animation) =>
             FadeTransition(opacity: animation, child: child),
         child: _buildUIForState(),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    final Map<String, dynamic> user = _userData?['user'] ?? {};
+    final String userName = user['name'] ?? 'Usuario';
+
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          color: FrutiaColors.primaryBackground,
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            // Encabezado del Drawer
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [FrutiaColors.accent, FrutiaColors.accent2],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    userName,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Mi cuenta',
+                    style: GoogleFonts.lato(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 500.ms),
+            // Opciones del menú
+            ListTile(
+              leading:
+                  Icon(Icons.trending_up_rounded, color: FrutiaColors.accent),
+              title: Text(
+                'Progreso',
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Cierra el drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ProgressScreen()),
+                );
+              },
+            ).animate().slideX(
+                  begin: -0.2,
+                  duration: 400.ms,
+                  delay: 200.ms,
+                  curve: Curves.easeOut,
+                ),
+
+            ListTile(
+              leading: Icon(Icons.settings_rounded, color: FrutiaColors.accent),
+              title: Text(
+                'Configuración',
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Cierra el drawer
+                // Placeholder para pantalla de configuración
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
+              },
+            ).animate().slideX(
+                  begin: -0.2,
+                  duration: 400.ms,
+                  delay: 400.ms,
+                  curve: Curves.easeOut,
+                ),
+            ListTile(
+              leading:
+                  Icon(Icons.description_rounded, color: FrutiaColors.accent),
+              title: Text(
+                'Términos y condiciones',
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Cierra el drawer
+                // Placeholder para pantalla de términos y condiciones
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => TermsAndConditionsScreen()));
+              },
+            ).animate().slideX(
+                  begin: -0.2,
+                  duration: 400.ms,
+                  delay: 500.ms,
+                  curve: Curves.easeOut,
+                ),
+            ListTile(
+              leading:
+                  Icon(Icons.privacy_tip_rounded, color: FrutiaColors.accent),
+              title: Text(
+                'Política de privacidad',
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Cierra el drawer
+                // Placeholder para pantalla de política de privacidad
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()));
+              },
+            ).animate().slideX(
+                  begin: -0.2,
+                  duration: 400.ms,
+                  delay: 600.ms,
+                  curve: Curves.easeOut,
+                ),
+            ListTile(
+              leading:
+                  Icon(Icons.help_outline_rounded, color: FrutiaColors.accent),
+              title: Text(
+                'Ayuda y soporte',
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Cierra el drawer
+                // Placeholder para pantalla de ayuda
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => HelpScreen()));
+              },
+            ).animate().slideX(
+                  begin: -0.2,
+                  duration: 400.ms,
+                  delay: 700.ms,
+                  curve: Curves.easeOut,
+                ),
+            const Divider(
+              color: Colors.grey,
+              height: 20,
+              thickness: 0.5,
+              indent: 16,
+              endIndent: 16,
+            ),
+            // Reutilizamos el botón de cerrar sesión existente
+            _btnLogout(context),
+          ],
+        ),
       ),
     );
   }
@@ -494,7 +672,7 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 40),
           _buildUpcomingMealCard(),
           const SizedBox(height: 24),
-          MembershipStatusWidget(isPremium: false, onUpgradePressed: () {}),
+          MembershipStatusWidget(isPremium: false),
           const SizedBox(height: 40),
           _buildAchievementsSection(),
           const SizedBox(height: 24),
@@ -527,10 +705,6 @@ class _DashboardViewState extends State<_DashboardView> {
                         style: GoogleFonts.lato(
                             fontSize: 22, fontWeight: FontWeight.bold))
                   ])),
-              IconButton(
-                  icon: const Icon(Icons.edit_outlined,
-                      color: FrutiaColors.secondaryText),
-                  onPressed: () {})
             ]))
         .animate()
         .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
@@ -1096,47 +1270,74 @@ class _StatCard extends StatelessWidget {
 
 class MembershipStatusWidget extends StatelessWidget {
   final bool isPremium;
-  final VoidCallback? onUpgradePressed;
-  const MembershipStatusWidget(
-      {super.key, required this.isPremium, this.onUpgradePressed});
+
+  const MembershipStatusWidget({
+    Key? key,
+    required this.isPremium,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: !isPremium ? onUpgradePressed : null,
-        child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                color: isPremium ? Colors.green[50] : Colors.red[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: isPremium ? Colors.green : Colors.red, width: 1.5)),
-            child: Row(children: [
-              Icon(isPremium ? Icons.verified_user : Icons.card_membership,
-                  color: isPremium ? Colors.green : Colors.red, size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(
-                        isPremium
-                            ? "Membresía Premium"
-                            : "Actualiza tu membresía",
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isPremium ? Colors.green : Colors.red)),
-                    const SizedBox(height: 4),
-                    Text(
-                        isPremium
-                            ? "Estás disfrutando de todos los beneficios premium"
-                            : "Desbloquea todas las funciones premium",
-                        style: const TextStyle(
-                            fontSize: 14, color: Colors.black87))
-                  ])),
-              if (!isPremium)
-                Icon(Icons.arrow_forward_ios, color: Colors.red, size: 16)
-            ])));
+      // La navegación solo se activa si el usuario NO es premium
+      onTap: !isPremium 
+        ? () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PremiumScreen()),
+            );
+          }
+        : null,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          // Usa el color correspondiente al estado de la membresía
+          color: isPremium ? Colors.green[50] : Colors.red[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isPremium ? Colors.green : Colors.red,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isPremium ? Icons.verified_user : Icons.card_membership,
+              color: isPremium ? Colors.green : Colors.red,
+              size: 28, // Tamaño ligeramente aumentado para más impacto
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPremium ? "Membresía Premium" : "Actualiza tu membresía",
+                    style: GoogleFonts.poppins( // Usando Poppins para consistencia
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isPremium ? Colors.green.shade800 : Colors.red.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPremium
+                        ? "Estás disfrutando de todos los beneficios"
+                        : "Desbloquea todas las funciones premium",
+                    style: GoogleFonts.lato( // Usando Lato para el cuerpo
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  )
+                ],
+              ),
+            ),
+            if (!isPremium)
+              Icon(Icons.arrow_forward_ios, color: Colors.red, size: 16),
+          ],
+        ),
+      ),
+    );
   }
 }

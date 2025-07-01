@@ -75,9 +75,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         if (permissionGranted) {
           print("Permisos de notificación concedidos");
           // Opcional: mostrar mensaje al usuario
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Notificaciones activadas")),
-          );
+       
         } else {
           print("Permisos de notificación denegados");
           // Opcional: mostrar mensaje al usuario
@@ -452,7 +450,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                           context: context,
                                           builder: (_) => Center(
                                             child: CircularProgressIndicator(
-                                              color: FrutiaColors.primary,
+                                              color: FrutiaColors.accent,
                                             ),
                                           ),
                                         );
