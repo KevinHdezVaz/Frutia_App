@@ -82,7 +82,10 @@ dependencies:
   collection: ^1.19.0
   showcaseview: ^4.0.1
   onesignal_flutter: ^5.3.3
-
+  pdf: ^3.10.8 # O la versión más reciente
+  printing: ^5.11.1 # O la versión más reciente
+  share_plus: ^7.0.0
+  open_file: ^3.5.10
 
 flutter_localizations:
     sdk: flutter

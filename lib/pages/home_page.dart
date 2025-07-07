@@ -2,9 +2,14 @@ import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/onscreen/QuestionnairePage.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:Frutia/pages/screens/drawer/HelpandSupport.dart';
+import 'package:Frutia/pages/screens/drawer/PrivacyPolitice.dart';
+import 'package:Frutia/pages/screens/drawer/TermsAndConditions.dart';
 import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
+import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
 import 'package:Frutia/services/RachaProgreso.dart';
+import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/utils/PlanCarousel.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -26,8 +31,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
+
+  final PlanService _planService = PlanService();
   PageState _pageState = PageState.loading;
   Map<String, dynamic>? _userData;
+  MealPlanData? _mealPlanData; // <-- AÑADIDO: Para guardar el plan completo
 
   bool _canCompleteStreakToday = false;
   bool _isStreakButtonLoading = false;
@@ -147,15 +155,29 @@ class _HomePageState extends State<HomePage> {
         }
       } else if (profile['plan_setup_complete'] != true &&
           profile['plan_setup_complete'] != 1) {
+        // El usuario tiene perfil pero no ha completado el plan
         setState(() {
           _userData = fullUserData;
           _pageState = PageState.needsPlan;
         });
       } else {
-        setState(() {
-          _userData = fullUserData;
-          _pageState = PageState.hasPlan;
-        });
+        // EL USUARIO TIENE UN PLAN, AHORA CARGAMOS LOS DETALLES
+        try {
+          final plan = await _planService.getCurrentPlan();
+          if (mounted) {
+            setState(() {
+              _userData = fullUserData;
+              _mealPlanData = plan; // <-- Guardamos el plan
+              _pageState = PageState.hasPlan;
+            });
+          }
+        } catch (e) {
+          // Si falla la carga del plan, se considera un error
+          setState(() {
+            _pageState = PageState.error;
+            _userData = fullUserData;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -276,26 +298,6 @@ class _HomePageState extends State<HomePage> {
                 ),
 
             ListTile(
-              leading: Icon(Icons.settings_rounded, color: FrutiaColors.accent),
-              title: Text(
-                'Configuración',
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Cierra el drawer
-                // Placeholder para pantalla de configuración
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
-              },
-            ).animate().slideX(
-                  begin: -0.2,
-                  duration: 400.ms,
-                  delay: 400.ms,
-                  curve: Curves.easeOut,
-                ),
-            ListTile(
               leading:
                   Icon(Icons.description_rounded, color: FrutiaColors.accent),
               title: Text(
@@ -308,7 +310,10 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(context); // Cierra el drawer
                 // Placeholder para pantalla de términos y condiciones
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => TermsAndConditionsScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TermsAndConditionsScreen()));
               },
             ).animate().slideX(
                   begin: -0.2,
@@ -329,7 +334,10 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(context); // Cierra el drawer
                 // Placeholder para pantalla de política de privacidad
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => PrivacyPolicyScreen()));
               },
             ).animate().slideX(
                   begin: -0.2,
@@ -350,7 +358,10 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(context); // Cierra el drawer
                 // Placeholder para pantalla de ayuda
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => HelpScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => HelpAndSupportScreen()));
               },
             ).animate().slideX(
                   begin: -0.2,
@@ -383,19 +394,17 @@ class _HomePageState extends State<HomePage> {
         return const SizedBox.shrink(key: ValueKey('onboarding'));
       case PageState.needsPlan:
       case PageState.hasPlan:
-        // Pass a key to _DashboardView so it can be reconstructed if needed
         return _DashboardView(
-          key: ValueKey(
-              'dashboard_${_pageState == PageState.hasPlan ? "hasPlan" : "needsPlan"}'),
+          key: ValueKey('dashboard_${_pageState.name}'),
           userData: _userData!,
+          mealPlanData:
+              _mealPlanData, // Pasamos el plan (puede ser null si es needsPlan)
           canCompleteStreakToday: _canCompleteStreakToday,
           isStreakButtonLoading: _isStreakButtonLoading,
           onCompleteStreak: _completeDayFromHome,
           streakHistory: _streakHistory,
           daysSinceLastStreak: _daysSinceLastStreak,
-          // Propiedad para indicar si se debe mostrar el showcase
-          shouldShowShowcase:
-              true, // Puedes controlar esto con una bandera real de SharedPreferences
+          shouldShowShowcase: true,
         );
       case PageState.error:
         return _buildErrorUI(key: const ValueKey('error'));
@@ -446,6 +455,8 @@ class _HomePageState extends State<HomePage> {
 // --- Convert _DashboardView to StatefulWidget ---
 class _DashboardView extends StatefulWidget {
   final Map<String, dynamic> userData;
+  final MealPlanData? mealPlanData; // <-- AÑADIDO: Recibe el plan
+
   final bool canCompleteStreakToday;
   final bool isStreakButtonLoading;
   final VoidCallback onCompleteStreak;
@@ -456,6 +467,8 @@ class _DashboardView extends StatefulWidget {
   const _DashboardView({
     super.key,
     required this.userData,
+    this.mealPlanData, // <-- AÑADIDO
+
     required this.canCompleteStreakToday,
     required this.isStreakButtonLoading,
     required this.onCompleteStreak,
@@ -568,9 +581,9 @@ class _DashboardViewState extends State<_DashboardView> {
     final Map<String, dynamic> user = widget.userData['user'] ?? {};
     final Map<String, dynamic> profileData = widget.userData['profile'] ?? {};
     final String userName = user['name'] ?? 'Usuario';
-    final bool hasPlan = profileData.isNotEmpty &&
-        (profileData['plan_setup_complete'] == true ||
-            profileData['plan_setup_complete'] == 1);
+    final bool hasPlan =
+        widget.mealPlanData != null; // La condición ahora es más simple
+
     final String currentWeight = profileData['weight']?.toString() ?? '--';
     final String mainGoal = profileData['goal'] ?? 'No definido';
 
@@ -639,7 +652,7 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(hasPlan ? 'Tu plan de hoy' : 'Crea tu plan',
+            child: Text(hasPlan ? 'Tus recetas de hoy' : 'Crea tu plan',
                 style: GoogleFonts.lato(
                     fontSize: 20, fontWeight: FontWeight.bold)),
           ),
@@ -648,7 +661,9 @@ class _DashboardViewState extends State<_DashboardView> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             // --- Showcase for Create Plan Card (if no plan) ---
             child: hasPlan
-                ? const PlanCarousel()
+                ? PlanCarousel(
+                    recipes:
+                        widget.mealPlanData!.recipes) // <-- PASAMOS LAS RECETAS
                 : Showcase(
                     key: _createPlanCardKey,
                     title: 'Crea tu plan de alimentación',
@@ -674,9 +689,8 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 24),
           MembershipStatusWidget(isPremium: false),
           const SizedBox(height: 40),
-          _buildAchievementsSection(),
-          const SizedBox(height: 24),
-          _btnLogout(context),
+          //   _buildAchievementsSection(),
+          //        _btnLogout(context),
           const SizedBox(height: 120),
         ],
       )
@@ -1280,14 +1294,14 @@ class MembershipStatusWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       // La navegación solo se activa si el usuario NO es premium
-      onTap: !isPremium 
-        ? () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const PremiumScreen()),
-            );
-          }
-        : null,
+      onTap: !isPremium
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PremiumScreen()),
+              );
+            }
+          : null,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         padding: const EdgeInsets.all(16),
@@ -1314,10 +1328,13 @@ class MembershipStatusWidget extends StatelessWidget {
                 children: [
                   Text(
                     isPremium ? "Membresía Premium" : "Actualiza tu membresía",
-                    style: GoogleFonts.poppins( // Usando Poppins para consistencia
+                    style: GoogleFonts.poppins(
+                      // Usando Poppins para consistencia
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: isPremium ? Colors.green.shade800 : Colors.red.shade800,
+                      color: isPremium
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1325,7 +1342,8 @@ class MembershipStatusWidget extends StatelessWidget {
                     isPremium
                         ? "Estás disfrutando de todos los beneficios"
                         : "Desbloquea todas las funciones premium",
-                    style: GoogleFonts.lato( // Usando Lato para el cuerpo
+                    style: GoogleFonts.lato(
+                      // Usando Lato para el cuerpo
                       fontSize: 14,
                       color: Colors.black87,
                     ),

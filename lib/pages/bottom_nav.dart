@@ -1,3 +1,5 @@
+import 'package:Frutia/pages/Pantalla1.dart';
+import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/PlaceholderScreen.dart';
 import 'package:Frutia/pages/screens/datosPersonales/PlanSummaryScreen.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +49,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
       ChatHistoryScreen(), // Al tocar "Frutia", irá a ChatHistoryPage
       PlaceholderScreen(),
       ProgressScreen(),
-      ProfilePage(),
+      PlanSummaryScreen(),
     ];
   }
 

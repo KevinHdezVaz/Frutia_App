@@ -60,7 +60,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                     children: [
                       ClipOval(
                         child: Image.asset(
-                          'assets/images/imagenFrutia.png',
+                          'assets/images/fondoAppFrutia.webp',
                           width: 200,
                           height: 200,
                           fit: BoxFit.cover,

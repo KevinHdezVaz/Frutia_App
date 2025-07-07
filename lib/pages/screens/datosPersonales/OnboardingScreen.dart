@@ -370,10 +370,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
       case 0: // WelcomeScreen
         return true;
       case 1: // PersonalInfoScreen: name, mainGoal, hasMedicalCondition, medicalConditionDetails
-        if (provider.name.isEmpty) {
-          _validationErrors['name'] = 'Por favor, ingresa tu nombre.';
-          isValid = false;
-        }
+
         if (provider.mainGoal == null) {
           errorMessages.add('Selecciona un objetivo principal.');
           isValid = false;
@@ -981,8 +978,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             onChanged: (val) => setState(() =>
                 provider.update(() => provider.hasMedicalCondition = val)),
             activeColor: FrutiaColors.accent,
-            secondary: const Text('👨‍⚕️',
-                style: TextStyle(fontSize: 24)), // Emoji de médico
+            secondary: const Text('👨‍⚕️', style: TextStyle(fontSize: 24)),
           ),
           if (provider.hasMedicalCondition)
             CustomTextField(

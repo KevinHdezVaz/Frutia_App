@@ -1,3 +1,5 @@
+import 'package:Frutia/pages/Pantalla1.dart';
+import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/CompraDetailScreen.dart';
 import 'package:Frutia/pages/screens/ModificationsScreen.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart'; // Assuming RecetasScreen is in this file or a separate one
@@ -334,14 +336,16 @@ class _InteractiveCardState extends State<_InteractiveCard>
               case 'Mi Plan':
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => MyPlanPage()),
+                  MaterialPageRoute(
+                      builder: (context) => ProfessionalMiPlanDiarioScreen()),
                 );
                 break;
               case 'Recetas':
                 Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => RecetasScreen()),
-                );
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PremiumRecetasScreen(),
+                    ));
                 break;
               case 'Compras':
                 Navigator.push(

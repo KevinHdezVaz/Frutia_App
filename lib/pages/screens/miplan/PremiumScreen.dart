@@ -2,7 +2,7 @@ import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
- 
+
 class PremiumScreen extends StatefulWidget {
   const PremiumScreen({Key? key}) : super(key: key);
 
@@ -22,7 +22,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color.fromARGB(255, 240, 121, 78), Color.fromARGB(255, 243, 214, 135)],
+                colors: [
+                  Color.fromARGB(255, 66, 65, 65),
+                  Color.fromARGB(255, 153, 153, 153)
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -67,8 +70,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        const Icon(Icons.workspace_premium_rounded, color: FrutiaColors.accent, size: 60)
-            .animate().scale(delay: 200.ms, duration: 500.ms, curve: Curves.elasticOut),
+        const Icon(Icons.workspace_premium_rounded,
+                color: FrutiaColors.accent, size: 60)
+            .animate()
+            .scale(delay: 200.ms, duration: 500.ms, curve: Curves.elasticOut),
         const SizedBox(height: 16),
         Text(
           'Eleva tu Experiencia Frutia',
@@ -78,7 +83,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
-        ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.5, curve: Curves.easeOut),
+        )
+            .animate()
+            .fadeIn(delay: 300.ms)
+            .slideY(begin: 0.5, curve: Curves.easeOut),
         const SizedBox(height: 8),
         Text(
           'Desbloquea todas las funciones premium para alcanzar tus metas más rápido.',
@@ -113,7 +121,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
           subtitle: 'Accede a un recetario premium en constante crecimiento.',
           delay: 700.ms,
         ),
-         _FeatureListItem(
+        _FeatureListItem(
           icon: Icons.analytics_rounded,
           title: 'Análisis de Progreso Detallado',
           subtitle: 'Gráficos y estadísticas avanzadas sobre tu evolución.',
@@ -241,11 +249,15 @@ class _FeatureListItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: GoogleFonts.lato(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.lato(fontSize: 14, color: Colors.white.withOpacity(0.8)),
+                  style: GoogleFonts.lato(
+                      fontSize: 14, color: Colors.white.withOpacity(0.8)),
                 ),
               ],
             ),
@@ -284,7 +296,9 @@ class _PlanOptionCard extends StatelessWidget {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+          color: isSelected
+              ? Colors.white.withOpacity(0.2)
+              : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? FrutiaColors.accent : Colors.transparent,
@@ -296,15 +310,26 @@ class _PlanOptionCard extends StatelessWidget {
           children: [
             Column(
               children: [
-                Text(title, style: GoogleFonts.lato(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(title,
+                    style: GoogleFonts.lato(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(price, style: GoogleFonts.poppins(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                    Text(period, style: GoogleFonts.lato(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                    Text(price,
+                        style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold)),
+                    Text(period,
+                        style: GoogleFonts.lato(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14)),
                   ],
                 ),
                 if (originalPrice != null)
@@ -323,7 +348,8 @@ class _PlanOptionCard extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: FrutiaColors.accent,
                     borderRadius: BorderRadius.circular(8),
@@ -331,7 +357,10 @@ class _PlanOptionCard extends StatelessWidget {
                   child: Text(
                     tag!,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

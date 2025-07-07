@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/providers/ShoppingProvider.dart';
+import 'package:Frutia/services/providers/MealPlanProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -50,7 +51,6 @@ Future<void> main() async {
 // 1. Manejador para cuando se abre una notificación
   OneSignal.Notifications.addClickListener((event) {
     print('NOTIFICATION OPENED HANDLER: ${event.notification.body}');
-    // Aquí puedes manejar la navegación basada en la notificación
   });
 
 // 2. Manejador para notificaciones en primer plano
@@ -71,6 +71,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ShoppingProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => QuestionnaireProvider()),
+        //  ChangeNotifierProvider(create: (context) => MealPlanProvider()),
       ],
       child: ShowCaseWidget(
         builder: (context) => MyApp(isviewed: isviewed),

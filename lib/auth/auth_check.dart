@@ -2,32 +2,45 @@
 
 import 'package:flutter/material.dart';
 import 'package:Frutia/auth/auth_page_check.dart';
-import 'package:Frutia/pages/bottom_nav.dart'; // O directamente HomePage si prefieres
+import 'package:Frutia/pages/bottom_nav.dart';
 import 'package:Frutia/services/storage_service.dart';
 
-class AuthCheckMain extends StatelessWidget {
+// 1. Convierte el widget a StatefulWidget
+class AuthCheckMain extends StatefulWidget {
   const AuthCheckMain({super.key});
+
+  @override
+  State<AuthCheckMain> createState() => _AuthCheckMainState();
+}
+
+class _AuthCheckMainState extends State<AuthCheckMain> {
+  // 2. Declara una variable para guardar la future
+  late Future<String?> _checkTokenFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // 3. Llama a tu función UNA SOLA VEZ aquí y asigna la future
+    _checkTokenFuture = StorageService().getToken();
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String?>(
-      // 1. Revisa si existe un token guardado
-      future: StorageService().getToken(),
+      // 4. Usa la variable que no cambia en cada reconstrucción
+      future: _checkTokenFuture,
       builder: (context, snapshot) {
-        // Mientras espera, muestra un indicador de carga
+        // Esta lógica ya estaba correcta y no necesita cambios
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // 2. Si HAY un token, el usuario está logueado
         if (snapshot.hasData && snapshot.data != null) {
-          // Lo mandamos a la app principal (que contiene la HomePage)
-          return const BottomNavBar(); // O la HomePage directamente
+          return const BottomNavBar();
         }
 
-        // 3. Si NO hay token, lo mandamos a la página de autenticación
         return const AuthPageCheck();
       },
     );

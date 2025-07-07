@@ -205,8 +205,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       final prefs = await SharedPreferences.getInstance();
       // Set this to false for testing, or true if you want it to show only once
       // Currently, it's always false, so it will show every time the screen loads
-      final bool showcaseShown = false;
-
+      final bool showcaseShown = prefs.getBool('chatShowcaseShown') ??
+          false; // Leer de SharedPreferences
       if (!showcaseShown && !_isSaved && mounted) {
         // Collect all the keys you want to showcase in order
         final List<GlobalKey> keysToShow = [

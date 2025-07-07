@@ -51,6 +51,8 @@ class _RecetasScreenState extends State<RecetasScreen>
 
       setState(() {
         // Cargar solo las recetas alternativas
+
+        /*
         _breakfastOptions =
             mealPlanData.alternativas['desayuno']?.option.isNotEmpty ?? false
                 ? [mealPlanData.alternativas['desayuno']!.toJson()]
@@ -68,6 +70,8 @@ class _RecetasScreenState extends State<RecetasScreen>
                 ? [mealPlanData.alternativas['snacks']!.toJson()]
                 : [];
         _recommendations = List<String>.from(mealPlanData.recomendaciones);
+
+        */
       });
     } catch (e) {
       if (mounted) {

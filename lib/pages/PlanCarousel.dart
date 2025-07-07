@@ -1,33 +1,29 @@
-// lib/utils/PlanCarousel.dart
-
-import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../pages/screens/miplan/plan_data.dart';
-// import 'package:Frutia/pages/screens/recetas/premium_recetas_screen.dart'; // Asegúrate de tener esta pantalla
+import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/pages/screens/miplan/plan_data.dart'; // Asegúrate que la ruta sea correcta
+// Si RecipeDetailScreen está en otro archivo, impórtalo también
+// import 'package:Frutia/pages/screens/recetas/premium_recetas_screen.dart';
 
 class PlanCarousel extends StatelessWidget {
-  // 1. AHORA RECIBE LA LISTA DE RECETAS, YA NO CARGA NADA
+  // 1. AÑADIMOS EL PARÁMETRO PARA RECIBIR LAS RECETAS
   final List<InspirationRecipe> recipes;
 
   const PlanCarousel({Key? key, required this.recipes}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // 2. COMPRUEBA SI LA LISTA ESTÁ VACÍA
     if (recipes.isEmpty) {
-      return const SizedBox(
-        height: 220,
-        child: Center(child: Text("No hay recetas de inspiración en tu plan.")),
-      );
+      // Mensaje por si el plan no tuviera recetas de inspiración
+      return const Center(
+          child: Text("No hay recetas de inspiración en tu plan."));
     }
 
-    // 3. CONSTRUYE EL CARRUSEL CON LOS DATOS RECIBIDOS
     return SizedBox(
-      height: 220,
+      height: 220, // Altura fija para el carrusel
       child: PageView.builder(
-        controller: PageController(viewportFraction: 0.85),
+        controller: PageController(
+            viewportFraction: 0.85), // Efecto de ver la tarjeta siguiente
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
@@ -47,7 +43,7 @@ class _PlanCarouselCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         // Esta navegación requiere que tengas la pantalla RecipeDetailScreen
-        // Si la moviste de premium_recetas_screen, ajusta el import
+        // Si no la tienes, puedes comentar esta línea por ahora.
         // Navigator.push(context, MaterialPageRoute(builder: (context) => RecipeDetailScreen(recipe: recipe)));
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Navegando a ${recipe.title}")));

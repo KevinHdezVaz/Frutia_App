@@ -48,7 +48,7 @@ class ProfilePage extends StatelessWidget {
                 Center(
                   child: ClipOval(
                     child: Image.asset(
-                      'assets/images/imagenFrutia.png',
+                      'assets/images/fondoAppFrutia.webp',
                       height: 200,
                       fit: BoxFit.cover,
                     ).animate().fadeIn(duration: 300.ms).scale(

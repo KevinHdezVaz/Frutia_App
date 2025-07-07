@@ -51,15 +51,15 @@ class _MyPlanPageState extends State<MyPlanPage>
       }
 
       setState(() {
-        _breakfastOptions =
-            mealPlanData.desayunos.map((item) => item.toJson()).toList();
-        _lunchOptions =
-            mealPlanData.almuerzos.map((item) => item.toJson()).toList();
-        _dinnerOptions =
-            mealPlanData.cenas.map((item) => item.toJson()).toList();
-        _snackOptions =
-            mealPlanData.snacks.map((item) => item.toJson()).toList();
-        _recommendations = List<String>.from(mealPlanData.recomendaciones);
+        // _breakfastOptions =
+        //       mealPlanData.desayunos.map((item) => item.toJson()).toList();
+        // _lunchOptions =
+        //     mealPlanData.almuerzos.map((item) => item.toJson()).toList();
+        // _dinnerOptions =
+        //    mealPlanData.cenas.map((item) => item.toJson()).toList();
+        //_snackOptions =
+        //    mealPlanData.snacks.map((item) => item.toJson()).toList();
+        //  _recommendations = List<String>.from(mealPlanData.recomendaciones);
       });
     } catch (e) {
       if (mounted) {

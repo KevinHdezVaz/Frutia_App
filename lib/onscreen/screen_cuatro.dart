@@ -27,7 +27,7 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
     super.initState();
     // Initialize the video controller
     _videoController = VideoPlayerController.asset(
-      'assets/images/videoDocSaludando.mp4',
+      'assets/images/videoFrutiaProgreso.mp4',
     )..initialize().then((_) {
         if (mounted) {
           setState(() {
@@ -90,7 +90,7 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
       );
     }
 
-    Widget ProfessionalItem(String text) {
+    Widget BenefitItem(String text) {
       return Padding(
         padding: EdgeInsets.only(bottom: 8),
         child: Row(
@@ -99,9 +99,9 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
             Padding(
               padding: const EdgeInsets.only(top: 4, right: 8),
               child: Icon(
-                Icons.circle,
-                size: 8,
-                color: Colors.black87,
+                Icons.check_circle,
+                size: 20,
+                color: Colors.green,
               ),
             ),
             Expanded(
@@ -144,7 +144,7 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Estamos respaldados por profesionales",
+                          "Tu progreso con Frutia",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -153,16 +153,27 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                             height: 1.3,
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          "Nutrición personalizada para tus metas",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 18,
+                            height: 1.3,
+                          ),
+                        ),
                         const SizedBox(height: 30),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ProfessionalItem("Nutricionista 1"),
-                            ProfessionalItem("Nutricionista 2"),
-                            ProfessionalItem("Médico 1"),
-                            ProfessionalItem("Médico 2"),
-                            ProfessionalItem("Entrenador certificado 1"),
-                            ProfessionalItem("Entrenador certificado 2"),
+                            BenefitItem(
+                                "Planes de alimentación 100% personalizados"),
+                            BenefitItem("Seguimiento de tu progreso."),
+                            BenefitItem(
+                                "Ajustes automáticos según tus resultados"),
+                            BenefitItem(
+                                "Recetas saludables adaptadas a tus gustos"),
                           ],
                         ),
                       ],
@@ -222,7 +233,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   onPressed: () async {
                     // Reproducir sonido y vibrar
                     await _playButtonSound();
-                 
                     await _storeOnboardInfo();
                     Navigator.push(
                       context,
@@ -248,8 +258,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   alignment: Alignment.topRight,
                   child: TextButton(
                     onPressed: () async {
-                  
-                    
                       await _storeOnboardInfo();
                       Navigator.push(
                         context,

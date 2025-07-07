@@ -1,31 +1,42 @@
-import 'package:Frutia/model/MealPlanData.dart';
+import 'package:Frutia/pages/screens/datosPersonales/SuccessScreen.dart';
+import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:Frutia/utils/colors.dart';
-import 'package:Frutia/pages/screens/datosPersonales/SuccessScreen.dart';
+import 'package:Frutia/pages/Pantalla1.dart';
 import 'package:Frutia/services/plan_service.dart';
+import 'package:Frutia/utils/colors.dart';
 
-class PlanSummaryScreen extends StatelessWidget {
+class PlanSummaryScreen extends StatefulWidget {
   const PlanSummaryScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final PlanService planService = PlanService();
+  State<PlanSummaryScreen> createState() => _PlanSummaryScreenState();
+}
 
+class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
+  final PlanService _planService = PlanService();
+  late Future<MealPlanData?> _planFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _planFuture = _planService.getCurrentPlan();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       extendBodyBehindAppBar: true,
-      body: FutureBuilder<MealPlanData>(
-        future: planService.getCurrentPlan(),
+      body: FutureBuilder<MealPlanData?>(
+        future: _planFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: FrutiaColors.primary,
-              ),
-            );
-          } else if (snapshot.hasError) {
+                child: CircularProgressIndicator(color: FrutiaColors.accent));
+          }
+          if (snapshot.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -145,443 +156,324 @@ class PlanSummaryScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSummarySection(context, planData),
+                        _buildSummarySection(
+                            context, planData.nutritionPlan.targetMacros),
                         const SizedBox(height: 30),
-                        Text(
-                          "¿Qué incluye tu plan?",
-                          style: GoogleFonts.lato(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: FrutiaColors.primaryText,
-                          ),
-                        ).animate().fadeIn(delay: 300.ms),
-                        const SizedBox(height: 20),
-                        _buildMealCategory(context, "🍳 Desayunos",
-                            planData.desayunos, Icons.free_breakfast),
-                        const SizedBox(height: 20),
-                        _buildMealCategory(context, "☀️ Almuerzos",
-                            planData.almuerzos, Icons.lunch_dining),
-                        const SizedBox(height: 20),
-                        _buildMealCategory(context, "🌙 Cenas", planData.cenas,
-                            Icons.dinner_dining),
-                        const SizedBox(height: 20),
-                        _buildMealCategory(context, "🍏 Snacks Saludables",
-                            planData.snacks, Icons.fastfood),
-                        const SizedBox(height: 40),
-                        if (planData.recomendaciones.isNotEmpty)
-                          _buildRecommendationsSection(
-                                  context, planData.recomendaciones)
-                              .animate()
-                              .fadeIn(delay: 600.ms),
-                        const SizedBox(height: 40),
+                        _buildMealOptionsSummary(
+                            context, planData.nutritionPlan.meals),
+                        const SizedBox(height: 30),
+                        _buildSectionHeader(context, "Recetas de Inspiración",
+                            Icons.restaurant_menu),
+                        const SizedBox(height: 15),
+                        _buildRecipesSection(context, planData.recipes),
+                        const SizedBox(height: 30),
+                        _buildSectionHeader(context, "Consejos para el Éxito",
+                            Icons.lightbulb_outline),
+                        const SizedBox(height: 15),
+                        _buildRecommendationsSection(context,
+                            planData.nutritionPlan.generalRecommendations),
                       ],
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 20),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => const SuccessScreen()),
-                          (route) => false,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: FrutiaColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 60, vertical: 20),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 40, 20, 40),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const SuccessScreen()),
+                            (route) => false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: FrutiaColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 60, vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 8,
+                          shadowColor: FrutiaColors.primary.withOpacity(0.5),
+                          minimumSize: const Size.fromHeight(60),
                         ),
-                        elevation: 8,
-                        shadowColor: FrutiaColors.primary.withOpacity(0.5),
-                        minimumSize: const Size.fromHeight(60),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 24,
-                            color: Colors.white,
+                        icon: const Icon(
+                          Icons.check_circle_outline,
+                          size: 24,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          "¡Listo para empezar!",
+                          style: GoogleFonts.lato(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            "¡Listo para empezar!",
-                            style: GoogleFonts.lato(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ).animate().fadeIn(delay: 800.ms).scale(duration: 500.ms),
+                        ),
+                      ).animate().fadeIn(delay: 800.ms).scale(duration: 500.ms),
+                    ),
                   ),
-                ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 80),
-                ),
+                )
               ],
             );
-          } else {
-            return const Center(
-              child: Text('No se encontraron datos del plan.'),
-            );
           }
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 
-  Widget _buildSummarySection(BuildContext context, MealPlanData planData) {
+  Widget _buildSectionHeader(
+      BuildContext context, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: FrutiaColors.primary, size: 24),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: GoogleFonts.lato(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: FrutiaColors.primaryText),
+        ),
+      ],
+    ).animate().fadeIn(delay: 300.ms);
+  }
+
+  Widget _buildMealOptionsSummary(
+      BuildContext context, Map<String, List<MealCategory>> meals) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          planData.summaryTitle,
-          style: GoogleFonts.lato(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: FrutiaColors.primaryText,
-          ),
-        ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
-        const SizedBox(height: 20),
-        _buildSummaryCard(
-          icon: Icons.fitness_center,
-          title: "Tu Objetivo",
-          text: planData.summaryText1,
-          delay: 100.ms,
+        _buildSectionHeader(
+            context, "Tus Opciones de Comida", Icons.food_bank_outlined),
+        const SizedBox(height: 15),
+        ...meals.entries.map((entry) {
+          final mealTitle = entry.key;
+          final categories = entry.value;
+          return _buildSingleMealSummaryCard(context, mealTitle, categories);
+        }).toList(),
+      ],
+    ).animate().fadeIn(delay: 400.ms);
+  }
+
+  Widget _buildSingleMealSummaryCard(
+      BuildContext context, String mealTitle, List<MealCategory> categories) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 15),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              mealTitle,
+              style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.accent),
+            ),
+            const Divider(height: 15, thickness: 1),
+            ...categories
+                .map((category) => Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${category.title}:",
+                            style:
+                                GoogleFonts.lato(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              category.options
+                                  .map((opt) => opt.name)
+                                  .join(' / '),
+                              style: GoogleFonts.lato(
+                                  color: FrutiaColors.secondaryText),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ],
         ),
-        const SizedBox(height: 16),
-        _buildSummaryCard(
-          icon: Icons.tune,
-          title: "Personalización",
-          text: planData.summaryText2,
-          delay: 200.ms,
+      ),
+    );
+  }
+
+  Widget _buildSummarySection(BuildContext context, TargetMacros macros) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+            context, "Tus Macros Diarios", Icons.pie_chart_outline_rounded),
+        const SizedBox(height: 15),
+        _buildSummaryCard(context,
+            icon: Icons.local_fire_department_outlined,
+            title: 'Calorías',
+            text: '${macros.calories} kcal',
+            delay: 200.ms),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+                child: _buildSummaryCard(context,
+                    icon: Icons.egg_alt_outlined,
+                    title: 'Proteínas',
+                    text: '~${macros.protein}g',
+                    delay: 300.ms)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _buildSummaryCard(context,
+                    icon: Icons.local_pizza_outlined,
+                    title: 'Carbs',
+                    text: '~${macros.carbs}g',
+                    delay: 400.ms)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _buildSummaryCard(context,
+                    icon: Icons.water_drop_outlined,
+                    title: 'Grasas',
+                    text: '~${macros.fats}g',
+                    delay: 500.ms)),
+          ],
         ),
-        const SizedBox(height: 16),
-        _buildSummaryCard(
-          icon: Icons.star,
-          title: "Motivación",
-          text: planData.summaryText3,
-          delay: 300.ms,
-        ),
-        if (planData.summaryText4 != null) ...[
-          const SizedBox(height: 16),
-          _buildSummaryCard(
-            icon: Icons.celebration,
-            title: "Beneficios",
-            text: planData.summaryText4!,
-            delay: 400.ms,
-          ),
-        ],
       ],
     );
   }
 
-  Widget _buildSummaryCard({
-    required IconData icon,
-    required String title,
-    required String text,
-    required Duration delay,
-  }) {
+  Widget _buildSummaryCard(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required String text,
+      required Duration delay}) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              FrutiaColors.secondaryBackground,
-              FrutiaColors.secondaryBackground.withOpacity(0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: FrutiaColors.accent.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: FrutiaColors.accent.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: FrutiaColors.accent,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.lato(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: FrutiaColors.primaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      text,
-                      style: GoogleFonts.lato(
-                        fontSize: 15,
-                        color: FrutiaColors.secondaryText,
-                        height: 1.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 10,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+        child: Column(
+          children: [
+            Icon(icon, color: FrutiaColors.accent, size: 24),
+            const SizedBox(height: 8),
+            Text(title,
+                style: GoogleFonts.lato(
+                    fontSize: 13, color: FrutiaColors.secondaryText)),
+            const SizedBox(height: 4),
+            Text(text,
+                style: GoogleFonts.poppins(
+                    fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
         ),
       ),
     )
         .animate()
         .fadeIn(duration: 600.ms, delay: delay)
-        .slideY(begin: 0.1, end: 0);
+        .slideY(begin: 0.2, end: 0);
   }
 
-  Widget _buildMealCategory(
-      BuildContext context, String title, List<MealItem> items, IconData icon) {
-    if (items.isEmpty) return const SizedBox.shrink();
-
+  Widget _buildRecipesSection(
+      BuildContext context, List<InspirationRecipe> recipes) {
+    if (recipes.isEmpty) return const SizedBox.shrink();
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: FrutiaColors.accent, size: 28),
-            const SizedBox(width: 10),
-            Text(
-              title,
-              style: GoogleFonts.lato(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: FrutiaColors.accent,
-              ),
-            ),
-            const Spacer(),
-          ],
-        ),
-        const SizedBox(height: 15),
-        ...items.map((item) => _buildMealExpansionTile(context, item)).toList(),
-      ],
-    ).animate().fadeIn(delay: 400.ms);
+      children: recipes
+          .map((recipe) => _buildMealExpansionTile(context, recipe))
+          .toList(),
+    );
   }
 
-  Widget _buildMealExpansionTile(BuildContext context, MealItem item) {
+  Widget _buildMealExpansionTile(
+      BuildContext context, InspirationRecipe recipe) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 15),
-      elevation: 5,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          collapsedShape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text(
-            item.option,
-            style: GoogleFonts.lato(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: FrutiaColors.primaryText,
-            ),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        title: Text(recipe.title,
+            style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w700)),
+        subtitle: Text(recipe.mealType,
+            style: GoogleFonts.lato(fontSize: 14, color: FrutiaColors.accent)),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: Image.network(
+            recipe.imageUrl,
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+                width: 50,
+                height: 50,
+                color: Colors.grey[200],
+                child: const Icon(Icons.restaurant_menu)),
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(
-                item.description,
-                style: GoogleFonts.lato(
-                  fontSize: 14,
-                  color: FrutiaColors.secondaryText,
-                  fontStyle: FontStyle.italic,
-                ),
-                maxLines: 10,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(Icons.local_fire_department,
-                      size: 16,
-                      color: FrutiaColors.secondaryText.withOpacity(0.7)),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${item.calories} kcal",
-                    style: GoogleFonts.lato(
-                      fontSize: 13,
-                      color: FrutiaColors.secondaryText.withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(Icons.access_time,
-                      size: 16,
-                      color: FrutiaColors.secondaryText.withOpacity(0.7)),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${item.prepTimeMinutes} min",
-                    style: GoogleFonts.lato(
-                      fontSize: 13,
-                      color: FrutiaColors.secondaryText.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (item.ingredients.isNotEmpty) ...[
-                    const Divider(
-                        height: 20,
-                        thickness: 1,
-                        color: FrutiaColors.tertiaryBackground),
-                    Text(
-                      "Ingredientes:",
-                      style: GoogleFonts.lato(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: FrutiaColors.primaryText),
-                    ),
-                    const SizedBox(height: 8),
-                    ...item.ingredients.map((ing) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            "• ${ing.item}",
-                            style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: FrutiaColors.secondaryText),
-                          ),
-                        )),
-                  ],
-                  if (item.instructions.isNotEmpty) ...[
-                    const Divider(
-                        height: 20,
-                        thickness: 1,
-                        color: FrutiaColors.tertiaryBackground),
-                    Text(
-                      "Instrucciones:",
-                      style: GoogleFonts.lato(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: FrutiaColors.primaryText),
-                    ),
-                    const SizedBox(height: 8),
-                    ...item.instructions.asMap().entries.map((entry) {
-                      int index = entry.key;
-                      String instr = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          "${index + 1}. $instr",
-                          style: GoogleFonts.lato(
-                              fontSize: 14, color: FrutiaColors.secondaryText),
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ),
-          ],
         ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                Text("Ingredientes:",
+                    style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
+                ...recipe.planComponents.map((ing) => Text("• $ing")),
+                if (recipe.additionalIngredients.isNotEmpty)
+                  ...recipe.additionalIngredients.map((ing) =>
+                      Text("• ${ing.name} ${ing.quantity ?? ''}".trim())),
+                const SizedBox(height: 12),
+                Text("Instrucciones:",
+                    style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
+                ...recipe.steps.asMap().entries.map((entry) => Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text("${entry.key + 1}. ${entry.value}"),
+                    )),
+              ],
+            ),
+          )
+        ],
       ),
-    ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.05);
+    ).animate().fadeIn(delay: 400.ms).slideX(begin: 0.1);
   }
 
   Widget _buildRecommendationsSection(
-      BuildContext context, List<String> recomendaciones) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: FrutiaColors.secondaryBackground,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.lightbulb_outline,
-                  color: FrutiaColors.primary, size: 28),
-              const SizedBox(width: 10),
-              Text(
-                "Consejos para el éxito",
-                style: GoogleFonts.lato(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: FrutiaColors.primary,
-                ),
+      BuildContext context, List<String> recomendaciones,
+      {String title = "Recomendaciones",
+      IconData icon = Icons.lightbulb_outline}) {
+    if (recomendaciones.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, title, icon),
+        const SizedBox(height: 10),
+        ...recomendaciones.map((rec) => Padding(
+              padding: const EdgeInsets.only(bottom: 8, left: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("• ",
+                      style: TextStyle(
+                          color: FrutiaColors.accent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
+                  Expanded(
+                      child: Text(rec,
+                          style: GoogleFonts.lato(fontSize: 15, height: 1.4))),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          ...recomendaciones
-              .map((recommendation) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          child: Icon(Icons.check_circle_outline,
-                              color: FrutiaColors.primary, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            recommendation,
-                            style: GoogleFonts.lato(
-                              fontSize: 15,
-                              color: FrutiaColors.primaryText,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ))
-              .toList(),
-        ],
-      ),
+            )),
+      ],
     );
   }
 }
