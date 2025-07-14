@@ -94,24 +94,20 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
       return Padding(
         padding: EdgeInsets.only(bottom: 8),
         child: Row(
+          mainAxisAlignment:
+              MainAxisAlignment.center, // Esto centra el Row completo
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 4, right: 8),
-              child: Icon(
-                Icons.check_circle,
-                size: 20,
-                color: Colors.green,
-              ),
-            ),
             Expanded(
               child: Text(
                 text,
+                textAlign: TextAlign
+                    .center, // Esto centra el texto dentro del Expanded
                 style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
+                  fontSize: 19,
+                  color: Colors.black,
                   height: 1.4,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -144,22 +140,12 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          "Tu progreso con Frutia",
+                          "Este es el primer paso hacia el cambio que mereces",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
-                            fontSize: 28,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          "Nutrición personalizada para tus metas",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 18,
+                            fontSize: 32,
                             height: 1.3,
                           ),
                         ),
@@ -167,13 +153,8 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            BenefitItem(
-                                "Planes de alimentación 100% personalizados"),
-                            BenefitItem("Seguimiento de tu progreso."),
-                            BenefitItem(
-                                "Ajustes automáticos según tus resultados"),
-                            BenefitItem(
-                                "Recetas saludables adaptadas a tus gustos"),
+                            BenefitItem("🌟 Y no estarás solo en el camino"),
+                            BenefitItem("🍓 Frutia te acompaña en cada paso"),
                           ],
                         ),
                       ],

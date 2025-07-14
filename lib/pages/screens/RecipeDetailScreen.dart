@@ -1,4 +1,3 @@
-import 'package:Frutia/model/MealPlanData.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'package:flutter/material.dart';

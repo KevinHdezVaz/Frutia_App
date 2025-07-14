@@ -1,12 +1,10 @@
+import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:Frutia/services/plan_service.dart'; // Asegúrate que la ruta sea correcta
+import 'package:Frutia/services/plan_service.dart';
 
-import 'screens/miplan/plan_data.dart'; // Asegúrate que la ruta sea correcta
-
-// --- Pantalla Principal de Recetas (Premium) ---
 class PremiumRecetasScreen extends StatefulWidget {
   const PremiumRecetasScreen({Key? key}) : super(key: key);
 
@@ -16,21 +14,15 @@ class PremiumRecetasScreen extends StatefulWidget {
 
 class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
     with SingleTickerProviderStateMixin {
-  // --- Estado y Controladores ---
   final PlanService _planService = PlanService();
   late final TextEditingController _searchController;
   late TabController _tabController;
 
   bool _isLoading = true;
   String? _errorMessage;
-
-  // Listas que contendrán los datos dinámicos de la API
   List<InspirationRecipe> _allRecipes = [];
   List<MealFormula> _allFormulas = [];
-
-  // Lista para mostrar las recetas filtradas en la UI
   List<InspirationRecipe> _filteredRecipes = [];
-
   String _activeFilter = 'Todos';
 
   @override
@@ -38,30 +30,30 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
     super.initState();
     _searchController = TextEditingController();
     _searchController.addListener(_performFiltering);
-    _tabController = TabController(length: 2, vsync: this);
-    _fetchPlanData(); // Llama a la carga de datos al iniciar la pantalla
+    _tabController = TabController(length: 1, vsync: this);
+    _fetchPlanData();
   }
 
-  // --- Lógica de Carga de Datos ---
   Future<void> _fetchPlanData() async {
     try {
       final planData = await _planService.getCurrentPlan();
       setState(() {
-        // Asigna los datos de la API a las listas del estado
-        _allRecipes = planData!.recipes;
-        _allFormulas = planData!.formulas;
-        _filteredRecipes = _allRecipes; // Inicializa la lista filtrada
+        _allRecipes = planData?.recipes ?? [];
+        _allFormulas = planData?.formulas ?? [];
+        _filteredRecipes = _allRecipes;
         _isLoading = false;
       });
+      debugPrint('Recipes loaded: ${_allRecipes.length}');
+      debugPrint('Formulas loaded: ${_allFormulas.length}');
     } catch (e) {
       setState(() {
         _errorMessage = "Error al cargar recetas: ${e.toString()}";
         _isLoading = false;
       });
+      debugPrint('Error loading plan data: $e');
     }
   }
 
-  // --- Lógica de Filtrado y Navegación (sin cambios, ahora usa datos del estado) ---
   void _performFiltering() {
     final query = _searchController.text.toLowerCase();
     setState(() {
@@ -101,7 +93,6 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
     );
   }
 
-  // --- Widget Principal del Cuerpo con Manejo de Estado de Carga ---
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
@@ -119,9 +110,8 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
       );
     }
 
-    // Si la carga fue exitosa, muestra la UI principal
     return DefaultTabController(
-      length: 2,
+      length: 1,
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -162,7 +152,6 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
                 ),
                 tabs: const [
                   Tab(text: 'Inspiración'),
-                  Tab(text: 'Mis Fórmulas'),
                 ],
               ),
             ),
@@ -177,20 +166,12 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
               activeFilter: _activeFilter,
               onFilterChanged: _setActiveFilter,
             ).animate().fadeIn(duration: 500.ms),
-            _MisFormulasTab(
-              formulas: _allFormulas,
-              onShowInspiration: _showInspirationFor,
-            ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
           ],
         ),
       ),
     );
   }
 }
-
-// =========================================================================
-// --- WIDGETS COMPONENTES (Copiados de tu código original, sin cambios) ---
-// =========================================================================
 
 class _InspiracionTab extends StatelessWidget {
   final List<InspirationRecipe> recipes;
@@ -207,7 +188,7 @@ class _InspiracionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> filters = ['Todos', 'Almuerzo', 'Cena', 'Shake'];
+    final List<String> filters = ['Todos', 'Desayuno', 'Almuerzo', 'Cena'];
     return Column(
       children: [
         Padding(
@@ -299,16 +280,27 @@ class _MisFormulasTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: formulas.length,
-      itemBuilder: (context, index) {
-        return _FormulaCard(
-          formula: formulas[index],
-          onShowInspiration: () => onShowInspiration(formulas[index].mealType),
-        ).animate().fadeIn(duration: 500.ms, delay: (index * 100).ms);
-      },
-    );
+    return formulas.isEmpty
+        ? Center(
+            child: Text(
+              'No hay fórmulas disponibles.',
+              style: GoogleFonts.lato(
+                color: FrutiaColors.secondaryText,
+                fontSize: 16,
+              ),
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: formulas.length,
+            itemBuilder: (context, index) {
+              return _FormulaCard(
+                formula: formulas[index],
+                onShowInspiration: () =>
+                    onShowInspiration(formulas[index].mealType),
+              ).animate().fadeIn(duration: 500.ms, delay: (index * 100).ms);
+            },
+          );
   }
 }
 
@@ -457,17 +449,15 @@ class _RecipeCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withOpacity(0.5),
         child: Stack(
           fit: StackFit.expand,
           children: [
             Hero(
-              tag: recipe.id,
-              child: Image.network(
-                recipe.imageUrl,
+              tag: recipe.id ?? recipe.title,
+              child: Image.asset(
+                'assets/images/fondoAppFrutia.webp',
                 fit: BoxFit.cover,
-                errorBuilder: (c, e, s) =>
-                    Center(child: Icon(Icons.image_not_supported)),
               ),
             ),
             Container(
@@ -475,7 +465,7 @@ class _RecipeCard extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.black.withOpacity(0.7),
-                    Colors.transparent,
+                    Colors.black.withOpacity(0.4),
                   ],
                   begin: Alignment.bottomCenter,
                   end: Alignment.center,
@@ -503,7 +493,7 @@ class _RecipeCard extends StatelessWidget {
                       Icon(Icons.timer_outlined, color: Colors.white, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '${recipe.prepTimeMinutes} min',
+                        '${recipe.prepTimeMinutes ?? 30} min',
                         style: GoogleFonts.lato(
                           color: Colors.white,
                           fontSize: 12,
@@ -543,7 +533,7 @@ class RecipeDetailScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 300.0,
+            expandedHeight: 200.0,
             pinned: true,
             flexibleSpace: Container(
               decoration: BoxDecoration(
@@ -555,9 +545,9 @@ class RecipeDetailScreen extends StatelessWidget {
               ),
               child: FlexibleSpaceBar(
                 background: Hero(
-                  tag: recipe.id,
-                  child: Image.network(
-                    recipe.imageUrl,
+                  tag: recipe.id ?? recipe.title,
+                  child: Image.asset(
+                    'assets/images/fondoAppFrutia.webp',
                     fit: BoxFit.cover,
                     color: Colors.black.withOpacity(0.3),
                     colorBlendMode: BlendMode.darken,
@@ -583,7 +573,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    recipe.description,
+                    recipe.description ?? 'Deliciosa receta para tu plan.',
                     style: GoogleFonts.lato(
                       fontSize: 16,
                       color: FrutiaColors.secondaryText,
@@ -596,7 +586,7 @@ class RecipeDetailScreen extends StatelessWidget {
                     children: [
                       _InfoChip(
                         icon: Icons.timer_outlined,
-                        text: '${recipe.prepTimeMinutes} min',
+                        text: '${recipe.prepTimeMinutes ?? 30} min',
                         color: FrutiaColors.accent,
                       ),
                       _InfoChip(

@@ -86,7 +86,10 @@ dependencies:
   printing: ^5.11.1 # O la versión más reciente
   share_plus: ^7.0.0
   open_file: ^3.5.10
-
+  flutter_custom_tabs: ^2.4.0
+  webview_flutter: ^4.13.0
+  webview_flutter_wkwebview: ^3.15.0
+  
 flutter_localizations:
     sdk: flutter
  
@@ -117,6 +120,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+
+  fonts:
+      - family: Roboto
+        fonts:
+          - asset: assets/fonts/Roboto-Regular.ttf
+          - asset: assets/fonts/Roboto-Bold.ttf
+            weight: 700
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
@@ -124,6 +134,7 @@ flutter:
     - assets/grid/
     - assets/map_style.json
     - assets/logos/
+    - assets/fonts/
     - assets/sonidos/
     - .env
 

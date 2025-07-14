@@ -9,20 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 // --- MODELOS DE DATOS PARA ESTA PANTALLA ---
 
 // Modelo para un detalle de precio (no se usa con el nuevo plan, pero se mantiene la estructura)
-class PriceDetail {
-  final String store;
-  final double price;
-  final String currency;
-  PriceDetail(
-      {required this.store, required this.price, required this.currency});
-}
 
-// Modelo para un ingrediente individual
+// En tu archivo de la pantalla de compras
+
 class Ingredient {
   final String item;
   final String quantity;
   final String? imageUrl;
-  final List<PriceDetail> prices;
+  final List<PriceInfo> prices; // Usamos el modelo PriceInfo de la API
 
   Ingredient({
     required this.item,
@@ -31,12 +25,11 @@ class Ingredient {
     this.prices = const [],
   });
 
-  // Factory para crear un Ingrediente desde una MealOption de tu plan principal
+  // ▼▼▼ INICIO DE LA CORRECCIÓN ▼▼▼
   factory Ingredient.fromMealOption(MealOption option) {
     String item = option.name;
     String quantity = '';
 
-    // Extrae la cantidad del nombre, ej: "Pollo (200g)" -> item: "Pollo", quantity: "200g"
     final regex = RegExp(r'\((.*?)\)');
     final match = regex.firstMatch(option.name);
     if (match != null) {
@@ -48,9 +41,11 @@ class Ingredient {
       item: item,
       quantity: quantity,
       imageUrl: option.imageUrl,
-      prices: [], // El nuevo modelo de IA no incluye precios por ingrediente
+      // Ahora copiamos la información de precios directamente desde la opción del plan
+      prices: option.prices,
     );
   }
+  // ▲▲▲ FIN DE LA CORRECCIÓN ▲▲▲
 }
 
 // Modelo para el item en la UI de la lista de compras
@@ -68,7 +63,7 @@ class ShoppingIngredientItem {
   String get item => ingredientData.item;
   String get quantity => ingredientData.quantity;
   String? get imageUrl => ingredientData.imageUrl;
-  List<PriceDetail> get prices => ingredientData.prices;
+  List<PriceInfo> get prices => ingredientData.prices;
 }
 
 // --- PANTALLA PRINCIPAL DE COMPRAS ---
@@ -497,18 +492,39 @@ class _ComprasScreenState extends State<ComprasScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
-                style: GoogleFonts.lato(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  decoration: ingredient.isChecked
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                  color: ingredient.isChecked
-                      ? FrutiaColors.secondaryText
-                      : FrutiaColors.primaryText,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nombre del ingrediente
+                  Text(
+                    '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
+                    style: GoogleFonts.lato(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      decoration: ingredient.isChecked
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      color: ingredient.isChecked
+                          ? FrutiaColors.secondaryText
+                          : FrutiaColors.primaryText,
+                    ),
+                  ),
+                  // Solo muestra la sección de precios si hay precios disponibles
+                  if (ingredient.prices.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    // Muestra cada precio
+                    ...ingredient.prices.map((price) => Text(
+                          '${price.store}: ${price.price.toStringAsFixed(2)} ${price.currency ?? ''}',
+                          style: GoogleFonts.lato(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: FrutiaColors.primaryText,
+                          ),
+                        )),
+                  ]
+                ],
               ),
             ),
             Checkbox(

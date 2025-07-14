@@ -25,17 +25,11 @@
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.frutia.app.latam</string> <!-- O tu bundle ID -->
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>miapp</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.730095641142-qj58r88ha7vnjlro9b5gsmb8upo9idcu</string>
+				<string>frutiapp</string>
 			</array>
 		</dict>
 	</array>

@@ -1,3 +1,5 @@
+import 'dart:convert'; // Import para decodificar JSON
+
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/onscreen/QuestionnairePage.dart';
@@ -6,6 +8,7 @@ import 'package:Frutia/pages/screens/drawer/HelpandSupport.dart';
 import 'package:Frutia/pages/screens/drawer/PrivacyPolitice.dart';
 import 'package:Frutia/pages/screens/drawer/TermsAndConditions.dart';
 import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
+import 'package:Frutia/pages/screens/miplan/TrialExpiredDialog.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
 import 'package:Frutia/services/RachaProgreso.dart';
@@ -15,10 +18,12 @@ import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:http/http.dart'
+    as http; // Asumiendo que usas http, para el tipo de excepción
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import for SharedPreferences
-import 'package:showcaseview/showcaseview.dart'; // Import for ShowcaseView
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 enum PageState { loading, error, needsOnboarding, needsPlan, hasPlan }
 
@@ -31,12 +36,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
-
   final PlanService _planService = PlanService();
   PageState _pageState = PageState.loading;
   Map<String, dynamic>? _userData;
-  MealPlanData? _mealPlanData; // <-- AÑADIDO: Para guardar el plan completo
-
+  MealPlanData? _mealPlanData;
+  String? _userName;
   bool _canCompleteStreakToday = false;
   bool _isStreakButtonLoading = false;
   Set<String> _streakHistory = {};
@@ -49,19 +53,43 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchAndCheckProfile();
     });
+    _fetchUserName();
+  }
+
+  Future<void> _fetchUserName() async {
+    try {
+      final name = await _planService.getUserName();
+      if (mounted) {
+        setState(() {
+          _userName = name;
+        });
+      }
+      debugPrint('User name loaded: $name');
+    } catch (e) {
+      debugPrint('Error fetching user name: $e');
+      if (mounted) {
+        setState(() {
+          _userName = 'Usuario'; // Valor por defecto en caso de error
+        });
+      }
+    }
+  }
+
+  Future<void> _showTrialExpiredDialog() async {
+    await Future.delayed(Duration.zero);
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // El usuario no puede cerrar el diálogo
+      builder: (BuildContext dialogContext) {
+        return const TrialExpiredDialog();
+      },
+    );
   }
 
   void _checkIfStreakCanBeCompleted(Map<String, dynamic>? profile) {
-    if (!mounted) return;
-
-    if (profile == null) {
-      setState(() {
-        _canCompleteStreakToday = true;
-        _daysSinceLastStreak = 0;
-        _streakHistory.clear();
-      });
-      return;
-    }
+    if (!mounted || profile == null) return;
 
     if (profile['streak_history'] != null) {
       final history = List<String>.from(profile['streak_history']);
@@ -95,16 +123,12 @@ class _HomePageState extends State<HomePage> {
 
     try {
       await RachaProgresoService.marcarDiaCompleto();
-      if (!mounted) return;
-
       await _fetchAndCheckProfile();
       if (!mounted) return;
 
       await navigator.push(
         MaterialPageRoute(builder: (context) => const ProgressScreen()),
       );
-
-      if (!mounted) return;
       await _fetchAndCheckProfile();
 
       scaffoldMessenger.showSnackBar(
@@ -115,6 +139,11 @@ class _HomePageState extends State<HomePage> {
       );
     } catch (e) {
       if (mounted) {
+        // El error 403 del middleware se captura aquí.
+        if (e is http.Response && e.statusCode == 403) {
+          _showTrialExpiredDialog();
+          return;
+        }
         scaffoldMessenger.showSnackBar(
           SnackBar(
               content: Text('Error al completar el día: ${e.toString()}'),
@@ -127,6 +156,32 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+
+  // --- INICIA NUEVA FUNCIÓN ---
+  /// Revisa los datos del usuario para ver si su prueba ha expirado.
+  bool _isTrialExpired(Map<String, dynamic>? user) {
+    if (user == null) return false;
+
+    // Solo nos importa si el estado es 'trial'
+    if (user['subscription_status'] != 'trial') return false;
+
+    final trialEndsAtString = user['trial_ends_at'];
+    if (trialEndsAtString == null) {
+      // Si es nulo pero el estado es 'trial', consideramos que expiró.
+      return true;
+    }
+
+    try {
+      final endDate = DateTime.parse(trialEndsAtString);
+      // La prueba expira si la fecha actual es posterior a la fecha de finalización.
+      return DateTime.now().isAfter(endDate);
+    } catch (e) {
+      // Si el formato de fecha es inválido, no podemos hacer nada.
+      debugPrint("Error al parsear fecha de prueba: $e");
+      return false;
+    }
+  }
+  // --- TERMINA NUEVA FUNCIÓN ---
 
   Future<void> _fetchAndCheckProfile() async {
     if (!mounted) return;
@@ -141,6 +196,27 @@ class _HomePageState extends State<HomePage> {
       final profile = responseData['profile'];
       final fullUserData = {'user': user, 'profile': profile};
 
+      debugPrint(
+          "Datos del usuario recibidos del backend: ${jsonEncode(user)}");
+
+      setState(() {
+        _userData = fullUserData;
+      });
+
+      // --- INICIA CAMBIO LÓGICO ---
+      // 1. Revisamos si la prueba ha expirado ANTES de hacer cualquier otra cosa.
+      if (_isTrialExpired(user)) {
+        _showTrialExpiredDialog();
+        // Ponemos la UI en un estado válido pero sin intentar cargar el plan,
+        // ya que sabemos que fallará.
+        setState(() {
+          _pageState = PageState.hasPlan; // Para que muestre el dashboard
+          _mealPlanData = null; // Pero sin datos de plan
+        });
+        return; // Detenemos la ejecución aquí.
+      }
+      // --- TERMINA CAMBIO LÓGICO ---
+
       _checkIfStreakCanBeCompleted(profile);
 
       if (profile == null || profile['height'] == null) {
@@ -148,39 +224,25 @@ class _HomePageState extends State<HomePage> {
             builder: (context) =>
                 PersonalDataPage(onSuccess: _fetchAndCheckProfile)));
         if (mounted) {
-          setState(() {
-            _userData = fullUserData;
-            _pageState = PageState.needsOnboarding;
-          });
+          setState(() => _pageState = PageState.needsOnboarding);
         }
       } else if (profile['plan_setup_complete'] != true &&
           profile['plan_setup_complete'] != 1) {
-        // El usuario tiene perfil pero no ha completado el plan
-        setState(() {
-          _userData = fullUserData;
-          _pageState = PageState.needsPlan;
-        });
+        setState(() => _pageState = PageState.needsPlan);
       } else {
-        // EL USUARIO TIENE UN PLAN, AHORA CARGAMOS LOS DETALLES
-        try {
-          final plan = await _planService.getCurrentPlan();
-          if (mounted) {
-            setState(() {
-              _userData = fullUserData;
-              _mealPlanData = plan; // <-- Guardamos el plan
-              _pageState = PageState.hasPlan;
-            });
-          }
-        } catch (e) {
-          // Si falla la carga del plan, se considera un error
+        // Si la prueba no ha expirado, intentamos cargar el plan.
+        final plan = await _planService.getCurrentPlan();
+        if (mounted) {
           setState(() {
-            _pageState = PageState.error;
-            _userData = fullUserData;
+            _mealPlanData = plan;
+            _pageState = PageState.hasPlan;
           });
         }
       }
     } catch (e) {
       if (mounted) {
+        // El catch ahora solo maneja errores inesperados.
+        // El caso de 'trial_expired' se maneja proactivamente arriba.
         setState(() {
           _pageState = PageState.error;
           _userData = null;
@@ -191,6 +253,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isPremium =
+        _userData?['user']?['subscription_status'] == 'active';
+    final bool isInTrial =
+        _userData?['user']?['subscription_status'] == 'trial' &&
+            !_isTrialExpired(_userData?['user']);
+
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
@@ -213,15 +281,12 @@ class _HomePageState extends State<HomePage> {
         duration: const Duration(milliseconds: 400),
         transitionBuilder: (child, animation) =>
             FadeTransition(opacity: animation, child: child),
-        child: _buildUIForState(),
+        child: _buildUIForState(isPremium: isPremium, isInTrial: isInTrial),
       ),
     );
   }
 
   Widget _buildDrawer(BuildContext context) {
-    final Map<String, dynamic> user = _userData?['user'] ?? {};
-    final String userName = user['name'] ?? 'Usuario';
-
     return Drawer(
       child: Container(
         decoration: BoxDecoration(
@@ -230,7 +295,6 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // Encabezado del Drawer
             DrawerHeader(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -243,18 +307,14 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 30,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 40,
-                    ),
+                    backgroundColor: Colors.white24,
+                    child: Icon(Icons.person, color: Colors.white, size: 40),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    userName,
+                    _userName ?? 'Usuario',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 20,
@@ -271,112 +331,84 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ).animate().fadeIn(duration: 500.ms),
-            // Opciones del menú
             ListTile(
               leading:
                   Icon(Icons.trending_up_rounded, color: FrutiaColors.accent),
-              title: Text(
-                'Progreso',
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              title: Text('Progreso',
+                  style: GoogleFonts.lato(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
-                Navigator.pop(context); // Cierra el drawer
+                Navigator.pop(context);
                 Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const ProgressScreen()),
-                );
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProgressScreen()));
               },
             ).animate().slideX(
-                  begin: -0.2,
-                  duration: 400.ms,
-                  delay: 200.ms,
-                  curve: Curves.easeOut,
-                ),
-
+                begin: -0.2,
+                duration: 400.ms,
+                delay: 200.ms,
+                curve: Curves.easeOut),
             ListTile(
               leading:
                   Icon(Icons.description_rounded, color: FrutiaColors.accent),
-              title: Text(
-                'Términos y condiciones',
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              title: Text('Términos y condiciones',
+                  style: GoogleFonts.lato(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
-                Navigator.pop(context); // Cierra el drawer
-                // Placeholder para pantalla de términos y condiciones
+                Navigator.pop(context);
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => TermsAndConditionsScreen()));
               },
             ).animate().slideX(
-                  begin: -0.2,
-                  duration: 400.ms,
-                  delay: 500.ms,
-                  curve: Curves.easeOut,
-                ),
+                begin: -0.2,
+                duration: 400.ms,
+                delay: 500.ms,
+                curve: Curves.easeOut),
             ListTile(
               leading:
                   Icon(Icons.privacy_tip_rounded, color: FrutiaColors.accent),
-              title: Text(
-                'Política de privacidad',
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              title: Text('Política de privacidad',
+                  style: GoogleFonts.lato(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
-                Navigator.pop(context); // Cierra el drawer
-                // Placeholder para pantalla de política de privacidad
+                Navigator.pop(context);
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => PrivacyPolicyScreen()));
               },
             ).animate().slideX(
-                  begin: -0.2,
-                  duration: 400.ms,
-                  delay: 600.ms,
-                  curve: Curves.easeOut,
-                ),
+                begin: -0.2,
+                duration: 400.ms,
+                delay: 600.ms,
+                curve: Curves.easeOut),
             ListTile(
               leading:
                   Icon(Icons.help_outline_rounded, color: FrutiaColors.accent),
-              title: Text(
-                'Ayuda y soporte',
-                style: GoogleFonts.lato(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              title: Text('Ayuda y soporte',
+                  style: GoogleFonts.lato(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
-                Navigator.pop(context); // Cierra el drawer
-                // Placeholder para pantalla de ayuda
+                Navigator.pop(context);
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (context) => HelpAndSupportScreen()));
               },
             ).animate().slideX(
-                  begin: -0.2,
-                  duration: 400.ms,
-                  delay: 700.ms,
-                  curve: Curves.easeOut,
-                ),
+                begin: -0.2,
+                duration: 400.ms,
+                delay: 700.ms,
+                curve: Curves.easeOut),
             const Divider(
-              color: Colors.grey,
-              height: 20,
-              thickness: 0.5,
-              indent: 16,
-              endIndent: 16,
-            ),
-            // Reutilizamos el botón de cerrar sesión existente
+                color: Colors.grey,
+                height: 20,
+                thickness: 0.5,
+                indent: 16,
+                endIndent: 16),
             _btnLogout(context),
           ],
         ),
@@ -384,7 +416,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildUIForState() {
+  Widget _buildUIForState({required bool isPremium, required bool isInTrial}) {
     switch (_pageState) {
       case PageState.loading:
         return const Center(
@@ -397,14 +429,16 @@ class _HomePageState extends State<HomePage> {
         return _DashboardView(
           key: ValueKey('dashboard_${_pageState.name}'),
           userData: _userData!,
-          mealPlanData:
-              _mealPlanData, // Pasamos el plan (puede ser null si es needsPlan)
+          mealPlanData: _mealPlanData,
           canCompleteStreakToday: _canCompleteStreakToday,
           isStreakButtonLoading: _isStreakButtonLoading,
           onCompleteStreak: _completeDayFromHome,
           streakHistory: _streakHistory,
           daysSinceLastStreak: _daysSinceLastStreak,
           shouldShowShowcase: true,
+          isPremium: isPremium,
+          isInTrial: isInTrial,
+          userName: _userName,
         );
       case PageState.error:
         return _buildErrorUI(key: const ValueKey('error'));
@@ -422,19 +456,16 @@ class _HomePageState extends State<HomePage> {
             Icon(Icons.error_outline,
                 size: 80, color: Colors.red.withOpacity(0.7)),
             const SizedBox(height: 24),
-            Text(
-              '¡Algo salió mal!',
-              style:
-                  GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
+            Text('¡Algo salió mal!',
+                style:
+                    GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Text(
-              'No pudimos cargar tu perfil. Por favor, intenta de nuevo.',
-              style: GoogleFonts.lato(
-                  fontSize: 16, color: FrutiaColors.secondaryText),
-              textAlign: TextAlign.center,
-            ),
+                'No pudimos cargar tu perfil. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.',
+                style: GoogleFonts.lato(
+                    fontSize: 16, color: FrutiaColors.secondaryText),
+                textAlign: TextAlign.center),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _fetchAndCheckProfile,
@@ -452,29 +483,32 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// --- Convert _DashboardView to StatefulWidget ---
 class _DashboardView extends StatefulWidget {
   final Map<String, dynamic> userData;
-  final MealPlanData? mealPlanData; // <-- AÑADIDO: Recibe el plan
-
+  final MealPlanData? mealPlanData;
   final bool canCompleteStreakToday;
   final bool isStreakButtonLoading;
   final VoidCallback onCompleteStreak;
   final Set<String> streakHistory;
   final int daysSinceLastStreak;
-  final bool shouldShowShowcase; // New property to control showcase
+  final bool shouldShowShowcase;
+  final bool isPremium;
+  final bool isInTrial;
+  final String? userName;
 
   const _DashboardView({
     super.key,
     required this.userData,
-    this.mealPlanData, // <-- AÑADIDO
-
+    this.mealPlanData,
     required this.canCompleteStreakToday,
     required this.isStreakButtonLoading,
     required this.onCompleteStreak,
     required this.streakHistory,
     required this.daysSinceLastStreak,
-    this.shouldShowShowcase = false, // Default to false
+    this.shouldShowShowcase = false,
+    required this.isPremium,
+    required this.isInTrial,
+    required this.userName,
   });
 
   @override
@@ -482,7 +516,6 @@ class _DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<_DashboardView> {
-  // GlobalKeys for showcase targets in Dashboard
   final GlobalKey _streakReminderKey =
       GlobalKey(debugLabel: 'homepageStreakReminderShowcase');
   final GlobalKey _weekCalendarKey =
@@ -500,7 +533,7 @@ class _DashboardViewState extends State<_DashboardView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return; // Add this check immediately
+      if (!mounted) return;
       if (widget.shouldShowShowcase) {
         _showHomePageShowcase();
       }
@@ -509,62 +542,34 @@ class _DashboardViewState extends State<_DashboardView> {
 
   Future<void> _showHomePageShowcase() async {
     final prefs = await SharedPreferences.getInstance();
-    // Re-check mounted after the first async operation
-    if (!mounted) {
-      debugPrint(
-          'HomePage: Showcase skipped as DashboardView is unmounted after prefs load.');
-      return;
-    }
-
+    if (!mounted) return;
     final bool homePageShowcaseShown =
         prefs.getBool('homePageShowcaseShown') ?? false;
 
     if (!homePageShowcaseShown) {
-      // No need for `&& mounted` here, handled above
       await Future.delayed(const Duration(milliseconds: 800));
-      // Crucial: Check mounted *again* after the delay
-      if (!mounted) {
-        debugPrint(
-            'HomePage: Showcase skipped as DashboardView is unmounted after delay.');
-        return;
-      }
+      if (!mounted) return;
 
       List<GlobalKey> keysToShow = [];
-
       final bool hasPlan = widget.userData['profile'] != null &&
           (widget.userData['profile']['plan_setup_complete'] == true ||
               widget.userData['profile']['plan_setup_complete'] == 1);
 
-      if (hasPlan) {
-        if (widget.canCompleteStreakToday) {
-          keysToShow.add(_streakReminderKey);
-        }
+      if (hasPlan && widget.canCompleteStreakToday) {
+        keysToShow.add(_streakReminderKey);
       }
-
       keysToShow.add(_weekCalendarKey);
       keysToShow.add(_streakStatKey);
-
       if (!hasPlan) {
         keysToShow.add(_createPlanCardKey);
       }
 
-      // Final check before using context to start showcase
       if (keysToShow.isNotEmpty &&
           mounted &&
           ShowCaseWidget.of(context).mounted) {
         ShowCaseWidget.of(context).startShowCase(keysToShow);
         await prefs.setBool('homePageShowcaseShown', true);
-        debugPrint('HomePage: Showcase started!');
-      } else {
-        debugPrint(
-            'HomePage: No keys to show or ShowCaseWidget is not mounted or DashboardView is unmounted before starting showcase.');
-        if (!mounted) debugPrint('DashboardView was unmounted.');
-        if (!ShowCaseWidget.of(context).mounted)
-          debugPrint('ShowCaseWidget context was unmounted.');
       }
-    } else {
-      debugPrint(
-          'HomePage: Showcase conditions not met or already shown for HomePage.');
     }
   }
 
@@ -576,32 +581,45 @@ class _DashboardViewState extends State<_DashboardView> {
     return 'Desayuno';
   }
 
+  String _getTrialDaysRemaining() {
+    if (!widget.isInTrial) return '';
+
+    final trialEndsAtString = widget.userData['user']?['trial_ends_at'];
+    if (trialEndsAtString == null) return 'N/A';
+
+    try {
+      final endDate = DateTime.parse(trialEndsAtString);
+      final now = DateTime.now();
+      final difference = endDate.difference(now);
+
+      if (difference.isNegative) return '0 días';
+
+      return '${difference.inDays + 1} días';
+    } catch (e) {
+      return 'N/A';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> user = widget.userData['user'] ?? {};
     final Map<String, dynamic> profileData = widget.userData['profile'] ?? {};
-    final String userName = user['name'] ?? 'Usuario';
-    final bool hasPlan =
-        widget.mealPlanData != null; // La condición ahora es más simple
-
+    final bool hasPlan = widget.mealPlanData != null;
     final String currentWeight = profileData['weight']?.toString() ?? '--';
     final String mainGoal = profileData['goal'] ?? 'No definido';
-
     final int streakDays = (widget.daysSinceLastStreak >= 4)
         ? 0
         : (profileData['racha_actual'] ?? 0);
+    final String trialDaysRemaining = _getTrialDaysRemaining();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildProfileHeader(userName, context),
+          _buildProfileHeader(context),
           const SizedBox(height: 24),
-          // --- Showcase for _StreakReminderCard ---
-          if (hasPlan &&
-              widget
-                  .canCompleteStreakToday) // Only show if has plan and can complete today
+          if (hasPlan && widget.canCompleteStreakToday)
             Showcase(
               key: _streakReminderKey,
               title: 'Completa tu día',
@@ -627,7 +645,6 @@ class _DashboardViewState extends State<_DashboardView> {
               ),
             ),
           const SizedBox(height: 24),
-          // --- Showcase for Week Calendar ---
           Showcase(
             key: _weekCalendarKey,
             title: 'Tu progreso semanal',
@@ -644,11 +661,8 @@ class _DashboardViewState extends State<_DashboardView> {
             child: _buildWeekCalendar(context, widget.streakHistory),
           ),
           const SizedBox(height: 24),
-          // --- Showcase for Stats Row (the whole row, for the first stat) ---
-          // The key is on the first StatCard, which will highlight that card specifically.
-          // If you wanted to highlight the entire row as one block, you'd wrap the Row itself.
-          _buildStatsRow(context, streakDays, currentWeight,
-              mainGoal), // This method now handles individual showcases
+          _buildStatsRow(
+              context, streakDays, currentWeight, mainGoal, trialDaysRemaining),
           const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -659,11 +673,8 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 30),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            // --- Showcase for Create Plan Card (if no plan) ---
             child: hasPlan
-                ? PlanCarousel(
-                    recipes:
-                        widget.mealPlanData!.recipes) // <-- PASAMOS LAS RECETAS
+                ? PlanCarousel(recipes: widget.mealPlanData!.recipes)
                 : Showcase(
                     key: _createPlanCardKey,
                     title: 'Crea tu plan de alimentación',
@@ -687,10 +698,12 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 40),
           _buildUpcomingMealCard(),
           const SizedBox(height: 24),
-          MembershipStatusWidget(isPremium: false),
+          MembershipStatusWidget(
+            isPremium: widget.isPremium,
+            isInTrial: widget.isInTrial,
+            trialDaysRemaining: trialDaysRemaining,
+          ),
           const SizedBox(height: 40),
-          //   _buildAchievementsSection(),
-          //        _btnLogout(context),
           const SizedBox(height: 120),
         ],
       )
@@ -699,41 +712,54 @@ class _DashboardViewState extends State<_DashboardView> {
     );
   }
 
-  Widget _buildProfileHeader(String userName, BuildContext context) {
+  Widget _buildProfileHeader(BuildContext context) {
     return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(children: [
-              const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: FrutiaColors.accent,
-                  child: Icon(Icons.person, color: Colors.white, size: 30)),
-              const SizedBox(width: 16),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text('¡Hola de nuevo,',
-                        style: GoogleFonts.lato(
-                            fontSize: 16, color: FrutiaColors.secondaryText)),
-                    Text(userName,
-                        style: GoogleFonts.lato(
-                            fontSize: 22, fontWeight: FontWeight.bold))
-                  ])),
-            ]))
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 30,
+            backgroundColor: FrutiaColors.accent,
+            child: Icon(Icons.person, color: Colors.white, size: 30),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '¡Hola de nuevo,',
+                  style: GoogleFonts.lato(
+                    fontSize: 16,
+                    color: FrutiaColors.secondaryText,
+                  ),
+                ),
+                Text(
+                  widget.userName ?? 'Usuario',
+                  style: GoogleFonts.lato(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    )
         .animate()
         .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
-  // --- _buildStatsRow now wraps individual StatCards with Showcase ---
   Widget _buildStatsRow(BuildContext context, int streakDays,
-      String currentWeight, String mainGoal) {
+      String currentWeight, String mainGoal, String trialDaysRemaining) {
     return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(children: [
               Row(children: [
                 Expanded(
                   child: Showcase(
-                      key: _streakStatKey, // Highlight individual stat card
+                      key: _streakStatKey,
                       title: 'Tu racha actual',
                       description:
                           'Los días consecutivos que has completado tu plan.',
@@ -802,7 +828,20 @@ class _DashboardViewState extends State<_DashboardView> {
                             icon: Icons.flag_rounded,
                             value: mainGoal,
                             label: 'Objetivo',
-                            color: Colors.green)))
+                            color: Colors.green))),
+                if (widget.isInTrial) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      icon: Icons.timer_outlined,
+                      value: trialDaysRemaining,
+                      label: 'Prueba restante',
+                      color: FrutiaColors.accent2,
+                    ),
+                  ),
+                ] else ...[
+                  const Spacer(),
+                ]
               ])
             ]))
         .animate()
@@ -901,13 +940,13 @@ class _DashboardViewState extends State<_DashboardView> {
                                 ? Colors.white
                                 : FrutiaColors.primaryText)),
                     const SizedBox(height: 6),
-                    Icon(
-                      didComply ? Icons.check_circle : Icons.circle_outlined,
-                      size: 16,
-                      color: isToday
-                          ? Colors.green.withOpacity(0.8)
-                          : (didComply ? Colors.green : Colors.grey.shade400),
-                    ),
+                    Icon(didComply ? Icons.check_circle : Icons.circle_outlined,
+                        size: 16,
+                        color: isToday
+                            ? Colors.green.withOpacity(0.8)
+                            : (didComply
+                                ? Colors.green
+                                : Colors.grey.shade400)),
                   ],
                 ),
               );
@@ -998,10 +1037,10 @@ class _DashboardViewState extends State<_DashboardView> {
                   child: ElevatedButton(
                       onPressed: () {
                         Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const QuestionnaireFlow()),
-                        );
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const QuestionnaireFlow()));
                       },
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
@@ -1019,54 +1058,6 @@ class _DashboardViewState extends State<_DashboardView> {
         .animate()
         .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
-
-  Widget _buildAchievementsSection() {
-    return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Tus logros',
-                  style: GoogleFonts.lato(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _buildAchievementCard('Racha de 5 días',
-                        Icons.local_fire_department, Colors.orange),
-                    _buildAchievementCard(
-                        'Primera semana', Icons.check_circle, Colors.green),
-                    _buildAchievementCard(
-                        'Explorador', Icons.explore, Colors.blue)
-                  ])
-            ]))
-        .animate()
-        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
-  }
-
-  Widget _buildAchievementCard(String title, IconData icon, Color color) {
-    return Container(
-        decoration: BoxDecoration(
-            color: FrutiaColors.secondaryBackground,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4))
-            ]),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 40, color: color),
-          const SizedBox(height: 8),
-          Text(title,
-              style:
-                  GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center)
-        ]));
-  }
 }
 
 class _StreakReminderCard extends StatelessWidget {
@@ -1077,7 +1068,7 @@ class _StreakReminderCard extends StatelessWidget {
   final bool canCompleteToday;
 
   const _StreakReminderCard({
-    super.key, // Added super.key for consistency
+    super.key,
     required this.streakCount,
     required this.isLoading,
     required this.onPressed,
@@ -1255,7 +1246,7 @@ class _StatCard extends StatelessWidget {
   final String label;
   final Color color;
   const _StatCard(
-      {super.key, // Added super.key for consistency
+      {super.key,
       required this.icon,
       required this.value,
       required this.label,
@@ -1284,17 +1275,44 @@ class _StatCard extends StatelessWidget {
 
 class MembershipStatusWidget extends StatelessWidget {
   final bool isPremium;
+  final bool isInTrial;
+  final String trialDaysRemaining;
 
   const MembershipStatusWidget({
     Key? key,
     required this.isPremium,
+    required this.isInTrial,
+    required this.trialDaysRemaining,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    String title;
+    String subtitle;
+    Color color;
+    IconData icon;
+    bool isActionable = true;
+
+    if (isPremium) {
+      title = "Membresía Premium";
+      subtitle = "Estás disfrutando de todos los beneficios";
+      color = Colors.green;
+      icon = Icons.verified_user;
+      isActionable = false;
+    } else if (isInTrial) {
+      title = "En Período de Prueba";
+      subtitle = "Te quedan $trialDaysRemaining de prueba gratuita";
+      color = FrutiaColors.accent;
+      icon = Icons.timer;
+    } else {
+      title = "Actualiza tu membresía";
+      subtitle = "Desbloquea todas las funciones premium";
+      color = Colors.red;
+      icon = Icons.card_membership;
+    }
+
     return GestureDetector(
-      // La navegación solo se activa si el usuario NO es premium
-      onTap: !isPremium
+      onTap: isActionable
           ? () {
               Navigator.push(
                 context,
@@ -1306,44 +1324,30 @@ class MembershipStatusWidget extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          // Usa el color correspondiente al estado de la membresía
-          color: isPremium ? Colors.green[50] : Colors.red[50],
+          color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isPremium ? Colors.green : Colors.red,
-            width: 1.5,
-          ),
+          border: Border.all(color: color, width: 1.5),
         ),
         child: Row(
           children: [
-            Icon(
-              isPremium ? Icons.verified_user : Icons.card_membership,
-              color: isPremium ? Colors.green : Colors.red,
-              size: 28, // Tamaño ligeramente aumentado para más impacto
-            ),
+            Icon(icon, color: color, size: 28),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isPremium ? "Membresía Premium" : "Actualiza tu membresía",
+                    title,
                     style: GoogleFonts.poppins(
-                      // Usando Poppins para consistencia
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: isPremium
-                          ? Colors.green.shade800
-                          : Colors.red.shade800,
+                      color: color,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isPremium
-                        ? "Estás disfrutando de todos los beneficios"
-                        : "Desbloquea todas las funciones premium",
+                    subtitle,
                     style: GoogleFonts.lato(
-                      // Usando Lato para el cuerpo
                       fontSize: 14,
                       color: Colors.black87,
                     ),
@@ -1351,8 +1355,8 @@ class MembershipStatusWidget extends StatelessWidget {
                 ],
               ),
             ),
-            if (!isPremium)
-              Icon(Icons.arrow_forward_ios, color: Colors.red, size: 16),
+            if (isActionable)
+              Icon(Icons.arrow_forward_ios, color: color, size: 16),
           ],
         ),
       ),

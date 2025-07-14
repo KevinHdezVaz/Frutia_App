@@ -49,12 +49,8 @@ Color _colorFromString(String colorName) {
   }
 }
 
-// ==========================================================
-// 1. MODELO PRINCIPAL (ROOT)
-// ==========================================================
+// En tu archivo de modelos (ej. lib/models/plan_model.dart)
 class MealPlanData {
-  // El id no es parte del 'plan_data', así que lo quitamos de aquí
-  // para mantener el modelo limpio. La app no necesita el ID del plan.
   final NutritionPlan nutritionPlan;
   final List<InspirationRecipe> recipes;
   final List<MealFormula> formulas;
@@ -65,32 +61,62 @@ class MealPlanData {
     required this.formulas,
   });
 
-  // ▼▼▼ INICIO DE LA CORRECCIÓN ▼▼▼
   factory MealPlanData.fromJson(Map<String, dynamic> json) {
-    // AHORA ASUMIMOS QUE EL 'json' QUE RECIBIMOS YA ES EL PLAN DE COMIDAS
+    List<InspirationRecipe> parsedRecipes = [];
+    List<MealFormula> parsedFormulas = [];
 
-    // Extraemos la sección 'recipes' del plan
-    final recipesData = json['recipes'] as Map<String, dynamic>? ?? {};
-    final inspirationRecipesList =
-        recipesData['inspirationRecipes'] as List? ?? [];
-    final formulasList = recipesData['formulas'] as List? ?? [];
+    // Manejar recipes como lista o como mapa
+    if (json['recipes'] is List) {
+      // Caso 1: recipes es una lista de recetas (formato del JSON actual)
+      parsedRecipes = (json['recipes'] as List<dynamic>)
+          .map((r) => InspirationRecipe.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } else if (json['recipes'] is Map) {
+      // Caso 2: recipes es un mapa con inspirationRecipes y formulas (formato antiguo o futuro)
+      final recipesData = json['recipes'] as Map<String, dynamic>;
+      parsedRecipes =
+          (recipesData['inspirationRecipes'] as List<dynamic>? ?? [])
+              .map((r) => InspirationRecipe.fromJson(r as Map<String, dynamic>))
+              .toList();
+      parsedFormulas = (recipesData['formulas'] as List<dynamic>? ?? [])
+          .map((f) => MealFormula.fromJson(f as Map<String, dynamic>))
+          .toList();
+    }
 
     return MealPlanData(
-      // Parseamos directamente desde el 'json' que nos llega
       nutritionPlan: NutritionPlan.fromJson(json['nutritionPlan'] ?? {}),
-      recipes: inspirationRecipesList
-          .map((r) => InspirationRecipe.fromJson(r))
-          .toList(),
-      formulas: formulasList.map((f) => MealFormula.fromJson(f)).toList(),
+      recipes: parsedRecipes,
+      formulas: parsedFormulas,
     );
   }
-
-  // ▲▲▲ FIN DE LA CORRECCIÓN ▲▲▲
 }
 
 // ==========================================================
 // 2. MODELOS PARA 'nutritionPlan'
 // ==========================================================
+
+// --- Añade esta nueva clase ---
+class PriceInfo {
+  final String store;
+  final double price;
+  final String? currency;
+
+  const PriceInfo({required this.store, required this.price, this.currency});
+
+  factory PriceInfo.fromJson(Map<String, dynamic> json) {
+    return PriceInfo(
+      store: json['store'] as String? ?? 'N/A',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'store': store,
+        'price': price,
+        'currency': currency,
+      };
+}
 
 class NutritionPlan {
   final TargetMacros targetMacros;
@@ -168,6 +194,7 @@ class MealCategory {
   }
 }
 
+// --- Reemplaza tu clase MealOption por esta ---
 class MealOption {
   final String name;
   final String imageUrl;
@@ -175,6 +202,7 @@ class MealOption {
   final int protein;
   final int carbs;
   final int fats;
+  final List<PriceInfo> prices; // <-- CAMBIO CLAVE: Se añade esta línea
 
   const MealOption({
     required this.name,
@@ -183,9 +211,13 @@ class MealOption {
     required this.protein,
     required this.carbs,
     required this.fats,
+    required this.prices, // <-- CAMBIO CLAVE: Se añade al constructor
   });
 
   factory MealOption.fromJson(Map<String, dynamic> json) {
+    // Se añade la lógica para parsear la lista de precios
+    var pricesList = json['prices'] as List? ?? [];
+
     return MealOption(
       name: json['name'] ?? 'Sin nombre',
       imageUrl: json['imageUrl'] ?? '',
@@ -193,11 +225,12 @@ class MealOption {
       protein: json['protein'] ?? 0,
       carbs: json['carbs'] ?? 0,
       fats: json['fats'] ?? 0,
+      prices: pricesList
+          .map((p) => PriceInfo.fromJson(p))
+          .toList(), // <-- CAMBIO CLAVE
     );
   }
 
-  // ▼▼▼ MÉTODO AÑADIDO ▼▼▼
-  // Convierte el objeto MealOption a un Map, ideal para guardar como JSON.
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -206,9 +239,9 @@ class MealOption {
       'protein': protein,
       'carbs': carbs,
       'fats': fats,
+      'prices': prices.map((p) => p.toJson()).toList(), // <-- CAMBIO CLAVE
     };
   }
-  // ▲▲▲ FIN DEL MÉTODO AÑADIDO ▲▲▲
 }
 
 // ==========================================================
@@ -230,24 +263,24 @@ class RecipeIngredient {
 }
 
 class InspirationRecipe {
-  final String id;
+  final String? id;
   final String title;
-  final String description;
-  final String imageUrl;
+  final String? description;
+  final String? imageUrl;
   final String mealType;
-  final int prepTimeMinutes;
+  final int? prepTimeMinutes;
   final int calories;
   final List<String> planComponents;
   final List<RecipeIngredient> additionalIngredients;
   final List<String> steps;
 
   const InspirationRecipe({
-    required this.id,
+    this.id,
     required this.title,
-    required this.description,
-    required this.imageUrl,
+    this.description,
+    this.imageUrl,
     required this.mealType,
-    required this.prepTimeMinutes,
+    this.prepTimeMinutes,
     required this.calories,
     required this.planComponents,
     required this.additionalIngredients,
@@ -255,19 +288,26 @@ class InspirationRecipe {
   });
 
   factory InspirationRecipe.fromJson(Map<String, dynamic> json) {
-    final additional = json['additionalIngredients'] as List? ?? [];
+    final additional = json['additionalIngredients'] as List<dynamic>? ?? [];
+    // Maneja el caso donde el JSON usa 'name' en lugar de 'title' (backend actual)
+    final title = json['name'] ?? json['title'] ?? 'Sin Título';
+    // Convierte instructions en steps si steps no está presente
+    final steps = (json['steps'] as List<dynamic>?)?.cast<String>() ??
+        (json['instructions'] != null ? [json['instructions'] as String] : []);
     return InspirationRecipe(
-      id: json['id'] ?? '',
-      title: json['title'] ?? 'Sin Título',
-      description: json['description'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
+      id: json['id']?.toString() ?? 'recipe_${title.hashCode}',
+      title: title,
+      description: json['description'] ?? 'Receta nutritiva para tu plan.',
+      imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/150',
       mealType: json['mealType'] ?? 'General',
-      prepTimeMinutes: json['prepTimeMinutes'] ?? 0,
+      prepTimeMinutes: json['prepTimeMinutes'] ?? 30,
       calories: json['calories'] ?? 0,
-      planComponents: List<String>.from(json['planComponents'] ?? []),
-      additionalIngredients:
-          additional.map((i) => RecipeIngredient.fromJson(i)).toList(),
-      steps: List<String>.from(json['steps'] ?? []),
+      planComponents:
+          (json['planComponents'] as List<dynamic>?)?.cast<String>() ?? [],
+      additionalIngredients: additional
+          .map((i) => RecipeIngredient.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      steps: steps,
     );
   }
 }

@@ -1,15 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.frutia.app.latam">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:label="Frutia"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -20,88 +22,38 @@
             android:windowSoftInputMode="adjustResize">
             
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
-            <!-- Intent filter para launcher -->
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Intent filter para deep links -->
-         <intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <category android:name="android.intent.category.BROWSABLE" />
-    <data 
-        android:scheme="footconnect" 
-        android:host="checkout" 
-        android:pathPrefix="/success" />
-    <data 
-        android:scheme="footconnect" 
-        android:host="checkout" 
-        android:pathPrefix="/failure" />
-    <data 
-        android:scheme="footconnect" 
-        android:host="checkout" 
-        android:pathPrefix="/pending" />
-</intent-filter>
-
-<intent-filter>
-              <action android:name="android.intent.action.VIEW" />
-              <category android:name="android.intent.category.DEFAULT" />
-              <category android:name="android.intent.category.BROWSABLE" />
-              <data 
-                  android:scheme="miapp" 
-                  android:host="partido" />
-          </intent-filter>
-
-
-<!-- Nuevo intent filter para App Links HTTPS -->
-          <intent-filter android:autoVerify="true">
-              <action android:name="android.intent.action.VIEW" />
-              <category android:name="android.intent.category.DEFAULT" />
-              <category android:name="android.intent.category.BROWSABLE" />
-              <data 
-                  android:scheme="https" 
-                  android:host="proyect.aftconta.mx" 
-                  android:pathPrefix="/partido" />
-          </intent-filter>
-
-          
+            <!-- Configuración para deep links -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="frutiapp" android:host="payment"/>
+                <data android:scheme="https" android:host="tudominio.com" android:pathPrefix="/payment"/>
+            </intent-filter>
         </activity>
         
-
+        <!-- Configuración adicional -->
         <meta-data
             android:name="flutterEmbedding"
-            android:value="2" />
-
- 
-  <meta-data
-        android:name="com.onesignal.NotificationChannelId"
-        android:value="default_notification_channel" />
-    <meta-data
-        android:name="com.onesignal.NotificationChannelName"
-        android:value="Default Channel" />
-    <meta-data
-        android:name="com.onesignal.NotificationAccentColor.DEFAULT"
-        android:value="#FF9976D2"/>
-        
-        <meta-data
-            android:name="com.google.android.gms.auth.api.credentials.CREDENTIALS_API"
-            android:value="true" />
-
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDUr9LlEWbsDFQveRGQhh_tSO_Fxk65GYY" />
+            android:value="2"/>
     </application>
 
     <queries>
         <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="https" />
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="frutiapp"/>
         </intent>
     </queries>
-
 </manifest>

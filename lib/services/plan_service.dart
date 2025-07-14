@@ -31,6 +31,34 @@ class PlanService {
     }
   }
 
+  Future<String> getUserName() async {
+    try {
+      final token = await _storage.getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/name'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        debugPrint('--- RESPUESTA DEL ENDPOINT /user/name ---');
+        debugPrint(jsonEncode(jsonResponse));
+        debugPrint('---------------------------------------');
+
+        return jsonResponse['name'] as String;
+      } else {
+        throw Exception(
+            'Error al obtener el nombre del usuario: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching user name: $e');
+      rethrow;
+    }
+  }
+
   Future<List<String>> getShoppingListIngredients() async {
     // Nuevo método
     final token = await _storage.getToken();
@@ -118,70 +146,63 @@ class PlanService {
     }
   }
 // services/plan_service.dart
+// En tu archivo services/plan_service.dart
 
   Future<MealPlanData?> getCurrentPlan() async {
-    _log('Iniciando getCurrentPlan...');
-    try {
-      final token = await _storage.getToken();
-      if (token == null) {
-        _log('Error: No se encontró token de autenticación.');
-        throw AuthException('No autenticado.');
-      }
+    // --- Código para obtener el token y la URL ...
+    final token = await _storage.getToken();
+    if (token == null) throw Exception('No autenticado');
+    final url = Uri.parse('$baseUrl/plan/current');
 
-      final url = Uri.parse('$baseUrl/plan/current');
-      _log('Llamando a URL: $url');
+    final response = await http.get(url, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
 
-      final response = await http.get(
-        url,
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+    // ▼▼▼ INICIO DE LA CORRECCIÓN CON DEBUGGING ▼▼▼
 
-      _log('--- Respuesta del Servidor (getCurrentPlan) ---');
-      _log('Status Code: ${response.statusCode}');
-      _log('Response Body: ${response.body}');
-      _log('-------------------------------------------');
+    // 1. Imprimimos la respuesta CRUDA que llega del servidor
+    debugPrint("--- PASO 1: RESPUESTA COMPLETA DEL SERVIDOR ---");
+    debugPrint(response.body);
+    debugPrint("-------------------------------------------");
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
 
-        if (responseData.containsKey('data') && responseData['data'] != null) {
-          // <-- INICIO DE LA CORRECCIÓN
-          // 1. Extraemos específicamente el objeto del plan activo
-          final planJson = responseData['data']['active_plan'];
+      // 2. Extraemos el objeto 'active_plan' que está anidado
+      final activePlanJson = responseData['data']['active_plan'];
 
-          // 2. Comprobamos si el plan es nulo (caso válido para usuarios nuevos)
-          if (planJson == null) {
-            _log('Info: No se encontró un plan activo (active_plan es nulo).');
-            return null; // Devolvemos null para indicar que no hay plan
-          }
-
-          // 3. Si no es nulo, lo pasamos al constructor
-          _log('Campo "active_plan" encontrado. Parseando MealPlanData...');
-          return MealPlanData.fromJson(planJson);
-          // <-- FIN DE LA CORRECCIÓN
-        } else {
-          _log(
-              'Error: Respuesta 200 pero el campo "data" no existe o es nulo.');
-          throw Exception(
-              'Respuesta inesperada: campo "data" no encontrado o nulo.');
-        }
-      } else if (response.statusCode == 404) {
-        _log(
-            'Info: El servidor devolvió 404. No se encontró un plan activo para este usuario.');
+      if (activePlanJson == null) {
+        debugPrint(
+            "--- PASO 2: El plan activo es nulo. No hay nada que parsear. ---");
         return null;
-      } else {
-        _log('Error en la respuesta del servidor.');
-        final errorBody = json.decode(response.body);
-        throw Exception(
-            'Error al obtener el plan. Código: ${response.statusCode}. Mensaje: ${errorBody['message'] ?? 'Error desconocido'}');
       }
-    } catch (e, stacktrace) {
-      _log('EXCEPCIÓN en getCurrentPlan: $e');
-      _log('Stacktrace: $stacktrace');
-      rethrow;
+
+      // 3. Imprimimos SÓLO la parte del JSON que vamos a parsear
+      debugPrint(
+          "--- PASO 2: JSON DEL PLAN EXTRAÍDO (Lo que se va a parsear) ---");
+      // Usamos un encoder para imprimirlo bonito
+      JsonEncoder encoder = const JsonEncoder.withIndent('  ');
+      debugPrint(encoder.convert(activePlanJson));
+      debugPrint("----------------------------------------------------------");
+
+      try {
+        // 4. Pasamos el JSON correcto al constructor del modelo
+        final mealPlan =
+            MealPlanData.fromJson(activePlanJson as Map<String, dynamic>);
+        debugPrint(
+            "--- PASO 3: ¡ÉXITO! El JSON se ha parseado correctamente. ---");
+        return mealPlan;
+      } catch (e, s) {
+        debugPrint("--- ¡ERROR AL PARSEAR! ---");
+        debugPrint("El error es: $e");
+        debugPrint("Stacktrace: $s");
+        debugPrint("-------------------------");
+        throw Exception("Error al procesar los datos del plan.");
+      }
+    } else {
+      debugPrint("Error de servidor: ${response.statusCode}");
+      throw Exception('Error al cargar el plan desde el servidor.');
     }
   }
 
@@ -261,23 +282,33 @@ class PlanService {
   }
 }
 
+// Añade esta clase a tu archivo de modelos si no existe, o reemplázala.
+
 class MealLog {
+  final int id;
   final String date;
   final String mealType;
+  // La clave está aquí: 'selections' es una lista de objetos MealOption
   final List<MealOption> selections;
 
   MealLog({
+    required this.id,
     required this.date,
     required this.mealType,
     required this.selections,
   });
 
   factory MealLog.fromJson(Map<String, dynamic> json) {
-    final selectionsList = json['selections'] as List? ?? [];
+    // Se parsea la lista de selecciones usando el modelo MealOption que ya tienes
+    var selectionsList = json['selections'] as List? ?? [];
+
     return MealLog(
-      date: json['date'] ?? '',
-      mealType: json['meal_type'] ?? 'Comida Desconocida',
-      selections: selectionsList.map((s) => MealOption.fromJson(s)).toList(),
+      id: json['id'] as int? ?? 0,
+      date: json['date'] as String? ?? '',
+      mealType: json['meal_type'] as String? ?? 'Comida Desconocida',
+      selections: selectionsList
+          .map((s) => MealOption.fromJson(s as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

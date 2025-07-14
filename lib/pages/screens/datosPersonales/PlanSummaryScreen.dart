@@ -407,7 +407,7 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8.0),
           child: Image.network(
-            recipe.imageUrl,
+            recipe.imageUrl!,
             width: 50,
             height: 50,
             fit: BoxFit.cover,

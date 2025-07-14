@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/providers/ShoppingProvider.dart';
-import 'package:Frutia/services/providers/MealPlanProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/onscreen/SplashScreen.dart';
 import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/settings/theme_data.dart';
@@ -18,15 +16,11 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
-// Llaves globales
+// Llaves globales que pueden ser útiles en toda la app
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 final BonoService _bonoService = BonoService(baseUrl: baseUrl);
-
-// Stream controller para estado del pago
-final paymentStatusController =
-    StreamController<Map<String, dynamic>>.broadcast();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,33 +31,18 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // --- CONFIGURACIÓN CORRECTA PARA ONESIGNAL 5.3.3+ ---
-
-// Habilitar logs de depuración
+  // Configuración de OneSignal
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.Debug.setAlertLevel(OSLogLevel.none);
-
-// Inicializa OneSignal con tu App ID
   OneSignal.initialize("5fad8140-b31f-4893-b00f-5f896e38b7d6");
-
-// Configuración de manejadores de notificaciones:
-
-// 1. Manejador para cuando se abre una notificación
   OneSignal.Notifications.addClickListener((event) {
     print('NOTIFICATION OPENED HANDLER: ${event.notification.body}');
   });
-
-// 2. Manejador para notificaciones en primer plano
   OneSignal.Notifications.addForegroundWillDisplayListener((event) {
     print(
         'NOTIFICATION WILL DISPLAY IN FOREGROUND: ${event.notification.body}');
-    // Para mostrar la notificación, debes llamar a event.preventDefault() y luego mostrar manualmente
-    // o dejar que OneSignal la muestre automáticamente
-    event.preventDefault(); // Si quieres manejar la visualización manualmente
-    // event.notification.display(); // Para mostrar la notificación
+    event.preventDefault();
   });
-
-// Solicitar permisos
 
   runApp(
     MultiProvider(
@@ -71,27 +50,18 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ShoppingProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => QuestionnaireProvider()),
-        //  ChangeNotifierProvider(create: (context) => MealPlanProvider()),
       ],
       child: ShowCaseWidget(
         builder: (context) => MyApp(isviewed: isviewed),
-        autoPlay: false, // Desactiva el autoplay para control manual
-        enableAutoScroll: true, // Permite scroll automático a los elementos
-        blurValue: 1.5, // Valor del desenfoque del fondo
+        autoPlay: false,
+        enableAutoScroll: true,
+        blurValue: 1.5,
       ),
     ),
   );
 }
 
-void _showPaymentMessage(String message, Color color) {
-  scaffoldMessengerKey.currentState?.showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: color,
-    ),
-  );
-}
-
+// MyApp puede volver a ser un StatelessWidget, ya que no necesita manejar el estado de los deep links.
 class MyApp extends StatelessWidget {
   final int isviewed;
 
@@ -120,6 +90,7 @@ class MyApp extends StatelessWidget {
           darkTheme: darkTheme,
           home: SplashScreen(isviewed: isviewed),
           builder: (context, child) {
+            // El ShowCaseWidget se puede mantener aquí si se usa en múltiples partes de la app.
             return ShowCaseWidget(
               builder: (ctx) => child!,
             );
@@ -129,5 +100,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-enum PaymentStatus { success, failure, approved, pending, unknown }

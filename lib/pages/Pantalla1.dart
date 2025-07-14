@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:Frutia/pages/screens/historyScreen.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
+import 'package:Frutia/services/profile_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,12 +13,11 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
-import 'package:Frutia/utils/colors.dart'; // Asegúrate que esta ruta sea correcta
-import 'package:Frutia/services/plan_service.dart'; // Asegúrate que esta ruta sea correcta
+import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/services/plan_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// --- Pantalla Principal (StatefulWidget) ---
 class ProfessionalMiPlanDiarioScreen extends StatefulWidget {
   const ProfessionalMiPlanDiarioScreen({Key? key}) : super(key: key);
 
@@ -28,47 +28,44 @@ class ProfessionalMiPlanDiarioScreen extends StatefulWidget {
 
 class _ProfessionalMiPlanDiarioScreenState
     extends State<ProfessionalMiPlanDiarioScreen> {
-  // --- ESTADO Y SERVICIOS ---
   final PlanService _planService = PlanService();
-  MealPlanData? _mealPlanData; // Contendrá todo el plan venido de la API
+  MealPlanData? _mealPlanData;
   bool _isLoading = true;
   String? _errorMessage;
+  String? _userName;
 
-  // Mapa para guardar las selecciones del usuario dinámicamente
+  Map<String, dynamic>? _userProfile;
+  final ProfileService _profileService = ProfileService();
+
   final Map<String, Map<String, MealOption>> _dailySelections = {};
-
-  // Totales de macros calculados basados en la selección
   int _totalCalories = 0;
   int _totalProtein = 0;
   int _totalCarbs = 0;
   int _totalFats = 0;
 
   final Set<String> _registeringMeals = {};
-  // Para saber qué comidas ya se completaron y cambiar su UI
   final Set<String> _completedMeals = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchPlanAndInitialState(); // Usaremos una nueva función de arranque
+    _fetchPlanAndInitialState();
+    _fetchUserName();
   }
 
   Future<void> _registerMeal(
       String mealTitle, List<MealOption> selections) async {
-    // 1. Marcar la comida como "registrando" para mostrar un spinner
     setState(() {
       _registeringMeals.add(mealTitle);
     });
 
     try {
-      // 2. Llamar al servicio que creamos para guardar en la BD
       await _planService.logMeal(
-        date: DateTime.now(), // Usa la fecha actual
+        date: DateTime.now(),
         mealType: mealTitle,
         selections: selections,
       );
 
-      // 3. Si todo va bien, marca la comida como completada
       setState(() {
         _completedMeals.add(mealTitle);
       });
@@ -87,46 +84,61 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
       );
     } finally {
-      // 4. Quitar la comida del estado "registrando" sin importar el resultado
       setState(() {
         _registeringMeals.remove(mealTitle);
       });
     }
   }
 
-  // ▼▼▼ FUNCIÓN PRINCIPAL DE CARGA (MODIFICADA) ▼▼▼
+  Future<void> _fetchUserName() async {
+    try {
+      final name = await _planService.getUserName();
+      if (mounted) {
+        setState(() {
+          _userName = name;
+        });
+      }
+      debugPrint('User name loaded: $name');
+    } catch (e) {
+      debugPrint('Error fetching user name: $e');
+      if (mounted) {
+        setState(() {
+          _userName = 'Usuario'; // Valor por defecto en caso de error
+        });
+      }
+    }
+  }
+
   Future<void> _fetchPlanAndInitialState() async {
-    // Ponemos la pantalla en estado de carga
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      // 1. Obtenemos el plan y el historial al mismo tiempo
       final results = await Future.wait([
         _planService.getCurrentPlan(),
-        _planService.getHistory(), // Obtenemos los registros de la BD
+        _planService.getHistory(),
+        _profileService.getProfile(),
       ]);
 
       final plan = results[0] as MealPlanData?;
       final history = results[1] as List<MealLog>;
+      final profile = results[2] as Map<String, dynamic>?;
 
       if (plan == null) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _errorMessage = "No tienes un plan activo.";
             _isLoading = false;
           });
+        }
         return;
       }
 
-      // 2. Inicializamos las selecciones
       plan.nutritionPlan.meals.keys.forEach((mealTitle) {
         _dailySelections[mealTitle] = {};
       });
 
-      // 3. Cargamos las selecciones guardadas en el dispositivo
       await _loadSelectionsFromLocal();
 
-      // 4. Verificamos el historial para saber qué comidas ya se completaron HOY
       final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final completedToday = history
           .where((log) => log.date == todayString)
@@ -134,12 +146,12 @@ class _ProfessionalMiPlanDiarioScreenState
 
       _completedMeals.addAll(completedToday);
 
-      // 5. Actualizamos el estado final de la UI
       if (mounted) {
         setState(() {
           _mealPlanData = plan;
+          _userProfile = profile;
           _isLoading = false;
-          _calculateTotals(); // Calculamos macros con los datos cargados
+          _calculateTotals();
         });
       }
     } catch (e) {
@@ -175,7 +187,6 @@ class _ProfessionalMiPlanDiarioScreenState
 
   void _updateSelection(
       String mealTitle, String categoryTitle, MealOption option) {
-    // No permitimos cambiar la selección si la comida ya fue completada
     if (_completedMeals.contains(mealTitle)) return;
 
     setState(() {
@@ -188,13 +199,9 @@ class _ProfessionalMiPlanDiarioScreenState
   Future<void> _saveSelections() async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    // Convertimos el mapa de selecciones a un formato que se pueda guardar (JSON)
     final encodedData = json.encode(_dailySelections.map((meal, selections) =>
         MapEntry(
-            meal,
-            selections.map((cat, opt) => MapEntry(cat,
-                opt.toJson())) // Necesitarás un método toJson() en MealOption
-            )));
+            meal, selections.map((cat, opt) => MapEntry(cat, opt.toJson())))));
     await prefs.setString('daily_selection_$today', encodedData);
   }
 
@@ -216,113 +223,110 @@ class _ProfessionalMiPlanDiarioScreenState
     });
   }
 
-  // --- GENERACIÓN DE PDF (AHORA DINÁMICO) ---
   Future<void> _generateAndDownloadPDF() async {
-    if (_mealPlanData == null) {
+    if (_mealPlanData == null || _userProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('No hay datos del plan para generar el PDF.')),
+            content:
+                Text('No hay datos del plan o perfil para generar el PDF.')),
       );
       return;
     }
 
-    final plan = _mealPlanData!.nutritionPlan;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+          child: CircularProgressIndicator(color: FrutiaColors.accent)),
+    );
 
     try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: FrutiaColors.accent),
-        ),
-      );
-
       final pdf = pw.Document();
-      final logo = pw.MemoryImage(
-        (await rootBundle.load('assets/images/fondoAppFrutia.webp'))
-            .buffer
-            .asUint8List(),
-      );
+      final plan = _mealPlanData!.nutritionPlan;
+      final profile = _userProfile!;
 
-      // --- PÁGINA 1: PLAN DE COMIDAS ---
+      // Cargar la imagen del logo
+      final ByteData imageData =
+          await rootBundle.load('assets/images/fondoAppFrutia.webp');
+      final Uint8List imageBytes = imageData.buffer.asUint8List();
+
+      // Nuevas recomendaciones y recordatorios
+      final List<String> additionalRecommendations = [
+        'PROTEÍNAS se pesan CRUDAS, si la pesa cocida QUITAR 20g al gramaje indicado',
+        'CARBOHIDRATOS se pesan COCIDOS, excepto la avena que se pesa CRUDA',
+        'Consumir una adecuada cantidad de agua al día (3.2 litros) – Cuantifícala',
+        'Utiliza una balanza electrónica para pesar las comidas',
+        'Utiliza cucharas medidoras para mayor exactitud',
+        'Utiliza Pam (aceite en spray) o sino utiliza el aceite de oliva extra virgen',
+        'Los vegetales son LIBRES, dales variedad a tus comidas (Recuerda que aportan fibra)',
+      ];
+
+      final List<String> additionalReminders = [
+        'Pon horarios de comida y respétalos',
+        'Busca recetas e inventa platos nuevos para no aburrirte',
+        'Prepara salsas en base a vegetales (Ají, rocoto, albahaca, tomate, pimientos, champiñones, etc.)',
+        'Organiza tus comidas en adelantado si vas a tener un día atípico (Piensa en adelantado)',
+      ];
+
+      // Combinar las recomendaciones y recordatorios existentes con los nuevos
+      final allGeneralRecommendations = [
+        ...plan.generalRecommendations,
+        ...additionalRecommendations,
+      ];
+      final allRememberRecommendations = [
+        ...plan.rememberRecommendations,
+        ...additionalReminders,
+      ];
+
+      // Cargar las fuentes desde los assets
+      final font =
+          pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Regular.ttf"));
+      final boldFont =
+          pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Bold.ttf"));
+
+      final pw.ThemeData theme =
+          pw.ThemeData.withFont(base: font, bold: boldFont);
+
+      // PÁGINA 1: PLAN DE COMIDAS
       pdf.addPage(
         pw.MultiPage(
+          theme: theme,
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
+          header: (context) =>
+              _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
           build: (pw.Context context) => [
-            // Encabezado
-            pw.Row(children: [
-              pw.SizedBox(height: 50, child: pw.Image(logo)),
-              pw.SizedBox(width: 20),
-              pw.Text('Tu Plan de Alimentación by Frutia',
-                  style: pw.TextStyle(
-                      fontSize: 20, fontWeight: pw.FontWeight.bold)),
-            ]),
+            _buildProfileInfo(profile),
             pw.SizedBox(height: 20),
-
-            // Macros Objetivo
-            pw.Text('Macros Objetivo:',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-            pw.Text('Calorías: ${plan.targetMacros.calories} kcal'),
-            pw.Text(
-                'Proteínas: ${plan.targetMacros.protein}g / Grasas: ${plan.targetMacros.fats}g / Carbohidratos: ${plan.targetMacros.carbs}g'),
+            _buildMacrosInfo(plan.targetMacros),
             pw.SizedBox(height: 20),
-
-            // Comidas Seleccionadas (o las opciones si no se seleccionó)
-            ..._dailySelections.entries.map((mealEntry) {
-              final mealTitle = mealEntry.key;
-              final selections = mealEntry.value;
-              return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Header(level: 1, text: mealTitle),
-                    pw.SizedBox(height: 5),
-                    if (selections.isNotEmpty)
-                      ...selections.values
-                          .map((option) => pw.Text('- ${option.name}'))
-                    else
-                      // Muestra opciones generales si no hay selección
-                      ...plan.meals[mealTitle]!.map((category) {
-                        final optionsText =
-                            category.options.map((o) => o.name).join(' o ');
-                        return pw.Text('- ${category.title}: $optionsText');
-                      }),
-                    pw.SizedBox(height: 15),
-                  ]);
+            ...plan.meals.entries.map((mealEntry) {
+              return _buildMealPdfSection(mealEntry.key, mealEntry.value);
             }),
           ],
         ),
       );
 
-      // --- PÁGINA 2: RECOMENDACIONES ---
+      // PÁGINA 2: RECOMENDACIONES
       pdf.addPage(pw.MultiPage(
+          theme: theme,
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
+          header: (context) =>
+              _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
           build: (pw.Context context) => [
-                pw.Header(level: 0, text: 'Recomendaciones Generales'),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: plan.generalRecommendations
-                      .map((rec) => pw.Bullet(text: rec))
-                      .toList(),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Header(level: 0, text: 'Recuerda'),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: plan.rememberRecommendations
-                      .map((rec) => pw.Bullet(text: rec))
-                      .toList(),
-                ),
+                _buildRecommendationsSection(
+                    'Recomendaciones Generales', allGeneralRecommendations),
+                _buildRecommendationsSection(
+                    'Recuerda', allRememberRecommendations),
               ]));
 
       final directory = await getApplicationDocumentsDirectory();
       final file = File(
-          '${directory.path}/Plan_Frutia_${DateTime.now().toIso8601String()}.pdf');
+          '${directory.path}/Plan_Frutia_${DateFormat('yyyy-MM-dd').format(DateTime.now())}.pdf');
       await file.writeAsBytes(await pdf.save());
 
       if (mounted) Navigator.of(context).pop();
-
       OpenFile.open(file.path);
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
@@ -332,7 +336,82 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
-  // --- CONSTRUCCIÓN DE LA UI ---
+  pw.Widget _buildPdfHeader(String userName, Uint8List imageBytes) {
+    return pw.Container(
+        alignment: pw.Alignment.center,
+        margin: const pw.EdgeInsets.only(bottom: 20.0),
+        child: pw.Column(children: [
+          // Imagen del logo
+
+          pw.Text('Frutia',
+              style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 24,
+                  color: PdfColors.red)),
+          pw.Image(
+            pw.MemoryImage(imageBytes),
+            height: 60,
+          ),
+
+          pw.Text('Plan de Alimentación Personalizado para $_userName',
+              style: pw.TextStyle(fontSize: 18)),
+          pw.Divider(color: PdfColors.grey400),
+        ]));
+  }
+
+  pw.Widget _buildProfileInfo(Map<String, dynamic> profile) {
+    return pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text('Peso: ${profile['weight'] ?? 'N/A'} kg'),
+          pw.Text('Talla: ${profile['height'] ?? 'N/A'} cm'),
+          pw.Text('Edad: ${profile['age'] ?? 'N/A'} años'),
+        ]);
+  }
+
+  pw.Widget _buildMacrosInfo(TargetMacros macros) {
+    return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Header(level: 1, text: 'Macros Objetivo'),
+          pw.Text('Calorías: ${macros.calories} kcal'),
+          pw.Text(
+              'Proteínas: ${macros.protein}g / Grasas: ${macros.fats}g / Carbohidratos: ${macros.carbs}g'),
+        ]);
+  }
+
+  pw.Widget _buildMealPdfSection(
+      String mealTitle, List<MealCategory> categories) {
+    return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Header(level: 2, text: mealTitle),
+          pw.Table.fromTextArray(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            cellAlignment: pw.Alignment.centerLeft,
+            cellPadding: const pw.EdgeInsets.all(5),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            data: <List<String>>[
+              <String>['Componente', 'Opciones'],
+              ...categories.map((cat) =>
+                  [cat.title, cat.options.map((opt) => opt.name).join(' o ')]),
+            ],
+          ),
+          pw.SizedBox(height: 15),
+        ]);
+  }
+
+  pw.Widget _buildRecommendationsSection(String title, List<String> items) {
+    return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Header(level: 1, text: title),
+          ...items.map((item) => pw.Bullet(text: item)),
+          pw.SizedBox(height: 20),
+        ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -389,14 +468,11 @@ class _ProfessionalMiPlanDiarioScreenState
 
     final plan = _mealPlanData!.nutritionPlan;
 
-    // Dentro del método _buildBody() de _ProfessionalMiPlanDiarioScreenState
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // El Dashboard de Métricas no cambia
           _MetricsDashboard(
             calories: _totalCalories,
             targetCalories: plan.targetMacros.calories,
@@ -408,10 +484,7 @@ class _ProfessionalMiPlanDiarioScreenState
             targetFats: plan.targetMacros.fats,
             onDownloadPDF: _generateAndDownloadPDF,
           ).animate().fadeIn(duration: 500.ms),
-
           const SizedBox(height: 24),
-
-          // Generación Dinámica de Tarjetas de Comida
           ...plan.meals.entries.map((entry) {
             final mealTitle = entry.key;
             final mealCategories = entry.value;
@@ -428,18 +501,13 @@ class _ProfessionalMiPlanDiarioScreenState
                 selections: _dailySelections[mealTitle]!,
                 onOptionSelected: (category, option) =>
                     _updateSelection(mealTitle, category, option),
-
-                // ▼▼▼ INICIO DE LA MODIFICACIÓN ▼▼▼
                 isRegistering: _registeringMeals.contains(mealTitle),
                 isCompleted: _completedMeals.contains(mealTitle),
                 onRegister: () {
-                  // Extraemos las selecciones para esta comida específica
                   final selectionsForMeal =
                       _dailySelections[mealTitle]!.values.toList();
-                  // Llamamos a la función principal para iniciar el registro
                   _registerMeal(mealTitle, selectionsForMeal);
                 },
-                // ▲▲▲ FIN DE LA MODIFICACIÓN ▲▲▲
               ).animate().fadeIn(duration: 500.ms, delay: delay),
             );
           }).toList(),
@@ -463,10 +531,6 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 }
-
-// =========================================================================
-// --- WIDGETS COMPONENTES (SIN CAMBIOS, YA ERAN DINÁMICOS) ---
-// =========================================================================
 
 class _MetricsDashboard extends StatelessWidget {
   final int calories,
@@ -550,7 +614,6 @@ class _MetricsDashboard extends StatelessWidget {
             const SizedBox(height: 55),
             ElevatedButton.icon(
               onPressed: () {
-                // Navegación a la pantalla de Historial
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -566,15 +629,13 @@ class _MetricsDashboard extends StatelessWidget {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                // Estilo de botón "secundario" o "contorneado"
                 backgroundColor: Colors.white,
                 foregroundColor: FrutiaColors.accent,
                 side: const BorderSide(color: FrutiaColors.accent, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                minimumSize:
-                    const Size(double.infinity, 50), // Tamaño aumentado
+                minimumSize: const Size(double.infinity, 50),
               ),
             ),
             const SizedBox(height: 20),
@@ -735,7 +796,6 @@ class _MealCard extends StatelessWidget {
             ),
           ),
           const Divider(indent: 16, endIndent: 16),
-          // Las opciones de comida solo se muestran si la comida no está completada
           if (!isCompleted)
             ...categories.map((category) => _MealCategorySection(
                   category: category,
@@ -743,10 +803,7 @@ class _MealCard extends StatelessWidget {
                   onChanged: (option) =>
                       onOptionSelected(category.title, option),
                 )),
-
           if (title != 'Shake' && !isCompleted) _FreeSaladInfo(),
-
-          // Lógica condicional para el botón y el mensaje de completado
           if (isCompleted)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -874,7 +931,6 @@ class _MealOptionTile extends StatelessWidget {
                     end: Alignment.bottomRight,
                   )
                 : null,
-            // color: isSelected ? null : FrutiaColors.secondaryBackground,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
@@ -884,6 +940,8 @@ class _MealOptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
+              // IMAGE COMMENTED OUT: Network image for meal option
+              /*
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
@@ -891,7 +949,6 @@ class _MealOptionTile extends StatelessWidget {
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
-                  // Widget de carga y error para la imagen
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
@@ -912,15 +969,32 @@ class _MealOptionTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
+              */
               Expanded(
-                child: Text(
-                  option.name,
-                  style: GoogleFonts.lato(
-                    fontWeight: FontWeight.w600,
-                    color: FrutiaColors.primaryText,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.name,
+                      style: GoogleFonts.lato(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: FrutiaColors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Proteina: ${option.protein}g   Carbohidrato: ${option.carbs}g   Grasas: ${option.fats}g',
+                      style: GoogleFonts.lato(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 12,
+                        color: FrutiaColors.secondaryText,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
               Icon(
                 isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
                 color: isSelected

@@ -4,14 +4,19 @@ import 'package:Frutia/model/ChatMessage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/PermissionService.dart';
 import 'package:Frutia/pages/screens/chatFrutia/VoiceChatScreen.dart';
 import 'package:Frutia/pages/screens/chatFrutia/WaveVisualizer.dart';
+import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/services/ChatServiceApi.dart';
+import 'package:Frutia/services/RachaProgreso.dart';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:clipboard/clipboard.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -52,10 +57,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   String _transcribedText = '';
   bool _isTyping = false;
   int _typingIndex = 0;
-  late Timer _typingTimer;
+
+  // --- NUEVAS VARIABLES DE ESTADO ---
+  bool _isPremium = false;
+  int _userMessageCount = 0;
+  final int _messageLimit = 3;
+
+  Timer? _typingTimer; // Nullable
+
   bool _isSpeechInitialized = false;
-  late AnimationController _sunController;
-  late Animation<double> _sunAnimation;
+  AnimationController?
+      _sunController; // Nullable  late Animation<double> _sunAnimation;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isLoading = false;
   final AuthService _authService = AuthService();
@@ -157,47 +169,280 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final GlobalKey _voiceChatButtonKey =
       GlobalKey(debugLabel: 'voiceChatButtonShowcase');
 
+  bool _isCheckingPlan = true; // Empieza en true para mostrar el loader
+  bool _hasActivePlan = false; // Determina si el usuario tiene un plan
+
   @override
   void initState() {
     super.initState();
+    // En lugar de llamar a _checkUserPlanStatus, llamamos a una función más completa
+    _initializeScreen();
+  }
+
+  // --- NUEVO WIDGET PAYWALL ---
+  Widget _buildPaywall() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: FrutiaColors.accent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: FrutiaColors.accent, width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline_rounded,
+              color: FrutiaColors.accent, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            'Límite de mensajes alcanzado',
+            style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: FrutiaColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Hazte premium para chatear con Frutia sin límites y acceder a todas las funciones.',
+            style: GoogleFonts.lato(
+                fontSize: 14, color: FrutiaColors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PremiumScreen()));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FrutiaColors.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Ver Planes Premium'),
+          )
+        ],
+      ),
+    ).animate().fadeIn();
+  }
+
+  Widget _buildNoPlanWidget() {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 80,
+                color: FrutiaColors.accent.withOpacity(0.7),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Crea tu Plan Primero',
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: frutia_primary_text,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Necesitas un plan de alimentación activo para poder chatear con Frutia y obtener consejos personalizados.',
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  color: FrutiaColors.secondaryText,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(
+                    builder: (context) => const QuestionnaireFlow(),
+                  ))
+                      .then((_) {
+                    setState(() {
+                      _isCheckingPlan = true;
+                    });
+                    _checkUserPlanStatus();
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: FrutiaColors.accent,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.arrow_forward_rounded),
+                label: const Text(
+                  'Crear Mi Plan',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.5),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => _navigateBack(context),
+                child: const Text(
+                  'Volver al inicio',
+                  style: TextStyle(color: FrutiaColors.secondaryText),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatUI(BuildContext innerContext) {
+    return Stack(
+      children: [
+        _FloatingParticles(),
+        if (_isLoading && _messages.isEmpty)
+          const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+              strokeWidth: 6.0,
+            ),
+          )
+        else
+          Column(
+            children: [
+              AppBar(
+                backgroundColor: FrutiaColors.accent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => _navigateBack(innerContext),
+                ),
+                actions: [
+                  if (!_isSaved)
+                    Showcase(
+                      key: _saveButtonKey,
+                      title: 'Guardar Chat',
+                      description:
+                          'Usa este botón para guardar la conversación, si no la guardas se perdera.',
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.save,
+                              color: Colors.white, size: 22),
+                          label: const Text("Guardar Chat",
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 14)),
+                          onPressed: _saveChat,
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              Expanded(
+                child: ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  itemCount: _messages.length + (_isTyping ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (_isTyping && index == 0) {
+                      return _buildTypingIndicator();
+                    }
+                    final messageIndex = _isTyping ? index - 1 : index;
+                    return _buildMessageBubble(_messages[messageIndex]);
+                  },
+                ),
+              ),
+              _buildInput(),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// Inicializa toda la lógica del chat una vez que se confirma que hay un plan.
+  void _initializeChat() {
     _messages = widget.initialMessages?.reversed.toList() ?? [];
     _currentSessionId = widget.sessionId;
-    // For testing, force _isSaved to false to ensure showcase runs
-    _isSaved =
-        false; // widget.sessionId != null && widget.initialMessages != null;
+    _isSaved = widget.sessionId != null;
 
-    for (var message in _messages) {
-      _updateTokenCount(message.text);
-    }
-
-    _sunController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat(reverse: true);
-
-    _sunAnimation = Tween<double>(begin: 30.0, end: 40.0).animate(
-      CurvedAnimation(parent: _sunController, curve: Curves.easeInOut),
-    );
+    _initializeSpeech();
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (mounted && _isTyping) {
+        setState(() => _typingIndex = (_typingIndex + 1) % 3);
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        debugPrint('¿Widget montado?: $mounted');
-        debugPrint('¿Context disponible?: ${context != null}');
-        debugPrint(
-            '¿ShowCaseWidget disponible?: ${ShowCaseWidget.of(context) != null}');
-
-        // Give the UI a bit more time to render after post-frame callback
         Future.delayed(const Duration(milliseconds: 500), () {
-          // Reduced from 1000ms
-          if (mounted) {
-            _showShowcase();
-          }
+          if (mounted) _showShowcase();
         });
       }
     });
 
-    _initializeSpeech();
-    _typingTimer = Timer.periodic(Duration.zero, (_) {});
+    if (!_initialMessageSent) {
+      _initialMessageSent = true;
+      if (_currentSessionId == null && _messages.isEmpty) {
+        _startNewSession().then((_) {
+          if (widget.initialMessage != null &&
+              widget.initialMessage!.isNotEmpty) {
+            _sendMessage(widget.initialMessage!);
+          }
+        });
+      } else if (widget.initialMessage != null &&
+          widget.initialMessage!.isNotEmpty) {
+        _sendMessage(widget.initialMessage!);
+      }
+    }
+  }
+
+  /// Verifica si el usuario tiene un plan de comidas configurado.
+  Future<void> _checkUserPlanStatus() async {
+    try {
+      // Reutilizamos el servicio que obtiene el perfil del usuario
+      final responseData = await RachaProgresoService.getProgresoWithUser();
+      if (!mounted) return;
+
+      final profile = responseData['profile'];
+      final bool planIsComplete = profile != null &&
+          (profile['plan_setup_complete'] == true ||
+              profile['plan_setup_complete'] == 1);
+
+      setState(() {
+        _hasActivePlan = planIsComplete;
+        _isCheckingPlan = false; // Terminamos de verificar
+      });
+
+      // 2. Si el plan está completo, procedemos a inicializar el chat.
+      if (planIsComplete) {
+        _initializeChat();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCheckingPlan = false; // Terminamos de verificar (con error)
+          _hasActivePlan = false; // Asumimos que no tiene plan si hay error
+        });
+        _showErrorSnackBar('No se pudo verificar el estado de tu plan.');
+      }
+    }
   }
 
   Future<void> _showShowcase() async {
@@ -285,10 +530,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _speech.stop();
     _speech.cancel();
     _controller.dispose();
-    if (_typingTimer.isActive) {
-      _typingTimer.cancel();
+    if (_typingTimer?.isActive == true) {
+      _typingTimer!.cancel();
     }
-    _sunController.dispose();
+    if (_sunController?.isAnimating == true) {
+      _sunController!.dispose();
+    }
     _audioPlayer.stop();
     _audioPlayer.dispose();
     super.dispose();
@@ -448,7 +695,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       setState(() {
         _messages.insert(0, aiMessage);
         _isTyping = false;
-        _typingTimer.cancel();
+        _typingTimer!.cancel();
         if (!isTemporary && response['session_id'] != null) {
           _currentSessionId = response['session_id'];
         }
@@ -462,7 +709,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       }
       setState(() {
         _isTyping = false;
-        _typingTimer.cancel();
+        _typingTimer!.cancel();
       });
       print('Error sending message: $e');
       _showErrorSnackBar('Error al enviar el mensaje: $e');
@@ -822,7 +1069,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _initializeScreen() async {
+    setState(() {
+      _isCheckingPlan = true;
+    });
+    try {
+      final responseData = await RachaProgresoService.getProgresoWithUser();
+      if (!mounted) return;
+
+      final user = responseData['user'];
+      final profile = responseData['profile'];
+
+      final bool planIsComplete = profile != null &&
+          (profile['plan_setup_complete'] == true ||
+              profile['plan_setup_complete'] == 1);
+
+      setState(() {
+        _hasActivePlan = planIsComplete;
+        _isPremium = user?['subscription_status'] == 'active';
+        _userMessageCount = user?['message_count'] ?? 0;
+        _isCheckingPlan = false;
+      });
+
+      if (planIsComplete) {
+        _initializeChat();
+      }
+    } catch (e) {
+      // ... (tu manejo de errores)
+    }
+  }
+
   Widget _buildInput() {
+    // Si el usuario no es premium y ha alcanzado el límite, muestra el paywall.
+    if (!_isPremium && _userMessageCount >= _messageLimit) {
+      return _buildPaywall();
+    }
+
+    // De lo contrario, muestra el input normal.
     switch (widget.inputMode) {
       case 'keyboard':
         return _buildKeyboardInput();
@@ -866,104 +1149,22 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       child: Scaffold(
         backgroundColor: frutia_background,
         body: Builder(
-          builder: (innerContext) => Stack(
-            children: [
-              _FloatingParticles(),
-              if (_isLoading)
-                Center(
-                  child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
-                    strokeWidth: 6.0,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                  ),
-                )
-              else
-                Column(
-                  children: [
-                    AppBar(
-                      backgroundColor: FrutiaColors.accent,
-                      elevation: 0,
-                      leading: IconButton(
-                        icon: Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => _navigateBack(innerContext),
-                      ),
-                      actions: [
-                        if (!_isSaved)
-                          Showcase(
-                            key: _saveButtonKey,
-                            title: 'Guardar Chat',
-                            description:
-                                'Usa este botón para guardar la conversación, si no la guardas se perdera.',
-                            tooltipBackgroundColor: FrutiaColors.accent,
-                            targetShapeBorder: const CircleBorder(),
-                            titleTextStyle: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            descTextStyle: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                            disableMovingAnimation: true,
-                            disableScaleAnimation: true,
-                            child: Padding(
-                              padding: EdgeInsets.only(right: 10),
-                              child: TextButton.icon(
-                                icon: Icon(Icons.save,
-                                    color: Colors.white, size: 22),
-                                label: Text(
-                                  "Guardar Chat",
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                ),
-                                onPressed: _saveChat,
-                                style: TextButton.styleFrom(
-                                  backgroundColor:
-                                      Colors.white.withOpacity(0.2),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Column(
-                            children: [
-                              Expanded(
-                                child: ListView.builder(
-                                  reverse: true,
-                                  itemCount:
-                                      _messages.length + (_isTyping ? 1 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (_isTyping && index == 0) {
-                                      return _buildTypingIndicator();
-                                    }
-                                    final messageIndex =
-                                        _isTyping ? index - 1 : index;
-                                    return _buildMessageBubble(
-                                        _messages[messageIndex]);
-                                  },
-                                ),
-                              ),
-                              _buildInput(),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          builder: (innerContext) {
+            if (_isCheckingPlan) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
                 ),
-            ],
-          ),
+              );
+            }
+
+            if (!_hasActivePlan) {
+              return _buildNoPlanWidget();
+            }
+
+            return _buildChatUI(innerContext);
+          },
         ),
       ),
     );

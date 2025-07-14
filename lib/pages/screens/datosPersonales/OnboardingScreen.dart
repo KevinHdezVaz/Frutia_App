@@ -44,8 +44,6 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     final emojiRegex = RegExp(
         r'[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]',
         unicode: true);
-    // Normaliza caracteres como '–' a '-' y asegura codificación correcta
-    // Mantenemos la conversión para caracteres especiales comunes en español
     return text
         .replaceAll(emojiRegex, '')
         .replaceAll('\u2013', '-') // Guion largo
@@ -61,7 +59,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         .replaceAll('\u00d3', 'Ó') // O mayúscula con acento
         .replaceAll('\u00da', 'Ú') // U mayúscula con acento
         .replaceAll('\u00d1', 'Ñ') // Ñ mayúscula
-        .trim(); // Trim to remove any leading/trailing spaces
+        .trim();
   }
 
   @override
@@ -92,9 +90,6 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         final provider = context.read<QuestionnaireProvider>();
 
         // --- Define ALL your maps in a consistent UI_KEY:DB_VALUE format ---
-        // UI_KEY: The string shown in the user interface (with emojis).
-        // DB_VALUE: The exact string as stored/retrieved from the database (may contain unicode escapes, no emojis).
-        // The `removeEmojis` function will be used to clean `DB_VALUE` for comparison.
         final Map<String, String> goalMap = {
           '🔥 Bajar grasa': 'Bajar grasa',
           '💪 Aumentar músculo': 'Aumentar músculo',
@@ -113,8 +108,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           'No entreno 🚶': 'No entreno',
           '1-2 días/semana (ocasional)🏋️': '1-2 días/semana (ocasional)',
           '3–4 veces por semana (regular) 💪': '3-4 veces por semana (regular)',
-          '5–6 veces por semana (frecuente) 🔥':
-              '5–6 veces por semana (frecuente)', // Matches DB value from SQL dump
+          '5–6 veces por semana (frecuente) �':
+              '5–6 veces por semana (frecuente)',
           'Todos los días (alta frecuencia) 🏃‍♂️':
               'Todos los días (alta frecuencia)',
         };
@@ -128,12 +123,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           '🤗 No tengo estructura fija': 'No tengo estructura fija',
         };
 
-        // DENTRO DE _loadProfileData()
-
         final Map<String, String> dietaryStyleMap = {
-          // La clave (con emoji) es para la UI, el valor es para comparar con la DB.
-          '🍖 Omnívoro':
-              'Omnívoro', // <-- CORREGIDO: Añadido el acento a 'Omnívoro'
+          '🍖 Omnívoro': 'Omnívoro',
           '🥕 Vegetariano': 'Vegetariano',
           '🌱 Vegano': 'Vegano',
           '🥚 Keto / Low carb': 'Keto / Low carb',
@@ -141,15 +132,14 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
 
         final Map<String, String> budgetMap = {
           '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)':
-              'Bajo - Solo lo básico (Ej: arroz, huevo, lentejas', // Corrected to match DB value from SQL dump
+              'Bajo - Solo lo básico (Ej: arroz, huevo, lentejas',
           '💵 Medio - Balanceado y variado (Ej: frutas, yogur, pescado)':
               'Medio - Balanceado y variado (Ej: frutas, yogur, pescado)',
           '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)':
-              'Alto - Sin restricciones (Ej: salmón, proteína, superfoods)', // Corrected to match DB value from SQL dump
+              'Alto - Sin restricciones (Ej: salmón, proteína, superfoods)',
         };
         final Map<String, String> eatsOutMap = {
-          '🍔 Casi todos los días':
-              'Casi todos los días', // Corrected to match DB value 'Casi todos los días' (with accent)
+          '🍔 Casi todos los días': 'Casi todos los días',
           '🍎 A veces (2 a 4 veces por semana)':
               'A veces (2 a 4 veces por semana)',
           '🥗 Rara vez (1 vez por semana o menos)':
@@ -158,165 +148,88 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         };
         final Map<String, String> communicationStyleMap = {
           'Motivadora (que te empuje a dar más cuando lo necesites) 🏋️':
-              'Motivadora (que te empuje a dar más cuando lo necesites)', // Corrected: Match DB value
+              'Motivadora (que te empuje a dar más cuando lo necesites)',
           'Cercana (como un amigo que te acompaña sin presión) 😊':
-              'Cercana (como un amigo que te acompaña sin presión)', // Corrected: Match DB value
+              'Cercana (como un amigo que te acompaña sin presión)',
           'Directa (clara, sin vueltas ni frases suaves) 🤗':
-              'Directa (clara, sin vueltas ni frases suaves)', // Matches DB value
+              'Directa (clara, sin vueltas ni frases suaves)',
           'Como te salga a ti, yo me adapto 🔄':
               'Como te salga a ti, yo me adapto',
         };
         final Map<String, String> difficultyMap = {
           'Mantenerme constante 🔄': 'Mantenerme constante',
           'Saber qué comer cuando no tengo lo del plan 🤔':
-              'Saber qué comer cuando no tengo lo del plan', // Corrected: Match DB value
+              'Saber qué comer cuando no tengo lo del plan',
           'Comer saludable fuera de casa 🍽️': 'Comer saludable fuera de casa',
           'Controlar los antojos 🍫': 'Controlar los antojos',
           'Preparar la comida 🧑‍🍳': 'Preparar la comida',
           'Otra ✍️': 'Otra',
         };
         final Map<String, String> motivationMap = {
-          'Ver resultados rápidos ⚡':
-              'Ver resultados rápidos', // Corrected: Match DB value
+          'Ver resultados rápidos ⚡': 'Ver resultados rápidos',
           'Sentirme mejor físicamente (energía, digestión, menos pesadez) 💪':
-              'Sentirme mejor físicamente (energía, digestión, menos pesadez)', // Corrected: Match DB value
+              'Sentirme mejor físicamente (energía, digestión, menos pesadez)',
           'Demostrarme que puedo lograrlo 💯':
-              'Demostrarme que puedo lograrlo', // Matches DB value
+              'Demostrarme que puedo lograrlo',
           'Mejorar mi salud a largo plazo 🏥': 'Mejorar mi salud a largo plazo',
           'Aún no lo tengo claro ❓': 'Aún no lo tengo claro',
         };
-
-        // Helper function to find UI key from cleaned DB value
-        // DENTRO DE _loadProfileData()
+        
         String? findUiKeyByCleanedDbValue(
             String? dbValue, Map<String, String> map) {
           if (dbValue == null || dbValue.isEmpty) return null;
-
-          // Limpia el valor de la base de datos
           final cleanedDbValue = removeEmojis(dbValue).trim();
-
-          // ----- INICIO DE CÓDIGO DE DEPURACIÓN -----
-          // Imprime el valor de la DB que estás buscando
-          debugPrint("--- BUSCANDO VALOR DE DB ---");
-          debugPrint("Original DB: '$dbValue'");
-          debugPrint("Limpio   DB: '$cleanedDbValue'");
-          debugPrint(
-              "Buscando en el mapa: ${map.keys.first}"); // Para saber en qué mapa estamos
-          // ----- FIN DE CÓDIGO DE DEPURACIÓN -----
-
           final entry = map.entries.firstWhere(
-            (e) {
-              final cleanedMapValue = removeEmojis(e.value).trim();
-
-              // ----- INICIO DE CÓDIGO DE DEPURACIÓN -----
-              // Imprime el valor del mapa que se está comparando
-              if (cleanedMapValue.contains('Directa')) {
-                // Filtra para que no imprima todo
-                debugPrint("Comparando con MAPA: '$cleanedMapValue'");
-              }
-              // ----- FIN DE CÓDIGO DE DEPURACIÓN -----
-
-              return cleanedMapValue == cleanedDbValue;
-            },
+            (e) => removeEmojis(e.value).trim() == cleanedDbValue,
             orElse: () => const MapEntry('', ''),
           );
-
-          if (entry.key.isEmpty) {
-            debugPrint(
-                ">>> ¡NO SE ENCONTRÓ COINCIDENCIA PARA '$cleanedDbValue'!");
-          }
-
           return entry.key.isNotEmpty ? entry.key : null;
         }
 
         provider.update(() {
           provider.name = profile['name'] ?? '';
-          provider.mainGoal =
-              findUiKeyByCleanedDbValue(profile['goal'], goalMap);
-          provider.dailyActivityLevel = findUiKeyByCleanedDbValue(
-              profile['activity_level'], activityLevelMap);
-
-          String? loadedDietStyle = profile['dietary_style'];
-          if (loadedDietStyle != null && loadedDietStyle.isNotEmpty) {
-            String? uiStyle =
-                findUiKeyByCleanedDbValue(loadedDietStyle, dietaryStyleMap);
-            if (uiStyle != null) {
-              provider.dietStyle = uiStyle;
-            } else {
-              provider.dietStyle =
-                  loadedDietStyle; // Keep original if it's a custom 'Otro'
-            }
-          } else {
-            provider.dietStyle = null;
-          }
-
-          provider.weeklyBudget =
-              findUiKeyByCleanedDbValue(profile['budget'], budgetMap);
-          provider.eatsOut =
-              findUiKeyByCleanedDbValue(profile['eats_out'], eatsOutMap);
-
+          provider.mainGoal = findUiKeyByCleanedDbValue(profile['goal'], goalMap);
+          provider.dailyActivityLevel = findUiKeyByCleanedDbValue(profile['activity_level'], activityLevelMap);
+          provider.dietStyle = findUiKeyByCleanedDbValue(profile['dietary_style'], dietaryStyleMap);
+          provider.weeklyBudget = findUiKeyByCleanedDbValue(profile['budget'], budgetMap);
+          provider.eatsOut = findUiKeyByCleanedDbValue(profile['eats_out'], eatsOutMap);
           provider.dislikedFoods = profile['disliked_foods'] ?? '';
           provider.hasAllergies = profile['has_allergies'] ?? false;
           provider.allergyDetails = profile['allergies'] ?? '';
           provider.medicalConditionDetails = profile['medical_condition'] ?? '';
-          provider.hasMedicalCondition =
-              profile['has_medical_condition'] ?? false;
-          provider.communicationTone = findUiKeyByCleanedDbValue(
-              profile['communication_style'], communicationStyleMap);
+          provider.hasMedicalCondition = profile['has_medical_condition'] ?? false;
+          provider.communicationTone = findUiKeyByCleanedDbValue(profile['communication_style'], communicationStyleMap);
           provider.preferredName = profile['preferred_name'] ?? '';
           provider.sport = List<String>.from(profile['sport'] ?? []);
-          provider.trainingFrequency = findUiKeyByCleanedDbValue(
-              profile['training_frequency'], trainingFrequencyMap);
-          provider.mealCount =
-              findUiKeyByCleanedDbValue(profile['meal_count'], mealCountMap);
-
+          provider.trainingFrequency = findUiKeyByCleanedDbValue(profile['training_frequency'], trainingFrequencyMap);
+          provider.mealCount = findUiKeyByCleanedDbValue(profile['meal_count'], mealCountMap);
           provider.breakfastTime = _parseTimeOfDay(profile['breakfast_time']);
           provider.lunchTime = _parseTimeOfDay(profile['lunch_time']);
           provider.dinnerTime = _parseTimeOfDay(profile['dinner_time']);
-
-          // Handle diet_difficulties loading
+          
           final Set<String> loadedDifficulties = {};
           List<dynamic>? rawDifficulties = profile['diet_difficulties'];
           if (rawDifficulties != null) {
             for (var item in rawDifficulties) {
               if (item is String) {
                 if (item.startsWith('Otra:')) {
-                  loadedDifficulties.add(item); // Keep original "Otra: " string
+                  loadedDifficulties.add(item);
                 } else {
-                  final String cleanItem = removeEmojis(item);
-                  final MapEntry<String, String> foundEntry =
-                      difficultyMap.entries.firstWhere(
-                    (entry) =>
-                        removeEmojis(entry.value).trim() ==
-                        cleanItem.trim(), // Trim here too for consistency
-                    orElse: () => const MapEntry('', ''),
-                  );
-                  if (foundEntry.key.isNotEmpty) {
-                    loadedDifficulties.add(foundEntry.key);
-                  }
+                  final String? uiKey = findUiKeyByCleanedDbValue(item, difficultyMap);
+                  if (uiKey != null) loadedDifficulties.add(uiKey);
                 }
               }
             }
           }
           provider.dietDifficulties = loadedDifficulties;
 
-          // Handle diet_motivations loading
           final Set<String> loadedMotivations = {};
           List<dynamic>? rawMotivations = profile['diet_motivations'];
           if (rawMotivations != null) {
             for (var item in rawMotivations) {
               if (item is String) {
-                final String cleanItem = removeEmojis(item);
-                final MapEntry<String, String> foundEntry =
-                    motivationMap.entries.firstWhere(
-                  (entry) =>
-                      removeEmojis(entry.value).trim() ==
-                      cleanItem.trim(), // Trim here too for consistency
-                  orElse: () => const MapEntry('', ''),
-                );
-                if (foundEntry.key.isNotEmpty) {
-                  loadedMotivations.add(foundEntry.key);
-                }
+                final String? uiKey = findUiKeyByCleanedDbValue(item, motivationMap);
+                if (uiKey != null) loadedMotivations.add(uiKey);
               }
             }
           }
@@ -336,7 +249,6 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     }
   }
 
-  /// Parsea un string de tiempo (HH:MM) a TimeOfDay.
   TimeOfDay? _parseTimeOfDay(String? time) {
     if (time == null || time.isEmpty) return null;
     final parts = time.split(':');
@@ -353,114 +265,61 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     super.dispose();
   }
 
-  /// Valida los datos de la página actual del cuestionario.
   bool _validateCurrentPage() {
     final provider = context.read<QuestionnaireProvider>();
-    final currentPage =
-        _pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0;
-
-    setState(() {
-      _validationErrors = {};
-    });
-
+    final currentPage = _pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0;
+    setState(() => _validationErrors = {});
     bool isValid = true;
     List<String> errorMessages = [];
 
     switch (currentPage) {
-      case 0: // WelcomeScreen
-        return true;
-      case 1: // PersonalInfoScreen: name, mainGoal, hasMedicalCondition, medicalConditionDetails
-
+      case 1:
         if (provider.mainGoal == null) {
           errorMessages.add('Selecciona un objetivo principal.');
           isValid = false;
         }
-        if (provider.hasMedicalCondition &&
-            provider.medicalConditionDetails.isEmpty) {
-          _validationErrors['medicalCondition'] =
-              'Específica tu condición médica.';
+        if (provider.hasMedicalCondition && provider.medicalConditionDetails.isEmpty) {
+          _validationErrors['medicalCondition'] = 'Específica tu condición médica.';
           isValid = false;
         }
         break;
-      case 2: // RoutineScreen: sport, trainingFrequency, dailyActivityLevel
-        if (provider.sport.isEmpty) {
-          errorMessages.add('Selecciona al menos un deporte.');
-          isValid = false;
-        }
-        if (provider.trainingFrequency == null) {
-          errorMessages.add('Selecciona tu frecuencia de entrenamiento.');
-          isValid = false;
-        }
-        if (provider.dailyActivityLevel == null) {
-          errorMessages.add('Selecciona tu nivel de actividad diaria.');
-          isValid = false;
-        }
+      case 2:
+        if (provider.sport.isEmpty) errorMessages.add('Selecciona al menos un deporte.');
+        if (provider.trainingFrequency == null) errorMessages.add('Selecciona tu frecuencia de entrenamiento.');
+        if (provider.dailyActivityLevel == null) errorMessages.add('Selecciona tu nivel de actividad diaria.');
+        isValid = errorMessages.isEmpty;
         break;
-      case 3: // AlimentacionScreen: breakfastTime, lunchTime, dinnerTime, eatsOut, mealCount
-        if (provider.mealCount == null) {
-          errorMessages.add('Selecciona cuántas veces al día quieres comer.');
-          isValid = false;
-        }
-        if (provider.eatsOut == null) {
-          errorMessages
-              .add('Selecciona con qué frecuencia comes fuera de casa.');
-          isValid = false;
-        }
+      case 3:
+        if (provider.mealCount == null) errorMessages.add('Selecciona cuántas veces al día quieres comer.');
+        if (provider.eatsOut == null) errorMessages.add('Selecciona con qué frecuencia comes fuera de casa.');
+        isValid = errorMessages.isEmpty;
         break;
-      case 4: // GustosScreen: dislikedFoods, hasAllergies, allergyDetails, dietStyle, weeklyBudget
+      case 4:
         if (provider.dietStyle == null || provider.dietStyle!.isEmpty) {
           errorMessages.add('Selecciona un estilo de alimentación.');
-          isValid = false;
-        } else {
-          final Map<String, String> predefinedStylesValues = {
-            'Omnívoro': 'Omnívoro',
-            'Vegetariano': 'Vegetariano',
-            'Vegano': 'Vegano',
-            'Keto / Low carb': 'Keto / Low carb',
-          };
-          if (!predefinedStylesValues.values
-                  .contains(removeEmojis(provider.dietStyle!)) &&
-              provider.dietStyle!.trim().isEmpty) {
-            _validationErrors['dietaryStyle'] =
-                'Por favor, especifica tu estilo de alimentación "Otro".';
-            isValid = false;
-          }
         }
         if (provider.hasAllergies && provider.allergyDetails.isEmpty) {
-          _validationErrors['allergyDetails'] =
-              'Específica tus alergias alimentarias.';
+          _validationErrors['allergyDetails'] = 'Específica tus alergias alimentarias.';
           isValid = false;
         }
-        if (provider.weeklyBudget == null) {
-          errorMessages.add('Selecciona tu presupuesto semanal.');
-          isValid = false;
-        }
+        if (provider.weeklyBudget == null) errorMessages.add('Selecciona tu presupuesto semanal.');
+        isValid = errorMessages.isEmpty && _validationErrors.isEmpty;
         break;
-      case 5: // PreferencesScreen: communicationTone, preferredName
-        if (provider.communicationTone == null) {
-          errorMessages.add('Selecciona un estilo de comunicación.');
-          isValid = false;
-        }
+      case 5:
+        if (provider.communicationTone == null) errorMessages.add('Selecciona un estilo de comunicación.');
+        isValid = errorMessages.isEmpty;
         break;
-      case 6: // PersonalizacionScreen: dietDifficulties, dietMotivations
-        if (provider.dietDifficulties.isEmpty) {
-          errorMessages.add('Selecciona al menos una dificultad en la dieta.');
-          isValid = false;
-        }
+      case 6:
+        if (provider.dietDifficulties.isEmpty) errorMessages.add('Selecciona al menos una dificultad en la dieta.');
         if (provider.dietDifficulties.contains('Otra ✍️')) {
-          bool otraEspecificada = provider.dietDifficulties.any((item) =>
-              item.startsWith('Otra: ') && item.length > 'Otra: '.length);
+          bool otraEspecificada = provider.dietDifficulties.any((item) => item.startsWith('Otra: ') && item.length > 'Otra: '.length);
           if (!otraEspecificada) {
-            _validationErrors['otraDificultad'] =
-                'Por favor, especifica tu otra dificultad alimentaria.';
+            _validationErrors['otraDificultad'] = 'Por favor, especifica tu otra dificultad alimentaria.';
             isValid = false;
           }
         }
-        if (provider.dietMotivations.isEmpty) {
-          errorMessages
-              .add('Selecciona al menos una motivación para tu dieta.');
-          isValid = false;
-        }
+        if (provider.dietMotivations.isEmpty) errorMessages.add('Selecciona al menos una motivación para tu dieta.');
+        isValid = errorMessages.isEmpty && _validationErrors.isEmpty;
         break;
     }
 
@@ -472,7 +331,6 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         ),
       );
     }
-
     return isValid;
   }
 
@@ -518,8 +376,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
                       width: 200,
                       height: 200,
                       child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+                        valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
                         strokeWidth: 6,
                         backgroundColor: Colors.grey[300],
                         value: null,
@@ -551,7 +408,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
                       curve: Curves.easeOut,
                     ),
                 const SizedBox(height: 16),
-                const LoadingMessagesWidget(), //
+                const LoadingMessagesWidget(),
               ],
             ),
           ),
@@ -575,91 +432,48 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
             .toList();
 
         final profileData = {
-          'name': questionnaireProvider.name.isNotEmpty
-              ? questionnaireProvider.name
-              : null,
-          'goal': questionnaireProvider.mainGoal != null
-              ? removeEmojis(questionnaireProvider.mainGoal!)
-              : null,
-          'activity_level': questionnaireProvider.dailyActivityLevel != null
-              ? removeEmojis(questionnaireProvider.dailyActivityLevel!)
-              : null,
-          'dietary_style': questionnaireProvider.dietStyle != null
-              ? removeEmojis(questionnaireProvider.dietStyle!)
-              : null,
-          'budget': questionnaireProvider.weeklyBudget != null
-              ? removeEmojis(questionnaireProvider.weeklyBudget!)
-              : null,
-          'eats_out': questionnaireProvider.eatsOut != null
-              ? removeEmojis(questionnaireProvider.eatsOut!)
-              : null,
-          'disliked_foods': questionnaireProvider.dislikedFoods.isNotEmpty
-              ? questionnaireProvider.dislikedFoods
-              : null,
+          'name': questionnaireProvider.name.isNotEmpty ? questionnaireProvider.name : null,
+          'goal': questionnaireProvider.mainGoal != null ? removeEmojis(questionnaireProvider.mainGoal!) : null,
+          'activity_level': questionnaireProvider.dailyActivityLevel != null ? removeEmojis(questionnaireProvider.dailyActivityLevel!) : null,
+          'dietary_style': questionnaireProvider.dietStyle != null ? removeEmojis(questionnaireProvider.dietStyle!) : null,
+          'budget': questionnaireProvider.weeklyBudget != null ? removeEmojis(questionnaireProvider.weeklyBudget!) : null,
+          'eats_out': questionnaireProvider.eatsOut != null ? removeEmojis(questionnaireProvider.eatsOut!) : null,
+          'disliked_foods': questionnaireProvider.dislikedFoods.isNotEmpty ? questionnaireProvider.dislikedFoods : null,
           'has_allergies': questionnaireProvider.hasAllergies,
-          'allergies': questionnaireProvider.allergyDetails.isNotEmpty
-              ? questionnaireProvider.allergyDetails
-              : null,
+          'allergies': questionnaireProvider.allergyDetails.isNotEmpty ? questionnaireProvider.allergyDetails : null,
           'has_medical_condition': questionnaireProvider.hasMedicalCondition,
-          'medical_condition':
-              questionnaireProvider.medicalConditionDetails.isNotEmpty
-                  ? questionnaireProvider.medicalConditionDetails
-                  : null,
-          'communication_style': questionnaireProvider.communicationTone != null
-              ? removeEmojis(questionnaireProvider.communicationTone!)
-              : null,
-          'preferred_name':
-              questionnaireProvider.preferredName?.isNotEmpty ?? false
-                  ? questionnaireProvider.preferredName
-                  : null,
-          'sport': questionnaireProvider.sport.isNotEmpty
-              ? questionnaireProvider.sport
-              : null,
-          'training_frequency': questionnaireProvider.trainingFrequency != null
-              ? removeEmojis(questionnaireProvider.trainingFrequency!)
-              : null,
-          'meal_count': questionnaireProvider.mealCount != null
-              ? removeEmojis(questionnaireProvider.mealCount!)
-              : null,
-          'breakfast_time':
-              formatTimeOfDay(questionnaireProvider.breakfastTime),
+          'medical_condition': questionnaireProvider.medicalConditionDetails.isNotEmpty ? questionnaireProvider.medicalConditionDetails : null,
+          'communication_style': questionnaireProvider.communicationTone != null ? removeEmojis(questionnaireProvider.communicationTone!) : null,
+          'preferred_name': questionnaireProvider.preferredName?.isNotEmpty ?? false ? questionnaireProvider.preferredName : null,
+          'sport': questionnaireProvider.sport.isNotEmpty ? questionnaireProvider.sport : null,
+          'training_frequency': questionnaireProvider.trainingFrequency != null ? removeEmojis(questionnaireProvider.trainingFrequency!) : null,
+          'meal_count': questionnaireProvider.mealCount != null ? removeEmojis(questionnaireProvider.mealCount!) : null,
+          'breakfast_time': formatTimeOfDay(questionnaireProvider.breakfastTime),
           'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
           'dinner_time': formatTimeOfDay(questionnaireProvider.dinnerTime),
-          'diet_difficulties':
-              cleanDietDifficulties.isNotEmpty ? cleanDietDifficulties : null,
-          'diet_motivations':
-              cleanDietMotivations.isNotEmpty ? cleanDietMotivations : null,
+          'diet_difficulties': cleanDietDifficulties.isNotEmpty ? cleanDietDifficulties : null,
+          'diet_motivations': cleanDietMotivations.isNotEmpty ? cleanDietMotivations : null,
           'plan_setup_complete': true,
         };
 
-        questionnaireProvider.printSummary();
-
         await ProfileService().saveProfile(profileData);
 
-        if (!widget.isEditing || await _hasSignificantChanges(profileData)) {
-          debugPrint(
-              '[QuestionnaireFlow] Se detectaron cambios significativos o no es edición. Generando/Regenerando plan...');
-          await PlanService().generatePlan();
-        } else {
-          debugPrint(
-              '[QuestionnaireFlow] No se detectaron cambios significativos. No se regenera el plan.');
-        }
+        // --- INICIA CORRECCIÓN ---
+        // Se elimina la condición `_hasSignificantChanges`.
+        // Ahora siempre se genera/regenera el plan al finalizar.
+        debugPrint('[QuestionnaireFlow] Finalizando cuestionario. Generando/Regenerando plan...');
+        await PlanService().generatePlan();
+        // --- FIN CORRECCIÓN ---
 
-        // ESTE ES EL BLOQUE CORREGIDO QUE DEBES USAR
         if (mounted) {
-          // 1. Cierra el diálogo de "Cargando..."
-          Navigator.of(context).pop();
-
-          // 2. SIN PREGUNTAR NADA, siempre navega a la pantalla del plan.
-          //    Esto funciona tanto para crear por primera vez como para editar.
+          Navigator.of(context).pop(); // Cierra el diálogo de "Cargando..."
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const PlanSummaryScreen()),
             (route) => false,
           );
         }
       } catch (e, stackTrace) {
-        debugPrint(
-            '--- ¡ERROR ATRAPADO DURANTE LA ${widget.isEditing ? "ACTUALIZACIÓN" : "GENERACIÓN"} DEL PLAN! ---');
+        debugPrint('--- ¡ERROR ATRAPADO DURANTE LA ${widget.isEditing ? "ACTUALIZACIÓN" : "GENERACIÓN"} DEL PLAN! ---');
         debugPrint('Error: $e');
         debugPrint('Stack trace: $stackTrace');
 
@@ -667,8 +481,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Error al ${widget.isEditing ? "actualizar" : "generar"} tu plan: ${e.toString().replaceFirst("Exception: ", "")}'),
+              content: Text('Error al ${widget.isEditing ? "actualizar" : "generar"} tu plan: ${e.toString().replaceFirst("Exception: ", "")}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -679,78 +492,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     }
   }
 
-  /// Verifica si los cambios en el perfil requieren regenerar el plan.
-  Future<bool> _hasSignificantChanges(
-      Map<String, dynamic> newProfileData) async {
-    try {
-      final currentProfile = await ProfileService().getProfile();
-      if (currentProfile == null) return true;
+  // --- SE ELIMINA LA FUNCIÓN _hasSignificantChanges ---
 
-      const significantFields = [
-        'name',
-        'goal',
-        'activity_level',
-        'dietary_style',
-        'budget',
-        'eats_out',
-        'disliked_foods',
-        'has_allergies',
-        'allergies',
-        'has_medical_condition',
-        'medical_condition',
-        'sport',
-        'training_frequency',
-        'meal_count',
-        'breakfast_time',
-        'lunch_time',
-        'dinner_time',
-        'diet_difficulties',
-        'diet_motivations',
-      ];
-
-      for (var field in significantFields) {
-        dynamic newValue = newProfileData[field];
-        dynamic currentValue = currentProfile[field];
-
-        if (newValue is String) {
-          newValue = removeEmojis(newValue);
-        }
-        if (currentValue is String) {
-          currentValue = removeEmojis(currentValue);
-        }
-
-        if (newValue is List && currentValue is List) {
-          final newSet = newValue
-              .whereType<String>()
-              .map((item) => removeEmojis(item))
-              .toSet();
-          final currentSet = currentValue
-              .whereType<String>()
-              .map((item) => removeEmojis(item))
-              .toSet();
-
-          if (newSet.length != currentSet.length ||
-              !newSet.every((element) => currentSet.contains(element))) {
-            debugPrint(
-                '[QuestionnaireFlow] Cambio detectado en $field (List). Nuevo: $newSet, Anterior: $currentSet');
-            return true;
-          }
-        } else if (newValue != currentValue) {
-          debugPrint(
-              '[QuestionnaireFlow] Cambio detectado en $field (Single Value). Nuevo: $newValue, Anterior: $currentValue');
-          return true;
-        }
-      }
-      debugPrint(
-          '[QuestionnaireFlow] No se detectaron cambios significativos en el perfil.');
-      return false;
-    } catch (e) {
-      debugPrint('[QuestionnaireFlow] Error al comparar cambios: $e');
-      return true;
-    }
-  }
-
-  /// Formatea TimeOfDay a string HH:MM.
   String? formatTimeOfDay(TimeOfDay? time) {
     if (time == null) return null;
     final hour = time.hour.toString().padLeft(2, '0');
@@ -766,13 +509,11 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         child: Column(
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: LinearProgressIndicator(
                 value: _progress,
                 backgroundColor: FrutiaColors.disabledText.withOpacity(0.2),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
+                valueColor: const AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
                 minHeight: 6,
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -780,16 +521,15 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
             Expanded(
               child: PageView(
                 controller: _pageController,
-                physics:
-                    const NeverScrollableScrollPhysics(), // Deshabilita el deslizamiento manual
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
                   WelcomeScreen(isEditing: widget.isEditing),
                   const PersonalInfoScreen(),
                   const RoutineScreen(),
                   const AlimentacionScreen(),
-                  const GustosScreen(), // Pantalla de Gustos con dietStyle y budget
-                  const PreferencesScreen(), // Pantalla de Preferencias
-                  const PersonalizacionScreen(), // Pantalla de Personalización con dificultades y motivaciones
+                  const GustosScreen(),
+                  const PreferencesScreen(),
+                  const PersonalizacionScreen(),
                 ],
               ),
             ),
@@ -798,8 +538,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
               totalPages: _numPages,
               onPreviousPressed: () {
                 if (_pageController.page! > 0) {
-                  _pageController.previousPage(
-                      duration: 400.ms, curve: Curves.easeOut);
+                  _pageController.previousPage(duration: 400.ms, curve: Curves.easeOut);
                 }
               },
               onNextOrFinishPressed: _handleNextOrFinish,
@@ -812,9 +551,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// SECCIONES DE PANTALLA INDIVIDUALES
-// -----------------------------------------------------------------------------
+// --- RESTO DE LOS WIDGETS DE PANTALLA Y AYUDA ---
+// (NavigationControls, WelcomeScreen, PersonalInfoScreen, etc. se quedan igual)
 
 class NavigationControls extends StatelessWidget {
   final PageController pageController;
@@ -834,16 +572,12 @@ class NavigationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentPage =
-        pageController.hasClients ? (pageController.page?.round() ?? 0) : 0;
-
+    final currentPage = pageController.hasClients ? (pageController.page?.round() ?? 0) : 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: FrutiaColors.secondaryBackground,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
         border: Border(top: BorderSide(color: Colors.grey[200]!)),
       ),
       child: Row(
@@ -864,8 +598,7 @@ class NavigationControls extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: FrutiaColors.accent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
             child: Text(currentPage < totalPages - 1
@@ -882,7 +615,6 @@ class NavigationControls extends StatelessWidget {
 
 class WelcomeScreen extends StatelessWidget {
   final bool isEditing;
-
   const WelcomeScreen({super.key, this.isEditing = false});
 
   @override
@@ -948,35 +680,18 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
-    final validationErrors = context
-            .findAncestorStateOfType<_QuestionnaireFlowState>()
-            ?._validationErrors ??
-        {};
-
+    final validationErrors = context.findAncestorStateOfType<_QuestionnaireFlowState>()?._validationErrors ?? {};
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(
-            title: 'Sobre ti 👤',
-          ),
-
-          /*   const QuestionnaireTitle(
-              title: 'Primero lo primero. Escribe tu nombre. ', isSub: true),
-          CustomTextField(
-            label: 'Nombre',
-            initialValue: provider.name,
-            onChanged: (val) => provider.update(() => provider.name = val),
-            errorText: validationErrors['name'],
-          ),
-          */
+          const QuestionnaireTitleARRIBA(title: 'Sobre ti 👤'),
           const SizedBox(height: 16),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             title: const Text('¿Tienes alguna condición médica? 🩺'),
             value: provider.hasMedicalCondition,
-            onChanged: (val) => setState(() =>
-                provider.update(() => provider.hasMedicalCondition = val)),
+            onChanged: (val) => setState(() => provider.update(() => provider.hasMedicalCondition = val)),
             activeColor: FrutiaColors.accent,
             secondary: const Text('👨‍⚕️', style: TextStyle(fontSize: 24)),
           ),
@@ -984,8 +699,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             CustomTextField(
               label: 'Específica (ej. diabetes)',
               initialValue: provider.medicalConditionDetails,
-              onChanged: (val) =>
-                  provider.update(() => provider.medicalConditionDetails = val),
+              onChanged: (val) => provider.update(() => provider.medicalConditionDetails = val),
               errorText: validationErrors['medicalCondition'],
             ).animate().fadeIn(),
           const SizedBox(height: 24),
@@ -1010,8 +724,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                   title: goal,
                   value: goal,
                   groupValue: provider.mainGoal,
-                  onTap: (val) => setState(
-                      () => provider.update(() => provider.mainGoal = val))),
+                  onTap: (val) => setState(() => provider.update(() => provider.mainGoal = val))),
             ))
         .toList();
   }
@@ -1049,8 +762,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
           ),
           const SizedBox(height: 40),
           const QuestionnaireTitle(
-              title:
-                  '¿Con qué frecuencia entrenas o haces ejercicio físico en una semana?',
+              title: '¿Con qué frecuencia entrenas o haces ejercicio físico en una semana?',
               isSub: true),
           ..._buildChipOptions([
             'No entreno 🚶',
@@ -1062,8 +774,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
               (val) => provider.update(() => provider.trainingFrequency = val)),
           const SizedBox(height: 40),
           const QuestionnaireTitle(
-              title:
-                  '¿Cómo es tu nivel de actividad diaria (fuera del entrenamiento)?',
+              title: '¿Cómo es tu nivel de actividad diaria (fuera del entrenamiento)?',
               isSub: true),
           ..._buildChipOptions(
             [
@@ -1088,12 +799,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
         runSpacing: 4.0,
         children: options.map((opt) {
           return Padding(
-            padding: const EdgeInsets.only(
-                bottom: 8.0), // Espacio vertical entre chips
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: GestureDetector(
-              onTap: () => setState(() => context
-                  .read<QuestionnaireProvider>()
-                  .update(() => updateFn(opt))),
+              onTap: () => setState(() => context.read<QuestionnaireProvider>().update(() => updateFn(opt))),
               child: Chip(
                 label: Text(
                   opt,
@@ -1103,19 +811,14 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         : FrutiaColors.primaryText,
                     fontWeight: FontWeight.w600,
                   ),
-                  softWrap:
-                      true, // Permite que el texto se divida en varias líneas
-                  overflow: TextOverflow.visible, // Evita que se corte
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
                 ),
-                backgroundColor:
-                    groupValue == opt ? FrutiaColors.accent : Colors.grey[200]!,
+                backgroundColor: groupValue == opt ? FrutiaColors.accent : Colors.grey[200]!,
                 side: BorderSide(
-                  color: groupValue == opt
-                      ? FrutiaColors.accent
-                      : Colors.grey[300]!,
+                  color: groupValue == opt ? FrutiaColors.accent : Colors.grey[300]!,
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
           );
@@ -1136,7 +839,6 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
-
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1153,24 +855,21 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
             label: 'Desayuno',
             icon: Icons.light_mode_rounded,
             selectedTime: provider.breakfastTime,
-            onTimeSelected: (time) =>
-                provider.update(() => provider.breakfastTime = time),
+            onTimeSelected: (time) => provider.update(() => provider.breakfastTime = time),
           ),
           const SizedBox(height: 16),
           TimeSelectorCard(
             label: 'Almuerzo',
             icon: Icons.wb_sunny_rounded,
             selectedTime: provider.lunchTime,
-            onTimeSelected: (time) =>
-                provider.update(() => provider.lunchTime = time),
+            onTimeSelected: (time) => provider.update(() => provider.lunchTime = time),
           ),
           const SizedBox(height: 16),
           TimeSelectorCard(
             label: 'Cena',
             icon: Icons.dark_mode_rounded,
             selectedTime: provider.dinnerTime,
-            onTimeSelected: (time) =>
-                provider.update(() => provider.dinnerTime = time),
+            onTimeSelected: (time) => provider.update(() => provider.dinnerTime = time),
           ),
           const SizedBox(height: 24),
           const QuestionnaireTitle(
@@ -1196,8 +895,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
                 title: opt,
                 value: opt,
                 groupValue: provider.mealCount,
-                onTap: (val) => setState(
-                    () => provider.update(() => provider.mealCount = val)),
+                onTap: (val) => setState(() => provider.update(() => provider.mealCount = val)),
               ),
             ))
         .toList();
@@ -1217,8 +915,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
                 title: opt,
                 value: opt,
                 groupValue: provider.eatsOut,
-                onTap: (val) => setState(
-                    () => provider.update(() => provider.eatsOut = val)),
+                onTap: (val) => setState(() => provider.update(() => provider.eatsOut = val)),
               ),
             ))
         .toList();
@@ -1233,53 +930,31 @@ class GustosScreen extends StatefulWidget {
 
 class _GustosScreenState extends State<GustosScreen> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final provider = context.read<QuestionnaireProvider>();
-    final validationErrors = context
-            .findAncestorStateOfType<_QuestionnaireFlowState>()
-            ?._validationErrors ??
-        {};
-
+    final validationErrors = context.findAncestorStateOfType<_QuestionnaireFlowState>()?._validationErrors ?? {};
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(
-              title: 'Gustos, alergias y estilo alimentario 🥗'),
-          const QuestionnaireTitle(
-              title: '¿Qué alimentos NO te gusta?', isSub: true),
+          const QuestionnaireTitleARRIBA(title: 'Gustos, alergias y estilo alimentario 🥗'),
+          const QuestionnaireTitle(title: '¿Qué alimentos NO te gusta?', isSub: true),
           CustomTextField(
             label: 'Ej: brócoli, hígado, etc.',
             initialValue: provider.dislikedFoods,
-            onChanged: (val) =>
-                provider.update(() => provider.dislikedFoods = val),
+            onChanged: (val) => provider.update(() => provider.dislikedFoods = val),
             emoji: "🚫",
           ),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿Tienes alguna alergia alimentaria? 🚨', isSub: true),
+          const QuestionnaireTitle(title: '¿Tienes alguna alergia alimentaria? 🚨', isSub: true),
           SwitchListTile.adaptive(
-            title: Text(provider.hasAllergies
-                ? 'Sí, tengo alergias 😷'
-                : 'No, ninguna ✅'),
+            title: Text(provider.hasAllergies ? 'Sí, tengo alergias 😷' : 'No, ninguna ✅'),
             value: provider.hasAllergies,
             onChanged: (val) {
               setState(() {
                 provider.update(() {
                   provider.hasAllergies = val;
-                  if (!val) {
-                    provider.allergyDetails = '';
-                  }
+                  if (!val) provider.allergyDetails = '';
                 });
               });
             },
@@ -1293,19 +968,16 @@ class _GustosScreenState extends State<GustosScreen> {
               child: CustomTextField(
                 label: 'Especifícalas aquí',
                 initialValue: provider.allergyDetails,
-                onChanged: (val) =>
-                    provider.update(() => provider.allergyDetails = val),
+                onChanged: (val) => provider.update(() => provider.allergyDetails = val),
                 errorText: validationErrors['allergyDetails'],
               ),
             ).animate().fadeIn(),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿Sigues algún estilo de alimentación?', isSub: true),
+          const QuestionnaireTitle(title: '¿Sigues algún estilo de alimentación?', isSub: true),
           _DietaryStyleSelection(),
           const SizedBox(height: 24),
           const QuestionnaireTitle(
-              title:
-                  '¿Con qué tipo de presupuesto cuentas para tu alimentación semanal? 💰',
+              title: '¿Con qué tipo de presupuesto cuentas para tu alimentación semanal? 💰',
               isSub: true),
           ..._buildBudgetOptions(provider),
         ],
@@ -1326,8 +998,7 @@ class _GustosScreenState extends State<GustosScreen> {
                 title: option,
                 value: option,
                 groupValue: provider.weeklyBudget,
-                onTap: (val) => setState(
-                    () => provider.update(() => provider.weeklyBudget = val)),
+                onTap: (val) => setState(() => provider.update(() => provider.weeklyBudget = val)),
               ),
             ))
         .toList();
@@ -1338,21 +1009,14 @@ class _DietaryStyleSelection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
-    final _flowState =
-        context.findAncestorStateOfType<_QuestionnaireFlowState>();
-
+    final _flowState = context.findAncestorStateOfType<_QuestionnaireFlowState>();
     const predefinedStyles = {
       '🍖 Omnívoro': 'Omnívoro',
       '🥕 Vegetariano': 'Vegetariano',
       '🌱 Vegano': 'Vegano',
       '🥚 Keto / Low carb': 'Keto / Low carb',
     };
-
-    // Esta lógica para 'Otro' ya es correcta y no necesita cambios.
-    bool isOtherSelected = provider.dietStyle != null &&
-        !predefinedStyles.keys // Comparamos con las claves ahora
-            .contains(provider.dietStyle!);
-
+    bool isOtherSelected = provider.dietStyle != null && !predefinedStyles.keys.contains(provider.dietStyle!);
     String? customDietStyleText = isOtherSelected ? provider.dietStyle : null;
 
     return Column(
@@ -1365,18 +1029,14 @@ class _DietaryStyleSelection extends StatelessWidget {
             ...predefinedStyles.entries.map((entry) {
               return ChoiceChipCard(
                 label: entry.key,
-                // CORRECCIÓN 1: Compara el valor del provider con la CLAVE del mapa.
                 isSelected: provider.dietStyle == entry.key,
-                // CORRECCIÓN 2: Al tocar, guarda la CLAVE del mapa en el provider.
-                onTap: () =>
-                    provider.update(() => provider.dietStyle = entry.key),
+                onTap: () => provider.update(() => provider.dietStyle = entry.key),
               );
             }).toList(),
             ChoiceChipCard(
               label: '✍️ Otro',
               isSelected: isOtherSelected,
-              onTap: () => provider.update(() => provider.dietStyle =
-                  ''), // Esto está bien para indicar "Otro"
+              onTap: () => provider.update(() => provider.dietStyle = ''),
             ),
           ],
         ),
@@ -1386,8 +1046,7 @@ class _DietaryStyleSelection extends StatelessWidget {
             child: CustomTextField(
               label: '✏️ Especifica tu estilo',
               initialValue: customDietStyleText,
-              onChanged: (newValue) =>
-                  provider.update(() => provider.dietStyle = newValue),
+              onChanged: (newValue) => provider.update(() => provider.dietStyle = newValue),
               errorText: _flowState?._validationErrors['dietaryStyle'],
             ),
           ),
@@ -1396,60 +1055,34 @@ class _DietaryStyleSelection extends StatelessWidget {
   }
 }
 
-/// Pantalla para personalizar dificultades y motivaciones alimentarias.
 class PersonalizacionScreen extends StatefulWidget {
   const PersonalizacionScreen({super.key});
-
   @override
   State<PersonalizacionScreen> createState() => _PersonalizacionScreenState();
 }
 
 class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final provider = context.read<QuestionnaireProvider>();
-    final validationErrors = context
-            .findAncestorStateOfType<_QuestionnaireFlowState>()
-            ?._validationErrors ??
-        {};
-
-    // Determine the initial value for the "Otra" text field for difficulties
-    String? initialOtraDificultad = provider.dietDifficulties.firstWhere(
-      (item) => item.startsWith('Otra: '),
-      orElse: () => '',
-    );
-    String cleanedOtraDificultad = initialOtraDificultad.isNotEmpty
-        ? initialOtraDificultad.replaceFirst('Otra: ', '')
-        : '';
+    final validationErrors = context.findAncestorStateOfType<_QuestionnaireFlowState>()?._validationErrors ?? {};
+    String? initialOtraDificultad = provider.dietDifficulties.firstWhere((item) => item.startsWith('Otra: '), orElse: () => '');
+    String cleanedOtraDificultad = initialOtraDificultad.isNotEmpty ? initialOtraDificultad.replaceFirst('Otra: ', '') : '';
 
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(
-              title: 'Personalización emocional (opcional) 🌟'),
+          const QuestionnaireTitleARRIBA(title: 'Personalización emocional (opcional) 🌟'),
           const QuestionnaireTitle(
-              title:
-                  '¿Qué es lo que más te cuesta mantener en un plan de alimentación?',
+              title: '¿Qué es lo que más te cuesta mantener en un plan de alimentación?',
               isSub: true),
           ..._buildCheckboxOptions(
             provider.dietDifficulties,
             {
               'Mantenerme constante 🔄': 'Mantenerme constante',
-              'Saber qué comer cuando no tengo lo del plan 🤔':
-                  'Saber qué comer cuando no tengo lo del plan',
-              'Comer saludable fuera de casa 🍽️':
-                  'Comer saludable fuera de casa',
+              'Saber qué comer cuando no tengo lo del plan 🤔': 'Saber qué comer cuando no tengo lo del plan',
+              'Comer saludable fuera de casa 🍽️': 'Comer saludable fuera de casa',
               'Controlar los antojos 🍫': 'Controlar los antojos',
               'Preparar la comida 🧑‍🍳': 'Preparar la comida',
               'Otra ✍️': 'Otra',
@@ -1463,8 +1096,7 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
                 label: 'Especifica',
                 initialValue: cleanedOtraDificultad,
                 onChanged: (val) => provider.update(() {
-                  provider.dietDifficulties
-                      .removeWhere((item) => item.startsWith('Otra: '));
+                  provider.dietDifficulties.removeWhere((item) => item.startsWith('Otra: '));
                   if (val.isNotEmpty) {
                     provider.dietDifficulties.add('Otra: $val');
                   }
@@ -1474,19 +1106,15 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
             ).animate().fadeIn(),
           const SizedBox(height: 24),
           const QuestionnaireTitle(
-              title:
-                  '¿Qué es lo que más te motiva a seguir un plan de alimentación?',
+              title: '¿Qué es lo que más te motiva a seguir un plan de alimentación?',
               isSub: true),
           ..._buildCheckboxOptions(
             provider.dietMotivations,
             {
               'Ver resultados rápidos ⚡': 'Ver resultados rápidos',
-              'Sentirme mejor físicamente (energía, digestión, menos pesadez) 💪':
-                  'Sentirme mejor físicamente (energía, digestión, menos pesadez)',
-              'Demostrarme que puedo lograrlo 💯':
-                  'Demostrarme que puedo lograrlo',
-              'Mejorar mi salud a largo plazo 🏥':
-                  'Mejorar mi salud a largo plazo',
+              'Sentirme mejor físicamente (energía, digestión, menos pesadez) 💪': 'Sentirme mejor físicamente (energía, digestión, menos pesadez)',
+              'Demostrarme que puedo lograrlo 💯': 'Demostrarme que puedo lograrlo',
+              'Mejorar mi salud a largo plazo 🏥': 'Mejorar mi salud a largo plazo',
               'Aún no lo tengo claro ❓': 'Aún no lo tengo claro',
             },
             null,
@@ -1497,7 +1125,6 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
     );
   }
 
-  /// Construye las opciones de selección múltiple para dificultades o motivaciones.
   List<Widget> _buildCheckboxOptions(
     Set<String> selectedValues,
     Map<String, String> optionMap,
@@ -1516,8 +1143,7 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
                     } else {
                       selectedValues.remove(entry.key);
                       if (entry.key == 'Otra ✍️') {
-                        selectedValues
-                            .removeWhere((item) => item.startsWith('Otra: '));
+                        selectedValues.removeWhere((item) => item.startsWith('Otra: '));
                       }
                     }
                   });
@@ -1531,7 +1157,6 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
 
 class PreferencesScreen extends StatefulWidget {
   const PreferencesScreen({super.key});
-
   @override
   State<PreferencesScreen> createState() => _PreferencesScreenState();
 }
@@ -1540,10 +1165,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<QuestionnaireProvider>();
-    final validationErrors = context
-            .findAncestorStateOfType<_QuestionnaireFlowState>()
-            ?._validationErrors ??
-        {};
+    final validationErrors = context.findAncestorStateOfType<_QuestionnaireFlowState>()?._validationErrors ?? {};
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1559,16 +1181,13 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           CustomTextField(
             label: 'Tu nombre o apodo',
             initialValue: provider.preferredName,
-            onChanged: (val) =>
-                provider.update(() => provider.preferredName = val),
+            onChanged: (val) => provider.update(() => provider.preferredName = val),
             errorText: validationErrors['preferredName'],
           ),
         ].animate(interval: 50.ms).fadeIn(duration: 300.ms),
       ),
     );
   }
-
-  // DENTRO DE LA CLASE _PreferencesScreenState
 
   List<Widget> _buildSelectionCards(
       String? groupValue, Function(String?) updateFn) {
@@ -1586,8 +1205,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               padding: const EdgeInsets.only(bottom: 12.0),
               child: SelectionCard(
                 title: entry.key,
-                value: entry
-                    .key, // <-- CORREGIDO: Cambiado de entry.value a entry.key
+                value: entry.key,
                 groupValue: groupValue,
                 onTap: (val) => setState(() => updateFn(val)),
               ),

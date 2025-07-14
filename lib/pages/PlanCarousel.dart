@@ -53,7 +53,7 @@ class _PlanCarouselCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           image: DecorationImage(
-            image: NetworkImage(recipe.imageUrl),
+            image: NetworkImage(recipe.imageUrl!!),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
                 Colors.black.withOpacity(0.4), BlendMode.darken),
