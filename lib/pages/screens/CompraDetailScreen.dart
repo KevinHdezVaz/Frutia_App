@@ -8,15 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // --- MODELOS DE DATOS PARA ESTA PANTALLA ---
 
-// Modelo para un detalle de precio (no se usa con el nuevo plan, pero se mantiene la estructura)
-
-// En tu archivo de la pantalla de compras
-
 class Ingredient {
   final String item;
   final String quantity;
   final String? imageUrl;
-  final List<PriceInfo> prices; // Usamos el modelo PriceInfo de la API
+  final List<PriceInfo> prices;
 
   Ingredient({
     required this.item,
@@ -25,7 +21,6 @@ class Ingredient {
     this.prices = const [],
   });
 
-  // ▼▼▼ INICIO DE LA CORRECCIÓN ▼▼▼
   factory Ingredient.fromMealOption(MealOption option) {
     String item = option.name;
     String quantity = '';
@@ -39,16 +34,21 @@ class Ingredient {
 
     return Ingredient(
       item: item,
-      quantity: quantity,
+      quantity: option.portion,
       imageUrl: option.imageUrl,
-      // Ahora copiamos la información de precios directamente desde la opción del plan
       prices: option.prices,
     );
   }
-  // ▲▲▲ FIN DE LA CORRECCIÓN ▲▲▲
+
+  factory Ingredient.fromExtended(Map<String, dynamic> extended) {
+    return Ingredient(
+      item: extended['name'] as String? ?? 'Ingrediente',
+      quantity: extended['original'] as String? ?? '',
+      prices: const [],
+    );
+  }
 }
 
-// Modelo para el item en la UI de la lista de compras
 class ShoppingIngredientItem {
   final Ingredient ingredientData;
   bool isChecked;
@@ -86,8 +86,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
     'Desayuno': 'assets/images/desayun.webp',
     'Almuerzo': 'assets/images/almuerzo.webp',
     'Cena': 'assets/images/cena.webp',
-    'Shake': 'assets/images/snack.webp',
-    // Se pueden añadir más si la API los devuelve
+    'Snacks': 'assets/images/snack.webp',
   };
 
   @override
@@ -101,7 +100,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
     await _loadIngredientsFromPlan();
   }
 
-  // --- FUNCIÓN PRINCIPAL REESCRITA PARA SER DINÁMICA ---
   Future<void> _loadIngredientsFromPlan() async {
     setState(() {
       _isLoading = true;
@@ -109,30 +107,35 @@ class _ComprasScreenState extends State<ComprasScreen> {
     });
 
     try {
-      // 1. Hacemos que la variable `planData` pueda aceptar un valor nulo.
       final MealPlanData? planData = await _planService.getCurrentPlan();
       if (!mounted) return;
 
-      // 2. Añadimos una comprobación para manejar el caso en que no se reciba un plan.
       if (planData == null) {
         throw Exception('No se encontró un plan de alimentación activo.');
       }
 
-      // Si llegamos aquí, sabemos que planData no es nulo y podemos continuar.
       final List<ShoppingIngredientItem> tempShoppingList = [];
 
-      // Iteramos sobre la nueva estructura del plan (nutritionPlan.meals)
-      planData.nutritionPlan.meals.forEach((mealType, mealCategories) {
-        // Inicializamos la categoría como expandida si tiene items
-        if (mealCategories.isNotEmpty &&
-            !_isCategoryExpanded.containsKey(mealType)) {
-          _isCategoryExpanded[mealType] = true;
-        }
-
-        for (var category in mealCategories) {
+      planData.nutritionPlan.meals.forEach((mealType, meal) {
+        for (var category in meal.components) {
           for (var option in category.options) {
             final ingredient = Ingredient.fromMealOption(option);
-            // Evitamos duplicados exactos dentro de la misma categoría de comida
+            if (!tempShoppingList.any((item) =>
+                item.item == ingredient.item && item.mealType == mealType)) {
+              tempShoppingList.add(
+                ShoppingIngredientItem(
+                  ingredientData: ingredient,
+                  mealType: mealType,
+                ),
+              );
+            }
+          }
+        }
+
+        for (var recipe in meal.suggestedRecipes) {
+          for (var extIngredient in recipe.extendedIngredients) {
+            final ingredient =
+                Ingredient.fromExtended(extIngredient as Map<String, dynamic>);
             if (!tempShoppingList.any((item) =>
                 item.item == ingredient.item && item.mealType == mealType)) {
               tempShoppingList.add(
@@ -146,7 +149,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
         }
       });
 
-      // Cargamos el estado 'checked' desde la memoria local
       for (var ingredient in tempShoppingList) {
         final uniqueKey = _getIngredientUniqueKey(ingredient);
         ingredient.isChecked = _prefs.getBool(uniqueKey) ?? false;
@@ -221,7 +223,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: true,
         flexibleSpace: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [FrutiaColors.accent, FrutiaColors.accent2],
               begin: Alignment.topLeft,
@@ -342,15 +344,18 @@ class _ComprasScreenState extends State<ComprasScreen> {
             });
           },
         ),
-        AnimatedCrossFade(
-          firstChild: Column(
-            children: items.map((item) => _buildIngredientCard(item)).toList(),
+        // --- INICIO DE LA OPTIMIZACIÓN ---
+        // Se reemplaza AnimatedCrossFade por una construcción condicional simple.
+        if (isExpanded)
+          ListView.builder(
+            itemCount: items.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (context, index) {
+              return _buildIngredientCard(items[index]);
+            },
           ),
-          secondChild: Container(),
-          crossFadeState:
-              isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-          duration: const Duration(milliseconds: 300),
-        ),
+        // --- FIN DE LA OPTIMIZACIÓN ---
         const SizedBox(height: 16),
       ],
     );
@@ -397,10 +402,10 @@ class _ComprasScreenState extends State<ComprasScreen> {
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           shadows: [
-                            Shadow(
+                            const Shadow(
                                 blurRadius: 4.0,
-                                color: Colors.black.withOpacity(0.5),
-                                offset: const Offset(2.0, 2.0))
+                                color: Colors.black54,
+                                offset: Offset(2.0, 2.0))
                           ],
                         ),
                       ),
@@ -421,12 +426,15 @@ class _ComprasScreenState extends State<ComprasScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    AnimatedRotation(
-                      turns: isExpanded ? 0.0 : -0.5,
-                      duration: const Duration(milliseconds: 300),
+                    // --- INICIO DE LA OPTIMIZACIÓN ---
+                    // Se reemplaza AnimatedRotation por un Transform.rotate estático.
+                    Transform.rotate(
+                      angle:
+                          isExpanded ? 0 : -3.14159, // -180 grados en radianes
                       child: const Icon(Icons.expand_more,
                           color: Colors.white, size: 28),
                     ),
+                    // --- FIN DE LA OPTIMIZACIÓN ---
                   ],
                 ),
               ),
@@ -438,103 +446,64 @@ class _ComprasScreenState extends State<ComprasScreen> {
   }
 
   Widget _buildIngredientCard(ShoppingIngredientItem ingredient) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side:
-            BorderSide(color: FrutiaColors.accent.withOpacity(0.2), width: 1.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: () {
-                if (ingredient.imageUrl != null &&
-                    ingredient.imageUrl!.isNotEmpty) {
-                  _showFullScreenImage(context, ingredient.imageUrl!);
-                }
-              },
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  border:
-                      Border.all(color: FrutiaColors.accent.withOpacity(0.5)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: (ingredient.imageUrl != null &&
-                          ingredient.imageUrl!.isNotEmpty)
-                      ? Image.network(
-                          ingredient.imageUrl!,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return const Center(
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: FrutiaColors.accent));
-                          },
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset('assets/images/fondoAppFrutia.webp',
-                                  fit: BoxFit.cover),
-                        )
-                      : Image.asset('assets/images/fondoAppFrutia.webp',
-                          fit: BoxFit.cover),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nombre del ingrediente
-                  Text(
-                    '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
-                    style: GoogleFonts.lato(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      decoration: ingredient.isChecked
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      color: ingredient.isChecked
-                          ? FrutiaColors.secondaryText
-                          : FrutiaColors.primaryText,
+    return GestureDetector(
+      onTap: () => _toggleIngredientCheck(ingredient),
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+              color: FrutiaColors.accent.withOpacity(0.2), width: 1.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
+                      style: GoogleFonts.lato(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        decoration: ingredient.isChecked
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                        color: ingredient.isChecked
+                            ? FrutiaColors.secondaryText
+                            : FrutiaColors.primaryText,
+                      ),
                     ),
-                  ),
-                  // Solo muestra la sección de precios si hay precios disponibles
-                  if (ingredient.prices.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    // Muestra cada precio
-                    ...ingredient.prices.map((price) => Text(
-                          '${price.store}: ${price.price.toStringAsFixed(2)} ${price.currency ?? ''}',
-                          style: GoogleFonts.lato(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: FrutiaColors.primaryText,
-                          ),
-                        )),
-                  ]
-                ],
+                    if (ingredient.prices.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      ...ingredient.prices.map((price) => Text(
+                            '${price.store}: \$${price.price.toStringAsFixed(2)} ${price.currency ?? ''}',
+                            style: GoogleFonts.lato(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: FrutiaColors.primaryText,
+                            ),
+                          )),
+                    ]
+                  ],
+                ),
               ),
-            ),
-            Checkbox(
-              value: ingredient.isChecked,
-              onChanged: (_) => _toggleIngredientCheck(ingredient),
-              activeColor: FrutiaColors.accent,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4)),
-            ),
-          ],
+              Checkbox(
+                value: ingredient.isChecked,
+                onChanged: (_) => _toggleIngredientCheck(ingredient),
+                activeColor: FrutiaColors.accent,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4)),
+              ),
+            ],
+          ),
         ),
       ),
     );

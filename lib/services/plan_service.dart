@@ -90,7 +90,7 @@ class PlanService {
     }
   }
 
-  Future<MealPlanData> generatePlan() async {
+  Future<void> generatePlan() async {
     final token = await _storage.getToken();
     if (token == null) throw AuthException('No autenticado.');
 
@@ -102,19 +102,41 @@ class PlanService {
       },
     );
 
-    print('Código de estado: ${response.statusCode}');
-    print('Cuerpo de la respuesta: ${response.body}');
-
-    if (response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      if (responseData.containsKey('data')) {
-        return MealPlanData.fromJson(responseData['data']);
-      } else {
-        throw Exception('Respuesta inesperada: campo "data" no encontrado.');
-      }
+    // El backend ahora devuelve 202 (Accepted) para indicar que el job ha empezado.
+    if (response.statusCode == 202) {
+      debugPrint("Solicitud para generar plan aceptada por el servidor.");
+      // No hacemos nada más, la función termina exitosamente.
+      return;
     } else {
+      // Si algo sale mal al iniciar el job, lanzamos un error.
       throw Exception(
-          'Error al generar el plan. Código: ${response.statusCode}. Cuerpo: ${response.body}');
+          'Error al iniciar la generación del plan. Código: ${response.statusCode}. Cuerpo: ${response.body}');
+    }
+  }
+
+  Future<String> checkPlanStatus(DateTime requestTime) async {
+    final token = await _storage.getToken();
+    if (token == null) throw AuthException('No autenticado.');
+
+    // Convertimos la fecha a segundos desde la época (formato timestamp UNIX)
+    final timestamp = requestTime.millisecondsSinceEpoch ~/ 1000;
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/plan/status?generation_request_time=$timestamp'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      // Devuelve "ready" o "pending"
+      return data['status'] as String? ?? 'pending';
+    } else {
+      // Si hay un error, asumimos que sigue pendiente para no romper el bucle de polling
+      debugPrint("Error al chequear estado del plan, se reintentará.");
+      return 'pending';
     }
   }
 

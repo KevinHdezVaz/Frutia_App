@@ -7,6 +7,7 @@ import 'package:flutter/material.dart'; // Importa si no lo tienes
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:onesignal_flutter/onesignal_flutter.dart'; // ¡Importa OneSignal!
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../model/User.dart' as frutia;
 
@@ -164,20 +165,39 @@ class AuthService {
   /// Cierra la sesión del usuario.
   Future<void> logout() async {
     final token = await _storage.getToken();
-    if (token == null) return; // No hay sesión que cerrar
+
+    // Opcional: Desvincula al usuario de OneSignal antes de hacer logout
+    OneSignal.logout();
 
     try {
-      await http.post(
-        Uri.parse('$baseUrl/logout'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token'
-        },
-      );
+      if (token != null) {
+        await http.post(
+          Uri.parse('$baseUrl/logout'),
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token'
+          },
+        );
+      }
+    } catch (e) {
+      // Ignoramos el error si la API falla, lo importante es limpiar localmente
+      print(
+          "Error al hacer logout en el backend (se procederá con la limpieza local): $e");
     } finally {
-      // Siempre elimina el token local, incluso si la llamada a la API falla.
-      await _storage.removeToken();
-      // Opcional: Remover External ID de OneSignal al cerrar sesión
+      // Limpiaremos todo sin importar si la llamada a la API fue exitosa
+
+      // ▼▼▼ CAMBIO IMPORTANTE AQUÍ ▼▼▼
+      // En lugar de solo remover el token, limpiamos todo.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // También es buena práctica desautenticar de Google si se usó
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+
+      // Y de Firebase
+      await _firebaseAuth.signOut();
     }
   }
 

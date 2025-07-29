@@ -1,10 +1,9 @@
-import 'package:Frutia/pages/Pantalla2.dart';
+import 'package:Frutia/pages/Pantalla2.dart'; // Asumo que esta es tu pantalla de detalles
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
-import '../pages/screens/miplan/plan_data.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../pages/screens/miplan/plan_data.dart'; // Asegúrate que la ruta a tu modelo sea correcta
 
 class PlanCarousel extends StatelessWidget {
   final List<InspirationRecipe> recipes;
@@ -15,24 +14,21 @@ class PlanCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (recipes.isEmpty) {
       return const SizedBox(
-        height: 200,
+        height: 220, // Aumentamos un poco la altura para consistencia
         child: Center(
           child: Text(
             "No hay recetas de inspiración en tu plan.",
-            style: TextStyle(
-              fontSize: 16,
-              color: FrutiaColors.secondaryText,
-            ),
+            style: TextStyle(fontSize: 16, color: FrutiaColors.secondaryText),
           ),
         ),
       );
     }
 
     return SizedBox(
-      height: 200, // Increased from 180 to prevent overflow
+      height: 220, // Aumentamos la altura para un mejor aspecto visual
       child: PageView.builder(
-        controller: PageController(
-            viewportFraction: 0.80), // Reduced from 0.85 for more spacing
+        controller:
+            PageController(viewportFraction: 0.85), // Un poco más grande
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
@@ -49,20 +45,6 @@ class _PlanCarouselCard extends StatelessWidget {
 
   const _PlanCarouselCard({required this.recipe, required this.index});
 
-  IconData _getIconForRecipe(String mealType) {
-    final typeLower = mealType.toLowerCase();
-    if (typeLower.contains('desayuno')) {
-      return Icons.free_breakfast_outlined;
-    } else if (typeLower.contains('almuerzo')) {
-      return Icons.restaurant_outlined;
-    } else if (typeLower.contains('cena')) {
-      return Icons.dinner_dining_outlined;
-    } else if (typeLower.contains('shake') || typeLower.contains('batido')) {
-      return Icons.blender_outlined;
-    }
-    return Icons.restaurant_menu_rounded;
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -72,110 +54,100 @@ class _PlanCarouselCard extends StatelessWidget {
             MaterialPageRoute(
                 builder: (context) => RecipeDetailScreen(recipe: recipe)));
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.symmetric(
-            horizontal: 12.0,
-            vertical: 6.0), // Increased horizontal margin, reduced vertical
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              FrutiaColors.accent.withOpacity(0.1),
-              FrutiaColors.accent2.withOpacity(0.1),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 6, // Reduced blur to minimize overflow risk
-              spreadRadius: 1,
-              offset: const Offset(0, 2), // Adjusted offset
-            ),
-          ],
-          border: Border.all(
-            color: FrutiaColors.accent.withOpacity(0.3),
-            width: 1.5,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0), // Reduced padding slightly
-          child: Row(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.3),
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              // Icon instead of image
+              Image.asset(
+                'assets/images/fondoAppFrutia.webp',
+                fit: BoxFit.cover,
+              ),
+
               Container(
-                padding: const EdgeInsets.all(10), // Reduced padding
                 decoration: BoxDecoration(
-                  color: FrutiaColors.accent.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _getIconForRecipe(recipe.mealType),
-                  color: FrutiaColors.accent,
-                  size: 30, // Slightly smaller icon
+                  gradient: LinearGradient(
+                    colors: [
+                      FrutiaColors.accent
+                          .withOpacity(0.2), // Color principal de tu app
+                      FrutiaColors.error
+                          .withOpacity(0.5), // Color secundario/acento
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+
+              // --- 2. DEGRADADO OSCURO PARA LEGIBILIDAD ---
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withOpacity(0.4),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.center,
+                  ),
+                ),
+              ),
+
+              // --- 3. CONTENIDO DE TEXTO ---
+              Positioned(
+                bottom: 16,
+                left: 16,
+                right: 16,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: FrutiaColors.accent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        recipe.mealType,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
                     Text(
                       recipe.title,
                       style: GoogleFonts.poppins(
-                        fontSize: 16, // Slightly smaller to fit
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        color: FrutiaColors.primaryText,
+                        fontSize: 18,
+                        shadows: [
+                          const Shadow(blurRadius: 4, color: Colors.black54)
+                        ],
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      recipe.description ?? 'Sin descripción',
-                      style: GoogleFonts.lato(
-                        fontSize: 13, // Slightly smaller to fit
-                        color: FrutiaColors.secondaryText,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${recipe.calories ?? '--'} kcal',
-                      style: GoogleFonts.lato(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: FrutiaColors.accent,
-                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.timer_outlined,
+                            color: Colors.white, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${recipe.readyInMinutes} min',
+                          style: GoogleFonts.lato(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.local_fire_department_outlined,
+                            color: Colors.white, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '~${recipe.calories} kcal',
+                          style: GoogleFonts.lato(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: FrutiaColors.accent,
-                size: 18, // Slightly smaller
               ),
             ],
           ),

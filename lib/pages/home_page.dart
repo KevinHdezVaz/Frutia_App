@@ -612,6 +612,19 @@ class _DashboardViewState extends State<_DashboardView> {
         : (profileData['racha_actual'] ?? 0);
     final String trialDaysRemaining = _getTrialDaysRemaining();
 
+    // 2. Si hay un plan, recorremos las comidas para extraer las recetas
+    final List<InspirationRecipe> suggestedRecipes = [];
+
+    if (hasPlan) {
+      for (var meal in widget.mealPlanData!.nutritionPlan.meals.values) {
+        // Ahora leemos la lista 'suggestedRecipes' (plural)
+        // y añadimos todos sus elementos a nuestra lista principal
+        if (meal.suggestedRecipes.isNotEmpty) {
+          suggestedRecipes.addAll(meal.suggestedRecipes);
+        }
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       child: Column(
@@ -674,7 +687,8 @@ class _DashboardViewState extends State<_DashboardView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: hasPlan
-                ? PlanCarousel(recipes: widget.mealPlanData!.recipes)
+                ? PlanCarousel(recipes: suggestedRecipes) // <-- ¡Solucionado!
+
                 : Showcase(
                     key: _createPlanCardKey,
                     title: 'Crea tu plan de alimentación',
@@ -754,98 +768,104 @@ class _DashboardViewState extends State<_DashboardView> {
   Widget _buildStatsRow(BuildContext context, int streakDays,
       String currentWeight, String mainGoal, String trialDaysRemaining) {
     return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(children: [
-              Row(children: [
-                Expanded(
-                  child: Showcase(
-                      key: _streakStatKey,
-                      title: 'Tu racha actual',
-                      description:
-                          'Los días consecutivos que has completado tu plan.',
-                      tooltipBackgroundColor: FrutiaColors.accent,
-                      targetShapeBorder: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12))),
-                      titleTextStyle: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
-                      descTextStyle:
-                          GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                      disableMovingAnimation: true,
-                      disableScaleAnimation: true,
-                      child: _StatCard(
-                          icon: Icons.local_fire_department_rounded,
-                          value: '$streakDays días',
-                          label: 'Racha',
-                          color: Colors.orange)),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Showcase(
+                  key: _streakStatKey,
+                  title: 'Tu racha actual',
+                  description:
+                      'Los días consecutivos que has completado tu plan.',
+                  tooltipBackgroundColor: FrutiaColors.accent,
+                  targetShapeBorder: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12))),
+                  titleTextStyle: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                  descTextStyle:
+                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                  disableMovingAnimation: true,
+                  disableScaleAnimation: true,
+                  child: _StatCard(
+                      icon: Icons.local_fire_department_rounded,
+                      value: '$streakDays días',
+                      label: 'Racha',
+                      color: Colors.orange),
                 ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Showcase(
+                  key: _weightStatKey,
+                  title: 'Tu peso',
+                  description:
+                      'Consulta tu peso actual para seguir tu progreso.',
+                  tooltipBackgroundColor: FrutiaColors.accent,
+                  targetShapeBorder: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12))),
+                  titleTextStyle: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                  descTextStyle:
+                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                  disableMovingAnimation: true,
+                  disableScaleAnimation: true,
+                  child: _StatCard(
+                      icon: Icons.monitor_weight_rounded,
+                      value: '$currentWeight kg',
+                      label: 'Peso actual',
+                      color: Colors.blue),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Showcase(
+                  key: _goalStatKey,
+                  title: 'Tu objetivo',
+                  description: 'Tu meta de salud principal. ¡A por ella!',
+                  tooltipBackgroundColor: FrutiaColors.accent,
+                  targetShapeBorder: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12))),
+                  titleTextStyle: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                  descTextStyle:
+                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                  disableMovingAnimation: true,
+                  disableScaleAnimation: true,
+                  child: _StatCard(
+                      icon: Icons.flag_rounded,
+                      value: mainGoal,
+                      label: 'Objetivo',
+                      color: Colors.green),
+                ),
+              ),
+              if (widget.isInTrial) ...[
                 const SizedBox(width: 12),
                 Expanded(
-                    child: Showcase(
-                        key: _weightStatKey,
-                        title: 'Tu peso',
-                        description:
-                            'Consulta tu peso actual para seguir tu progreso.',
-                        tooltipBackgroundColor: FrutiaColors.accent,
-                        targetShapeBorder: const RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(12))),
-                        titleTextStyle: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
-                        descTextStyle:
-                            GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                        disableMovingAnimation: true,
-                        disableScaleAnimation: true,
-                        child: _StatCard(
-                            icon: Icons.monitor_weight_rounded,
-                            value: '$currentWeight kg',
-                            label: 'Peso actual',
-                            color: Colors.blue)))
-              ]),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                    child: Showcase(
-                        key: _goalStatKey,
-                        title: 'Tu objetivo',
-                        description: 'Tu meta de salud principal. ¡A por ella!',
-                        tooltipBackgroundColor: FrutiaColors.accent,
-                        targetShapeBorder: const RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(12))),
-                        titleTextStyle: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
-                        descTextStyle:
-                            GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                        disableMovingAnimation: true,
-                        disableScaleAnimation: true,
-                        child: _StatCard(
-                            icon: Icons.flag_rounded,
-                            value: mainGoal,
-                            label: 'Objetivo',
-                            color: Colors.green))),
-                if (widget.isInTrial) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      icon: Icons.timer_outlined,
-                      value: trialDaysRemaining,
-                      label: 'Prueba restante',
-                      color: FrutiaColors.accent2,
-                    ),
+                  child: _StatCard(
+                    icon: Icons.timer_outlined,
+                    value: trialDaysRemaining,
+                    label: 'Prueba restante',
+                    color: FrutiaColors.accent2,
                   ),
-                ] else ...[
-                  const Spacer(),
-                ]
-              ])
-            ]))
-        .animate()
-        .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildWeekCalendar(BuildContext context, Set<String> history) {
@@ -1245,31 +1265,55 @@ class _StatCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
-  const _StatCard(
-      {super.key,
-      required this.icon,
-      required this.value,
-      required this.label,
-      required this.color});
+
+  const _StatCard({
+    super.key,
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-            color: FrutiaColors.secondaryBackground,
-            borderRadius: BorderRadius.circular(12)),
-        child: Row(children: [
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: FrutiaColors.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
           Icon(icon, color: color, size: 28),
           const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(value,
-                style: GoogleFonts.lato(
-                    fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(label,
-                style: GoogleFonts.lato(
-                    fontSize: 12, color: FrutiaColors.secondaryText))
-          ])
-        ]));
+          Expanded(
+            // Añadido Expanded aquí
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.lato(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2, // Limita a una línea
+                  overflow:
+                      TextOverflow.ellipsis, // Puntos suspensivos si no cabe
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.lato(
+                    fontSize: 12,
+                    color: FrutiaColors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -306,6 +306,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
+// En tu archivo ChatScreen.dart -> _ChatScreenState
+
   Widget _buildChatUI(BuildContext innerContext) {
     return Stack(
       children: [
@@ -320,26 +322,67 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         else
           Column(
             children: [
+              // ▼▼▼ APPBAR ACTUALIZADA CON EL DISEÑO QUE PREFIERES ▼▼▼
               AppBar(
                 backgroundColor: FrutiaColors.accent,
-                elevation: 0,
+                elevation: 2,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => _navigateBack(innerContext),
                 ),
+
+                // Título con Avatar y subtítulo de mensajes restantes
+                title: Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundColor: Colors.white,
+                      child: Text(
+                        'F',
+                        style: TextStyle(
+                            color: FrutiaColors.accent,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      radius: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Frutia",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (!_isPremium)
+                          Text(
+                            '${max(0, _messageLimit - _userMessageCount)} mensajes restantes',
+                            style: GoogleFonts.lato(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Botón de "Guardar Chat" visible directamente
                 actions: [
                   if (!_isSaved)
                     Showcase(
                       key: _saveButtonKey,
                       title: 'Guardar Chat',
                       description:
-                          'Usa este botón para guardar la conversación, si no la guardas se perdera.',
+                          'Usa este botón para guardar la conversación, si no la guardas se perderá.',
                       child: Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: TextButton.icon(
                           icon: const Icon(Icons.save,
                               color: Colors.white, size: 22),
-                          label: const Text("Guardar Chat",
+                          label: const Text("Guardar",
                               style:
                                   TextStyle(color: Colors.white, fontSize: 14)),
                           onPressed: _saveChat,
@@ -355,6 +398,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     ),
                 ],
               ),
+              // ▲▲▲ FIN DE LA ACTUALIZACIÓN DEL APPBAR ▲▲▲
+
               Expanded(
                 child: ListView.builder(
                   reverse: true,
@@ -656,7 +701,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _messages.insert(0, newMessage);
       _isTyping = true;
       _typingIndex = 0;
-      _typingTimer = Timer.periodic(Duration(milliseconds: 500), (timer) {
+      _typingTimer?.cancel(); // Reinicia el timer para evitar solapamientos
+      _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
         if (mounted) setState(() => _typingIndex = (_typingIndex + 1) % 3);
       });
       _updateTokenCount(newMessage.text);
@@ -677,9 +723,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               userName: currentUser?.name ?? 'Amigú',
             );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       print('Received response: $response');
       final aiMessage = ChatMessage(
@@ -695,21 +739,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       setState(() {
         _messages.insert(0, aiMessage);
         _isTyping = false;
-        _typingTimer!.cancel();
+        _typingTimer?.cancel();
+
         if (!isTemporary && response['session_id'] != null) {
           _currentSessionId = response['session_id'];
         }
+
+        // ▼▼▼ LÍNEA CLAVE ACTUALIZADA ▼▼▼
+        // Actualizamos el contador con el valor real que devuelve el backend
+        if (response['user_message_count'] != null) {
+          _userMessageCount = response['user_message_count'];
+        }
+
         _updateTokenCount(aiMessage.text);
       });
 
       Vibration.vibrate(duration: 200);
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() {
         _isTyping = false;
-        _typingTimer!.cancel();
+        _typingTimer?.cancel();
       });
       print('Error sending message: $e');
       _showErrorSnackBar('Error al enviar el mensaje: $e');
@@ -1322,7 +1372,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               );
             },
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 40),
         ],
       ),
     );

@@ -24,6 +24,7 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
   List<MealFormula> _allFormulas = [];
   List<InspirationRecipe> _filteredRecipes = [];
   String _activeFilter = 'Todos';
+  List<String> _mealFilters = ['Todos'];
 
   @override
   void initState() {
@@ -37,15 +38,39 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
   Future<void> _fetchPlanData() async {
     try {
       final planData = await _planService.getCurrentPlan();
+      if (!mounted) return;
+
+      List<InspirationRecipe> foundRecipes = [];
+      List<String> mealNames = [];
+
+      if (planData?.nutritionPlan.meals != null) {
+        // Usamos .entries para obtener tanto el nombre de la comida como sus datos
+        for (var entry in planData!.nutritionPlan.meals.entries) {
+          final String mealName = entry.key; // "Desayuno", "Almuerzo", etc.
+          final Meal meal = entry.value;
+
+          mealNames.add(mealName); // Guardamos el nombre para los filtros
+
+          if (meal.suggestedRecipes.isNotEmpty) {
+            // Asignamos el nombre de la comida a cada una de sus recetas
+            for (var recipe in meal.suggestedRecipes) {
+              recipe.mealType = mealName; // ¡Aquí está la magia!
+            }
+            foundRecipes.addAll(meal.suggestedRecipes);
+          }
+        }
+      }
+
       setState(() {
-        _allRecipes = planData?.recipes ?? [];
-        _allFormulas = planData?.formulas ?? [];
+        _allRecipes = foundRecipes;
         _filteredRecipes = _allRecipes;
+        // Creamos la lista de filtros dinámicamente
+        _mealFilters = ['Todos', ...mealNames];
         _isLoading = false;
       });
-      debugPrint('Recipes loaded: ${_allRecipes.length}');
-      debugPrint('Formulas loaded: ${_allFormulas.length}');
+      debugPrint('Recipes loaded from meals: ${_allRecipes.length}');
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = "Error al cargar recetas: ${e.toString()}";
         _isLoading = false;
@@ -59,6 +84,7 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
     setState(() {
       _filteredRecipes = _allRecipes.where((recipe) {
         final titleMatch = recipe.title.toLowerCase().contains(query);
+        // Esta línea ahora funciona gracias al cambio en _fetchPlanData
         final categoryMatch =
             _activeFilter == 'Todos' || recipe.mealType == _activeFilter;
         return titleMatch && categoryMatch;
@@ -165,6 +191,7 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
               searchController: _searchController,
               activeFilter: _activeFilter,
               onFilterChanged: _setActiveFilter,
+              filters: _mealFilters,
             ).animate().fadeIn(duration: 500.ms),
           ],
         ),
@@ -178,17 +205,18 @@ class _InspiracionTab extends StatelessWidget {
   final TextEditingController searchController;
   final String activeFilter;
   final ValueChanged<String> onFilterChanged;
+  final List<String> filters;
 
   const _InspiracionTab({
     required this.recipes,
     required this.searchController,
     required this.activeFilter,
     required this.onFilterChanged,
+    required this.filters,
   });
 
   @override
   Widget build(BuildContext context) {
-    final List<String> filters = ['Todos', 'Desayuno', 'Almuerzo', 'Cena'];
     return Column(
       children: [
         Padding(
@@ -200,7 +228,7 @@ class _InspiracionTab extends StatelessWidget {
               hintStyle: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText,
               ),
-              prefixIcon: Icon(Icons.search, color: FrutiaColors.accent),
+              prefixIcon: const Icon(Icons.search, color: FrutiaColors.accent),
               filled: true,
               fillColor: FrutiaColors.secondaryBackground,
               border: OutlineInputBorder(
@@ -239,6 +267,10 @@ class _InspiracionTab extends StatelessWidget {
             },
           ),
         ),
+        const SizedBox(height: 16),
+        // --- WIDGET DE TÍTULO CON BORDE DEGRADADO ---
+        const _GradientTitle(title: 'Tus recetas de hoy'),
+        const SizedBox(height: 16),
         Expanded(
           child: recipes.isEmpty
               ? Center(
@@ -265,6 +297,42 @@ class _InspiracionTab extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+// --- NUEVO WIDGET PARA EL TÍTULO CON BORDE ---
+class _GradientTitle extends StatelessWidget {
+  final String title;
+  const _GradientTitle({Key? key, required this.title}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 4), // Grosor del borde
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [FrutiaColors.accent, FrutiaColors.accent2],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.only(bottom: 8),
+        color: FrutiaColors.primaryBackground, // Color de fondo de la pantalla
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            title,
+            style: GoogleFonts.lato(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: FrutiaColors.primaryText,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -449,29 +517,38 @@ class _RecipeCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.5),
+        shadowColor: Colors.black.withOpacity(0.8),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Hero(
-              tag: recipe.id ?? recipe.title,
+            // Imagen estática de assets con overlay oscuro
+            ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.3),
+                BlendMode.darken,
+              ),
               child: Image.asset(
                 'assets/images/fondoAppFrutia.webp',
                 fit: BoxFit.cover,
               ),
             ),
+
+            // Gradiente encima de la imagen
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.4),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.6),
                   ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.center,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.4, 1.0],
                 ),
               ),
             ),
+
+            // Contenido del card
             Positioned(
               bottom: 12,
               left: 12,
@@ -492,13 +569,9 @@ class _RecipeCard extends StatelessWidget {
                     children: [
                       Icon(Icons.timer_outlined, color: Colors.white, size: 14),
                       const SizedBox(width: 4),
-                      Text(
-                        '${recipe.prepTimeMinutes ?? 30} min',
-                        style: GoogleFonts.lato(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
+                      Text('${recipe.readyInMinutes} min',
+                          style: GoogleFonts.lato(
+                              color: Colors.white, fontSize: 12)),
                       const SizedBox(width: 8),
                       Icon(Icons.local_fire_department_outlined,
                           color: Colors.white, size: 14),
@@ -528,34 +601,38 @@ class RecipeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extraemos los pasos de `analyzedInstructions` para una mejor visualización
+    final List<String> steps = recipe.analyzedInstructions.isNotEmpty &&
+            recipe.analyzedInstructions[0]['steps'] != null
+        ? (recipe.analyzedInstructions[0]['steps'] as List)
+            .map<String>((step) => step['step'].toString())
+            .toList()
+        : recipe.instructions
+            .split(RegExp(r'\. |\n')); // Fallback a instrucciones simples
+
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 200.0,
+            expandedHeight: 150.0,
             pinned: true,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [FrutiaColors.accent, FrutiaColors.accent2],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: FlexibleSpaceBar(
-                background: Hero(
-                  tag: recipe.id ?? recipe.title,
-                  child: Image.asset(
-                    'assets/images/fondoAppFrutia.webp',
-                    fit: BoxFit.cover,
-                    color: Colors.black.withOpacity(0.3),
-                    colorBlendMode: BlendMode.darken,
-                  ),
-                ),
+            stretch: true,
+            backgroundColor: FrutiaColors.accent,
+            leading: const BackButton(color: Colors.white),
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              titlePadding:
+                  const EdgeInsets.symmetric(horizontal: 48.0, vertical: 12.0),
+              title: Text(
+                recipe.title,
+                style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+                textAlign: TextAlign.center,
               ),
             ),
-            leading: BackButton(color: Colors.white),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -563,93 +640,67 @@ class RecipeDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    recipe.title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: FrutiaColors.primaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    recipe.description ?? 'Deliciosa receta para tu plan.',
-                    style: GoogleFonts.lato(
-                      fontSize: 16,
-                      color: FrutiaColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   Wrap(
-                    spacing: 8.0,
+                    spacing: 16.0,
                     runSpacing: 8.0,
                     children: [
                       _InfoChip(
-                        icon: Icons.timer_outlined,
-                        text: '${recipe.prepTimeMinutes ?? 30} min',
-                        color: FrutiaColors.accent,
-                      ),
+                          icon: Icons.timer_outlined,
+                          text: '${recipe.readyInMinutes} min'),
                       _InfoChip(
-                        icon: Icons.local_fire_department_outlined,
-                        text: '~${recipe.calories} kcal',
-                        color: FrutiaColors.accent,
-                      ),
+                          icon: Icons.local_fire_department_outlined,
+                          text: '~${recipe.calories} kcal'),
                       _InfoChip(
-                        icon: Icons.restaurant_menu_outlined,
-                        text: recipe.mealType,
-                        color: FrutiaColors.accent,
-                      ),
+                          icon: Icons.groups_outlined,
+                          text: '${recipe.servings} porciones'),
                     ],
                   ),
                   const Divider(height: 40),
+                  // En el método build de RecipeDetailScreen, busca esta parte:
+
                   _DetailSection(
-                    title: 'Cómo se Ajusta a tu Plan',
-                    icon: Icons.link_outlined,
-                    iconColor: FrutiaColors.progress,
-                    content: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: recipe.planComponents
-                          .map((item) => _ChecklistItem(text: item))
-                          .toList(),
-                    ),
-                  ),
-                  _DetailSection(
-                    title: 'Ingredientes Adicionales',
+                    title: 'Ingredientes',
                     icon: Icons.add_shopping_cart_outlined,
-                    iconColor: Colors.orange,
                     content: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: recipe.additionalIngredients
-                          .map((item) => _ChecklistItem(
-                                text: item.name,
-                                quantity: item.quantity,
-                              ))
-                          .toList(),
+                      children: recipe.extendedIngredients.map((item) {
+                        // ▼▼▼ REEMPLAZA ESTAS LÍNEAS ▼▼▼
+                        // final amount = item['amount']?.toStringAsFixed(1) ?? '';
+                        // final unit = item['unitShort'] ?? item['unit'] ?? '';
+                        // final name = item['name'] ?? 'Ingrediente';
+                        // return _ChecklistItem(text: name, quantity: '$amount $unit');
+                        // ▲▲▲ POR ESTAS LÍNEAS DE ABAJO ▼▼▼
+
+                        final name = item['name'] as String? ?? 'Ingrediente';
+                        final quantity = item['original'] as String? ??
+                            ''; // <-- Usamos el campo 'original'
+
+                        return _ChecklistItem(text: name, quantity: quantity);
+                      }).toList(),
                     ),
                   ),
                   _DetailSection(
                     title: 'Preparación',
                     icon: Icons.soup_kitchen_outlined,
-                    iconColor: Colors.purple,
                     content: Column(
-                      children: recipe.steps.asMap().entries.map((entry) {
+                      children: steps.asMap().entries.map((entry) {
                         int idx = entry.key + 1;
                         String step = entry.value;
+                        if (step.trim().isEmpty)
+                          return const SizedBox
+                              .shrink(); // No mostrar pasos vacíos
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
-                            child: Text('$idx'),
-                            radius: 15,
                             backgroundColor:
                                 FrutiaColors.accent.withOpacity(0.1),
                             foregroundColor: FrutiaColors.accent,
+                            child: Text('$idx'),
+                            radius: 16,
                           ),
-                          title: Text(
-                            step,
-                            style: GoogleFonts.lato(
-                              color: FrutiaColors.primaryText,
-                            ),
-                          ),
+                          title: Text(step,
+                              style:
+                                  GoogleFonts.lato(fontSize: 16, height: 1.5)),
                         );
                       }).toList(),
                     ),
@@ -664,17 +715,15 @@ class RecipeDetailScreen extends StatelessWidget {
   }
 }
 
+// --- 3. WIDGETS DE AYUDA ---
+// Estos son los componentes que usa la pantalla para organizarse.
+
 class _DetailSection extends StatelessWidget {
   final String title;
   final IconData icon;
-  final Color iconColor;
   final Widget content;
-  const _DetailSection({
-    required this.title,
-    required this.icon,
-    required this.iconColor,
-    required this.content,
-  });
+  const _DetailSection(
+      {required this.title, required this.icon, required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -684,18 +733,17 @@ class _DetailSection extends StatelessWidget {
         Row(
           children: [
             CircleAvatar(
-              radius: 18,
-              backgroundColor: iconColor.withOpacity(0.1),
-              child: Icon(icon, color: iconColor),
+              radius: 20,
+              backgroundColor: FrutiaColors.accent.withOpacity(0.1),
+              child: Icon(icon, color: FrutiaColors.accent),
             ),
             const SizedBox(width: 12),
             Text(
               title,
               style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: FrutiaColors.primaryText,
-              ),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.primaryText),
             ),
           ],
         ),
@@ -718,32 +766,25 @@ class _ChecklistItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: FrutiaColors.accent,
-            size: 20,
-          ),
+          Icon(Icons.check_circle_outline,
+              color: FrutiaColors.accent, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
               style: GoogleFonts.lato(
-                fontSize: 16,
-                color: FrutiaColors.primaryText,
-              ),
+                  fontSize: 16, color: FrutiaColors.primaryText, height: 1.4),
             ),
           ),
-          if (quantity != null)
+          if (quantity != null && quantity!.trim().isNotEmpty)
             Text(
               quantity!,
               style: GoogleFonts.lato(
-                fontSize: 16,
-                color: FrutiaColors.secondaryText,
-              ),
+                  fontSize: 16, color: FrutiaColors.secondaryText),
             ),
         ],
       ),
@@ -754,35 +795,28 @@ class _ChecklistItem extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String text;
-  final Color color;
-  const _InfoChip(
-      {required this.icon, required this.text, required this.color});
+  const _InfoChip({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.1),
-            FrutiaColors.accent2.withOpacity(0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: FrutiaColors.secondaryBackground,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 18, color: FrutiaColors.accent),
+          const SizedBox(width: 8),
           Text(
             text,
             style: GoogleFonts.lato(
-              fontWeight: FontWeight.w600,
-              color: FrutiaColors.primaryText,
-            ),
+                fontWeight: FontWeight.w600,
+                color: FrutiaColors.primaryText,
+                fontSize: 14),
           ),
         ],
       ),

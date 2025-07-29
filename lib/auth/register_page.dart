@@ -132,15 +132,24 @@ class _RegisterPageState extends State<RegisterPage>
   }
 
   bool validateRegister() {
+    // Priorizar validación de contraseñas si no están vacías
+    if (_passwordController.text.isNotEmpty &&
+        _confirmPasswordController.text.isNotEmpty &&
+        _passwordController.text != _confirmPasswordController.text) {
+      showErrorSnackBar("Las contraseñas no coinciden");
+      return false;
+    }
+
+    // Verificar campos vacíos (solo nombre, correo, contraseña y confirmar contraseña)
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty ||
-        _nameController.text.isEmpty ||
-        _ageController.text.isEmpty) {
+        _nameController.text.isEmpty) {
       showErrorSnackBar("Por favor complete todos los campos obligatorios");
       return false;
     }
 
+    // Otras validaciones relevantes
     if (!_emailController.text.contains('@')) {
       showErrorSnackBar("Correo electrónico inválido");
       return false;
@@ -153,15 +162,7 @@ class _RegisterPageState extends State<RegisterPage>
       showErrorSnackBar("La contraseña debe tener al menos 6 caracteres");
       return false;
     }
-    if (_passwordController.text != _confirmPasswordController.text) {
-      showErrorSnackBar("Las contraseñas no coinciden");
-      return false;
-    }
-    if (int.tryParse(_ageController.text) == null ||
-        int.parse(_ageController.text) <= 0) {
-      showErrorSnackBar("Por favor ingrese una edad válida");
-      return false;
-    }
+
     return true;
   }
 
@@ -468,7 +469,11 @@ class _RegisterPageState extends State<RegisterPage>
                                       child: Container(
                                         width: size.width * 0.8,
                                         child: ElevatedButton(
-                                          onPressed: signUp,
+                                          onPressed: () {
+                                            if (validateRegister()) {
+                                              signUp();
+                                            }
+                                          },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
                                                 FrutiaColors.accent,

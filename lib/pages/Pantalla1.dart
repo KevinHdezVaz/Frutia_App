@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/historyScreen.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/services/profile_service.dart';
@@ -380,26 +381,64 @@ class _ProfessionalMiPlanDiarioScreenState
         ]);
   }
 
-  pw.Widget _buildMealPdfSection(
-      String mealTitle, List<MealCategory> categories) {
-    return pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Header(level: 2, text: mealTitle),
-          pw.Table.fromTextArray(
-            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            cellAlignment: pw.Alignment.centerLeft,
-            cellPadding: const pw.EdgeInsets.all(5),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-            data: <List<String>>[
-              <String>['Componente', 'Opciones'],
-              ...categories.map((cat) =>
-                  [cat.title, cat.options.map((opt) => opt.name).join(' o ')]),
-            ],
-          ),
-          pw.SizedBox(height: 15),
+  // En el archivo ProfessionalMiPlanDiarioScreen.dart
+
+  pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
+    // ▼▼▼ INICIO DE LA CORRECCIÓN ▼▼▼
+
+    // 1. Creamos la cabecera de nuestra nueva tabla de 3 columnas
+    final List<List<String>> tableData = [
+      <String>['Componente', 'Opción de Alimento', 'Porción Sugerida'],
+    ];
+
+    // 2. Recorremos cada categoría y cada opción para crear una fila para cada alimento
+    for (var category in meal.components) {
+      for (var option in category.options) {
+        tableData.add([
+          category
+              .title, // Columna 1: El título del componente (ej: "Proteínas")
+          option
+              .name, // Columna 2: El nombre del alimento (ej: "Tortilla de Claras")
+          option.portion, // Columna 3: La porción (ej: "4 claras")
         ]);
+      }
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Header(level: 2, text: mealTitle),
+        pw.Table.fromTextArray(
+          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+          headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          cellAlignment: pw.Alignment.centerLeft,
+          cellPadding: const pw.EdgeInsets.all(5),
+          headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+
+          // 3. Usamos los nuevos datos y ajustamos el ancho de las columnas
+          data: tableData,
+          columnWidths: {
+            0: const pw.FlexColumnWidth(2),
+            1: const pw.FlexColumnWidth(3),
+            2: const pw.FlexColumnWidth(2),
+          },
+        ),
+
+        // La sección de recetas sugeridas se queda igual, ya estaba bien
+        if (meal.suggestedRecipes.isNotEmpty)
+          pw.Padding(
+              padding: const pw.EdgeInsets.only(top: 15, bottom: 5),
+              child: pw.Text('Recetas de Inspiración:',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+        ...meal.suggestedRecipes.map((recipe) {
+          return pw.Padding(
+              padding: const pw.EdgeInsets.only(left: 10, bottom: 8),
+              child: pw.Bullet(text: recipe.title));
+        }),
+        pw.SizedBox(height: 20),
+      ],
+    );
+    // ▲▲▲ FIN DE LA CORRECCIÓN ▲▲▲
   }
 
   pw.Widget _buildRecommendationsSection(String title, List<String> items) {
@@ -485,9 +524,13 @@ class _ProfessionalMiPlanDiarioScreenState
             onDownloadPDF: _generateAndDownloadPDF,
           ).animate().fadeIn(duration: 500.ms),
           const SizedBox(height: 24),
+
+          // ▼▼▼ INICIO DE LA CORRECCIÓN PRINCIPAL ▼▼▼
+          // Dentro de tu método _buildBody en ProfessionalMiPlanDiarioScreen
+
           ...plan.meals.entries.map((entry) {
             final mealTitle = entry.key;
-            final mealCategories = entry.value;
+            final meal = entry.value; // 'meal' es ahora un objeto Meal
             final icon = _getIconForMeal(mealTitle);
             final delay =
                 (plan.meals.keys.toList().indexOf(mealTitle) * 200).ms;
@@ -497,7 +540,9 @@ class _ProfessionalMiPlanDiarioScreenState
               child: _MealCard(
                 title: mealTitle,
                 icon: icon,
-                categories: mealCategories,
+                categories: meal.components, // Pasamos los componentes
+                suggestedRecipes: meal
+                    .suggestedRecipes, // <-- ASÍ QUEDA LA LLAMADA CORRECTA (en plural)
                 selections: _dailySelections[mealTitle]!,
                 onOptionSelected: (category, option) =>
                     _updateSelection(mealTitle, category, option),
@@ -725,6 +770,8 @@ class _MealCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final List<MealCategory> categories;
+  // CAMBIO: Ahora recibe una LISTA de recetas
+  final List<InspirationRecipe> suggestedRecipes;
   final Map<String, MealOption> selections;
   final Function(String, MealOption) onOptionSelected;
   final bool isRegistering;
@@ -735,6 +782,7 @@ class _MealCard extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.categories,
+    required this.suggestedRecipes, // Constructor actualizado
     required this.selections,
     required this.onOptionSelected,
     required this.isRegistering,
@@ -803,6 +851,51 @@ class _MealCard extends StatelessWidget {
                   onChanged: (option) =>
                       onOptionSelected(category.title, option),
                 )),
+          if (suggestedRecipes.isNotEmpty && !isCompleted)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Recetas Sugeridas",
+                    style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  // Creamos un botón por cada receta en la lista
+                  ...suggestedRecipes
+                      .map((recipe) => Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.menu_book_outlined,
+                                  size: 18),
+                              label: Text(recipe.title,
+                                  overflow: TextOverflow.ellipsis, maxLines: 1),
+                              style: OutlinedButton.styleFrom(
+                                  foregroundColor: FrutiaColors.accent,
+                                  side: const BorderSide(
+                                      color: FrutiaColors.accent),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  minimumSize: const Size(double.infinity, 45)),
+                              onPressed: () {
+                                // Navega a la pantalla de detalle que ya tienes
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        RecipeDetailScreen(recipe: recipe),
+                                  ),
+                                );
+                              },
+                            ),
+                          ))
+                      .toList(),
+                ],
+              ),
+            ),
           if (title != 'Shake' && !isCompleted) _FreeSaladInfo(),
           if (isCompleted)
             Padding(
@@ -975,7 +1068,9 @@ class _MealOptionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      option.name,
+                      // ▼▼▼ CAMBIO AQUÍ ▼▼▼
+                      // Unimos el nombre con la porción para que se vea claro
+                      '${option.name} (${option.portion})',
                       style: GoogleFonts.lato(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
