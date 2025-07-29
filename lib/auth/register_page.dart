@@ -1,4 +1,6 @@
+import 'package:Frutia/auth/PhoneVerificationPage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:Frutia/auth/auth_check.dart';
@@ -19,6 +21,7 @@ class _RegisterPageState extends State<RegisterPage>
     with TickerProviderStateMixin {
   bool isObscure = true;
   bool isObscureConfirm = true; // Estado separado para el campo de confirmación
+  String _fullPhoneNumber = ''; // <-- AÑADIR ESTA VARIABLE
 
   // Text Controllers
   final _emailController = TextEditingController();
@@ -26,6 +29,8 @@ class _RegisterPageState extends State<RegisterPage>
   final _confirmPasswordController =
       TextEditingController(); // Nuevo controlador
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController(); // <-- AÑADIR ESTE
+
   final _ageController = TextEditingController();
   final _authService = AuthService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -65,6 +70,7 @@ class _RegisterPageState extends State<RegisterPage>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose(); // Dispose del nuevo controlador
+    _phoneController.dispose(); // <-- AÑADIR ESTE
     _nameController.dispose();
     _ageController.dispose();
     super.dispose();
@@ -86,6 +92,7 @@ class _RegisterPageState extends State<RegisterPage>
       final response = await _authService.register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
         password: _passwordController.text,
       );
 
@@ -98,12 +105,6 @@ class _RegisterPageState extends State<RegisterPage>
           content: Text('¡Bienvenido, $userName! Registro exitoso.'),
           backgroundColor: FrutiaColors.success,
         ),
-      );
-
-      // Navegar a la siguiente pantalla (por ejemplo, la de verificación o la home).
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-            builder: (_) => AuthCheckMain()), // O tu página de inicio
       );
     } on AuthException catch (e) {
       // 4. Manejar errores de autenticación específicos (ej. email ya existe).
@@ -356,6 +357,61 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 20),
+                                    // Phone Field con selector de país
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: IntlPhoneField(
+                                        decoration: InputDecoration(
+                                          labelText: 'Número de teléfono',
+                                          // Mantenemos el estilo de tu app
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.secondaryText,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.accent,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          filled: true,
+                                          fillColor:
+                                              FrutiaColors.primaryBackground,
+                                        ),
+                                        initialCountryCode:
+                                            'MX', // El país que aparecerá por defecto (México)
+                                        onChanged: (phone) {
+                                          // Cada vez que el usuario cambia el número o el país,
+                                          // guardamos el número completo en formato E.164
+                                          setState(() {
+                                            _fullPhoneNumber =
+                                                phone.completeNumber;
+                                          });
+                                        },
+                                          validator: (phoneNumber) {
+        if (phoneNumber == null || phoneNumber.number.isEmpty) {
+          return 'Por favor ingresa un número';
+        }
+        // La librería puede validar si el número es plausiblemente correcto en longitud
+        if (!phoneNumber.isValidNumber()) { 
+          return 'El número de teléfono no es válido para el país seleccionado.';
+        }
+        return null; // Retorna null si es válido
+      },
+                                        // Estilo del texto y cursor
+                                        style:
+                                            TextStyle(color: Color(0xFF2D2D2D)),
+                                        cursorColor: FrutiaColors.accent,
+                                      ),
+                                    ),
+                                    SizedBox(height: 20),
+
                                     // Password TextField
                                     SlideTransition(
                                       position: _slideAnimation,
@@ -471,7 +527,25 @@ class _RegisterPageState extends State<RegisterPage>
                                         child: ElevatedButton(
                                           onPressed: () {
                                             if (validateRegister()) {
-                                              signUp();
+                                              // Si la validación es correcta, navega y pasa los datos
+                                              Navigator.push(
+                                                // Usamos push para que pueda regresar si hay un error
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      PhoneVerificationPage(
+                                                    name: _nameController.text
+                                                        .trim(),
+                                                    email: _emailController.text
+                                                        .trim(),
+                                                    password:
+                                                        _passwordController
+                                                            .text,
+                                                    phoneNumber:
+                                                        _fullPhoneNumber, // La variable del intl_phone_field
+                                                  ),
+                                                ),
+                                              );
                                             }
                                           },
                                           style: ElevatedButton.styleFrom(

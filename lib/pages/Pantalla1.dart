@@ -993,6 +993,8 @@ class _MealCategorySection extends StatelessWidget {
   }
 }
 
+ // En tu archivo ProfessionalMiPlanDiarioScreen.dart, reemplaza este widget
+
 class _MealOptionTile extends StatelessWidget {
   final MealOption option;
   final bool isSelected;
@@ -1033,43 +1035,11 @@ class _MealOptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // IMAGE COMMENTED OUT: Network image for meal option
-              /*
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  option.imageUrl,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      width: 50,
-                      height: 50,
-                      color: Colors.grey[300],
-                      child: const Center(
-                          child: Icon(Icons.image, color: Colors.grey)),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 50,
-                    height: 50,
-                    color: Colors.grey[300],
-                    child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              */
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      // ▼▼▼ CAMBIO AQUÍ ▼▼▼
-                      // Unimos el nombre con la porción para que se vea claro
                       '${option.name} (${option.portion})',
                       style: GoogleFonts.lato(
                         fontWeight: FontWeight.w600,
@@ -1077,15 +1047,20 @@ class _MealOptionTile extends StatelessWidget {
                         color: FrutiaColors.primaryText,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Proteina: ${option.protein}g   Carbohidrato: ${option.carbs}g   Grasas: ${option.fats}g',
-                      style: GoogleFonts.lato(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 12,
-                        color: FrutiaColors.secondaryText,
-                      ),
-                    ),
+                    const SizedBox(height: 8),
+
+          
+                    Wrap(
+                      spacing: 6, // Espacio horizontal entre píldoras
+                      runSpacing: 4, // Espacio vertical si se van a una nueva línea
+                      children: [
+                        _StatPill(label: '~${option.calories} kcal', color: Colors.orange.shade700),
+                        _StatPill(label: '${option.protein}g Proteina', color: Colors.blue.shade700),
+                        _StatPill(label: '${option.carbs}g Carbohidrato', color: Colors.green.shade700),
+                        _StatPill(label: '${option.fats}g Grasas', color: Colors.purple.shade700),
+                      ],
+                    )
+                
                   ],
                 ),
               ),
@@ -1098,6 +1073,35 @@ class _MealOptionTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// Añade esta clase al final de tu archivo .dart
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatPill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.lato(
+          color: color.withOpacity(0.9),
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
         ),
       ),
     );

@@ -75,6 +75,8 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 8.1)
     - PromisesObjC (~> 2.4)
   - Flutter (1.0.0)
+  - flutter_custom_tabs_ios (2.4.0):
+    - Flutter
   - flutter_tts (0.0.1):
     - Flutter
   - fluttertoast (0.0.2):
@@ -153,10 +155,63 @@ PODS:
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
   - NWWebSocket (0.5.4)
+  - onesignal_flutter (5.3.3):
+    - Flutter
+    - OneSignalXCFramework (= 5.2.13)
+  - OneSignalXCFramework (5.2.13):
+    - OneSignalXCFramework/OneSignalComplete (= 5.2.13)
+  - OneSignalXCFramework/OneSignal (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalExtension
+    - OneSignalXCFramework/OneSignalLiveActivities
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalOutcomes
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalComplete (5.2.13):
+    - OneSignalXCFramework/OneSignal
+    - OneSignalXCFramework/OneSignalInAppMessages
+    - OneSignalXCFramework/OneSignalLocation
+  - OneSignalXCFramework/OneSignalCore (5.2.13)
+  - OneSignalXCFramework/OneSignalExtension (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalOutcomes
+  - OneSignalXCFramework/OneSignalInAppMessages (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalOutcomes
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalLiveActivities (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalLocation (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalUser
+  - OneSignalXCFramework/OneSignalNotifications (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalExtension
+    - OneSignalXCFramework/OneSignalOutcomes
+  - OneSignalXCFramework/OneSignalOSCore (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+  - OneSignalXCFramework/OneSignalOutcomes (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+  - OneSignalXCFramework/OneSignalUser (5.2.13):
+    - OneSignalXCFramework/OneSignalCore
+    - OneSignalXCFramework/OneSignalNotifications
+    - OneSignalXCFramework/OneSignalOSCore
+    - OneSignalXCFramework/OneSignalOutcomes
+  - open_file_ios (0.0.1):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
+    - Flutter
+  - printing (1.0.0):
     - Flutter
   - PromisesObjC (2.4.0)
   - pusher_channels_flutter (0.0.1):
@@ -166,6 +221,8 @@ PODS:
     - NWWebSocket (~> 0.5.4)
     - TweetNacl (~> 1.0.0)
   - RecaptchaInterop (101.0.0)
+  - share_plus (0.0.1):
+    - Flutter
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -196,13 +253,18 @@ DEPENDENCIES:
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - Flutter (from `Flutter`)
+  - flutter_custom_tabs_ios (from `.symlinks/plugins/flutter_custom_tabs_ios/ios`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
+  - onesignal_flutter (from `.symlinks/plugins/onesignal_flutter/ios`)
+  - open_file_ios (from `.symlinks/plugins/open_file_ios/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - printing (from `.symlinks/plugins/printing/ios`)
   - pusher_channels_flutter (from `.symlinks/plugins/pusher_channels_flutter/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
@@ -229,6 +291,7 @@ SPEC REPOS:
     - GTMSessionFetcher
     - nanopb
     - NWWebSocket
+    - OneSignalXCFramework
     - PromisesObjC
     - PusherSwift
     - RecaptchaInterop
@@ -251,6 +314,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_core/ios"
   Flutter:
     :path: Flutter
+  flutter_custom_tabs_ios:
+    :path: ".symlinks/plugins/flutter_custom_tabs_ios/ios"
   flutter_tts:
     :path: ".symlinks/plugins/flutter_tts/ios"
   fluttertoast:
@@ -259,12 +324,20 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
+  onesignal_flutter:
+    :path: ".symlinks/plugins/onesignal_flutter/ios"
+  open_file_ios:
+    :path: ".symlinks/plugins/open_file_ios/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  printing:
+    :path: ".symlinks/plugins/printing/ios"
   pusher_channels_flutter:
     :path: ".symlinks/plugins/pusher_channels_flutter/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   speech_to_text:
@@ -296,6 +369,7 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: 29d7b3af4aaf0b8f3ed20b568c13df399b06f68c
   FirebaseInstallations: 0ee9074f2c1e86561ace168ee1470dc67aabaf02
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_custom_tabs_ios: 87333f36c33a5971502766aca2f6ff4823b09bda
   flutter_tts: b88dbc8655d3dc961bc4a796e4e16a4cc1795833
   fluttertoast: 76fea30fcf04176325f6864c87306927bd7d2038
   google_sign_in_ios: 0ab078e60da6dfe23cbc55c83502b52bba1aad63
@@ -307,12 +381,17 @@ SPEC CHECKSUMS:
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   NWWebSocket: 040d22f23438cc09aaeabf537beff67699c3c76d
+  onesignal_flutter: c4ec77cc6bd8f4131d912b982d7dece6c0b9e847
+  OneSignalXCFramework: 6a06ab8a3e44370cb70c6ef31c472b271cdaa7aa
+  open_file_ios: 5ff7526df64e4394b4fe207636b67a95e83078bb
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   pusher_channels_flutter: 19ee24691d26965e9efca571f1620f536b9882bf
   PusherSwift: cad631bad86cfff4b8458dce1310a7774e469b1f
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
+  share_plus: de6030e33b4e106470e09322d87cf2a4258d2d1d
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
   speech_to_text: 9dc43a5df3cbc2813f8c7cc9bd0fbf94268ed7ac
   sqflite: c35dad70033b8862124f8337cc994a809fcd9fa3
