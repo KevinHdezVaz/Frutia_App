@@ -291,16 +291,12 @@ Widget _buildSingleMealSummaryCard(
                     ),
                     const SizedBox(height: 4),
                     // ESTA PARTE YA MUESTRA LOS "INGREDIENTES" CORRECTAMENTE
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0, // Añadido para mejor espaciado vertical
-                      children: category.options
-                          .map((opt) => Text(
-                                opt.name,
-                                style: GoogleFonts.lato(
-                                    color: FrutiaColors.secondaryText),
-                              ))
-                          .toList(),
+                    Text(
+                      // 1. Mapeamos la lista de opciones a una lista de sus nombres.
+                      // 2. Usamos .join() para unirlas con " o ".
+                      category.options.map((opt) => opt.name).join(' o '),
+                      style:
+                          GoogleFonts.lato(color: FrutiaColors.secondaryText),
                     ),
                     // ▼▼▼ SE ELIMINÓ LA SECCIÓN REDUNDANTE DE AQUÍ ▼▼▼
                   ],

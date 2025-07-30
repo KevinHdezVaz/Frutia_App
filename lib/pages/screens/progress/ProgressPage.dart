@@ -34,6 +34,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   bool _hasActivePlan = false;
   // CAMBIO: Se añade estado para los días de inactividad
   int _daysSinceLastStreak = 0;
+  String _userGoal = 'No definido';
 
   final double _startWeight = 85.0;
   final double _currentWeight = 78.5;
@@ -59,6 +60,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
       if (profile != null) {
         setState(() {
           _currentStreak = profile['racha_actual'] ?? 0;
+          _userGoal = profile['goal'] ?? 'No definido'; // <--- AÑADE ESTA LÍNEA
+
           if (profile['ultima_fecha_racha'] != null) {
             _lastStreakUpdateDate =
                 DateTime.parse(profile['ultima_fecha_racha']);
@@ -235,7 +238,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               const SizedBox(width: 24),
               Container(width: 1, height: 60, color: Colors.grey.shade300),
               const SizedBox(width: 24),
-              _buildWeightIndicator(weightChange),
+              _buildGoalIndicator(_userGoal), // <--- REEMPLAZA CON ESTO
             ],
           ),
         )
@@ -300,6 +303,42 @@ class _ProgressScreenState extends State<ProgressScreen> {
             style: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText, fontSize: 14)),
       ],
+    );
+  }
+
+// En ProgressScreen.dart
+
+  Widget _buildGoalIndicator(String goal) {
+    return Expanded(
+      // Usamos Expanded para que el texto no se desborde
+      child: Column(
+        children: [
+          Text("Tu Objetivo",
+              style: GoogleFonts.lato(
+                  color: FrutiaColors.secondaryText, fontSize: 14)),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.flag_rounded, color: Colors.blue, size: 28),
+              const SizedBox(width: 8),
+              // Expanded aquí también para manejar textos largos de objetivos
+              Expanded(
+                child: Text(
+                  goal,
+                  style: GoogleFonts.poppins(
+                      fontSize: 22, // Un poco más pequeño para que quepa mejor
+                      fontWeight: FontWeight.bold,
+                      color: FrutiaColors.primaryText),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis, // Evita que se desborde
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
     );
   }
 

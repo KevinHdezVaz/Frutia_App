@@ -36,7 +36,8 @@ class ProfileService {
         final Map<String, dynamic> responseData = json.decode(response.body);
         // Your Laravel backend returns {'profile': data}, so we extract 'profile'
         print('[ProfileService] Profile fetched successfully.');
-        return responseData['profile'] as Map<String, dynamic>;
+        //  return responseData['profile'] as Map<String, dynamic>;
+        return responseData['user'] as Map<String, dynamic>;
       } else if (response.statusCode == 404) {
         print('[ProfileService] Profile not found for this user (404).');
         return null; // This indicates no existing profile, which is expected for new users

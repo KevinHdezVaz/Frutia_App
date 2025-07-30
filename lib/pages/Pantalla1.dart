@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/historyScreen.dart';
+import 'package:Frutia/pages/screens/miplan/DescargarPDFDialog.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/services/profile_service.dart';
 import 'package:flutter/material.dart';
@@ -91,6 +92,17 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
+// En ProfessionalMiPlanDiarioScreen.dart
+
+  bool get _isUserPremium {
+    if (_userProfile == null) return false;
+
+    // Ahora _userProfile contiene el objeto 'user', por lo que podemos buscar el status directamente.
+    final status = _userProfile?['subscription_status']?.toLowerCase();
+
+    return status == 'active' || status == 'premium';
+  }
+
   Future<void> _fetchUserName() async {
     try {
       final name = await _planService.getUserName();
@@ -123,6 +135,8 @@ class _ProfessionalMiPlanDiarioScreenState
       final plan = results[0] as MealPlanData?;
       final history = results[1] as List<MealLog>;
       final profile = results[2] as Map<String, dynamic>?;
+
+      print("DEBUG: Datos recibidos del ProfileService: $profile");
 
       if (plan == null) {
         if (mounted) {
@@ -297,7 +311,9 @@ class _ProfessionalMiPlanDiarioScreenState
           header: (context) =>
               _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
           build: (pw.Context context) => [
-            _buildProfileInfo(profile),
+            _buildProfileInfo(
+                profile['profile']), // <-- ¡Ese es todo el cambio!
+
             pw.SizedBox(height: 20),
             _buildMacrosInfo(plan.targetMacros),
             pw.SizedBox(height: 20),
@@ -522,6 +538,7 @@ class _ProfessionalMiPlanDiarioScreenState
             fats: _totalFats,
             targetFats: plan.targetMacros.fats,
             onDownloadPDF: _generateAndDownloadPDF,
+            isPremium: _isUserPremium, // <-- ASEGÚRATE DE QUE ESTA LÍNEA EXISTA
           ).animate().fadeIn(duration: 500.ms),
           const SizedBox(height: 24),
 
@@ -587,6 +604,7 @@ class _MetricsDashboard extends StatelessWidget {
       fats,
       targetFats;
   final VoidCallback onDownloadPDF;
+  final bool isPremium; // <-- 1. DECLARA LA VARIABLE AQUÍ
 
   const _MetricsDashboard({
     required this.calories,
@@ -598,6 +616,7 @@ class _MetricsDashboard extends StatelessWidget {
     required this.fats,
     required this.targetFats,
     required this.onDownloadPDF,
+    required this.isPremium, // <-- 2. AÑÁDELA AL CONSTRUCTOR AQUÍ
   });
 
   @override
@@ -685,8 +704,23 @@ class _MetricsDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: onDownloadPDF,
-              icon: const Icon(Icons.download, color: Colors.white),
+              onPressed: () {
+                if (isPremium) {
+                  onDownloadPDF();
+                } else {
+                  // ▼▼▼ MUESTRA TU NUEVO DIÁLOGO AQUÍ ▼▼▼
+                  showDialog(
+                    context: context,
+                    builder: (context) => const PremiumFeatureDialog(),
+                  );
+                }
+              },
+              icon: Icon(
+                isPremium
+                    ? Icons.download
+                    : Icons.lock, // Cambia el ícono a un candado
+                color: Colors.white,
+              ),
               label: Text(
                 'Descargar PDF',
                 style: GoogleFonts.poppins(
@@ -695,7 +729,9 @@ class _MetricsDashboard extends StatelessWidget {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: FrutiaColors.accent,
+                backgroundColor: isPremium
+                    ? FrutiaColors.accent
+                    : Colors.grey, // Cambia el color a gris
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -993,7 +1029,7 @@ class _MealCategorySection extends StatelessWidget {
   }
 }
 
- // En tu archivo ProfessionalMiPlanDiarioScreen.dart, reemplaza este widget
+// En tu archivo ProfessionalMiPlanDiarioScreen.dart, reemplaza este widget
 
 class _MealOptionTile extends StatelessWidget {
   final MealOption option;
@@ -1039,28 +1075,46 @@ class _MealOptionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${option.name} (${option.portion})',
-                      style: GoogleFonts.lato(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: FrutiaColors.primaryText,
+                    Text.rich(
+                      TextSpan(
+                        text: option.name,
+                        style: GoogleFonts.lato(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: FrutiaColors.primaryText,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: ' ${option.portion}',
+                            style: GoogleFonts.lato(
+                              fontWeight: FontWeight.w400,
+                              fontSize: 14,
+                              color: FrutiaColors.primaryText.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
-
-          
                     Wrap(
                       spacing: 6, // Espacio horizontal entre píldoras
-                      runSpacing: 4, // Espacio vertical si se van a una nueva línea
+                      runSpacing:
+                          4, // Espacio vertical si se van a una nueva línea
                       children: [
-                        _StatPill(label: '~${option.calories} kcal', color: Colors.orange.shade700),
-                        _StatPill(label: '${option.protein}g Proteina', color: Colors.blue.shade700),
-                        _StatPill(label: '${option.carbs}g Carbohidrato', color: Colors.green.shade700),
-                        _StatPill(label: '${option.fats}g Grasas', color: Colors.purple.shade700),
+                        _StatPill(
+                            label: '~${option.calories} kcal',
+                            color: Colors.orange.shade700),
+                        _StatPill(
+                            label: '${option.protein}g Proteina',
+                            color: Colors.blue.shade700),
+                        _StatPill(
+                            label: '${option.carbs}g Carbohidrato',
+                            color: Colors.green.shade700),
+                        _StatPill(
+                            label: '${option.fats}g Grasas',
+                            color: Colors.purple.shade700),
                       ],
                     )
-                
                   ],
                 ),
               ),
@@ -1078,7 +1132,6 @@ class _MealOptionTile extends StatelessWidget {
     );
   }
 }
-
 
 // Añade esta clase al final de tu archivo .dart
 

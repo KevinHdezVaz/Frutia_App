@@ -71,7 +71,7 @@ class _MercadoPagoCheckoutScreenState extends State<MercadoPagoCheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Completar Pago'),
-        backgroundColor: FrutiaColors.primary,
+        backgroundColor: FrutiaColors.accent,
         elevation: 2,
       ),
       body: Stack(
