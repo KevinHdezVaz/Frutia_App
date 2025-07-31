@@ -138,7 +138,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage>
       );
       print(
           "✅ Registro en backend exitoso. Usuario: ${response['user']['name']}");
-
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const AuthCheckMain()),

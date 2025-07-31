@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>remote-notification</string> 
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -65,10 +70,6 @@
 	<string>Necesitamos acceso al micrófono para grabar audio en la aplicación</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Necesitamos acceso al reconocimiento de voz para funcionalidades de audio</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-	</array>
 	<!-- Fin de nuevos permisos -->
 
 	<key>UIApplicationSupportsIndirectInputEvents</key>
