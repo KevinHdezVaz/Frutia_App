@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Frutia/auth/auth_check.dart';
@@ -5,6 +7,7 @@ import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
+import 'dart:ui'; // Para BackdropFilter
 
 class PhoneVerificationPage extends StatefulWidget {
   final String name;
@@ -26,89 +29,83 @@ class PhoneVerificationPage extends StatefulWidget {
   State<PhoneVerificationPage> createState() => _PhoneVerificationPageState();
 }
 
-class _PhoneVerificationPageState extends State<PhoneVerificationPage>
-    with TickerProviderStateMixin {
+class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
+  // --- Dependencias y Controladores ---
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AuthService _authService = AuthService();
   final TextEditingController _smsController = TextEditingController();
   final FocusNode _pinFocusNode = FocusNode();
 
-  String? _verificationId;
+  // --- Estado de la UI ---
   bool _isLoading = false;
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  String? _verificationId;
+  int? _resendToken;
+
+  // --- Lógica del Temporizador ---
+  Timer? _timer;
+  int _start = 60;
+  bool _canResend = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.0, 0.5, curve: Curves.easeInOut)),
-    );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.3, 0.8, curve: Curves.easeOut)),
-    );
-    _controller.forward();
     _sendSmsCode();
+    startTimer();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _timer?.cancel();
     _smsController.dispose();
     _pinFocusNode.dispose();
     super.dispose();
   }
 
+  // --- Lógica del Temporizador ---
+  void startTimer() {
+    setState(() => _canResend = false);
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_start == 0) {
+        setState(() {
+          _canResend = true;
+          timer.cancel();
+        });
+      } else {
+        setState(() => _start--);
+      }
+    });
+  }
+
+  void _resetTimer() {
+    _start = 60;
+    startTimer();
+  }
+
+  // --- Lógica de Autenticación de Firebase ---
   Future<void> _sendSmsCode() async {
     setState(() => _isLoading = true);
     await _auth.verifyPhoneNumber(
       phoneNumber: widget.phoneNumber,
+      forceResendingToken: _resendToken,
       verificationCompleted: (PhoneAuthCredential credential) async {
-        setState(() => _isLoading = true);
         _smsController.setText(credential.smsCode ?? "");
         await _verifyCodeAndRegister(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error de Firebase: ${e.message}"),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        _showErrorSnackBar("Error: ${e.message}");
       },
       codeSent: (String verificationId, int? resendToken) {
-        // ----- CAMBIO AQUÍ -----
-        // Muestra un SnackBar de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Código de verificación enviado con éxito."),
-            backgroundColor: Colors.green, // Color verde para éxito
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        _showSuccessSnackBar("Código de verificación enviado.");
         setState(() {
           _verificationId = verificationId;
+          _resendToken = resendToken;
           _isLoading = false;
         });
-        // -----------------------
       },
-      codeAutoRetrievalTimeout: (String verificationId) {},
+      codeAutoRetrievalTimeout: (String verificationId) {
+        // No es necesario hacer nada aquí para esta implementación.
+      },
     );
   }
 
@@ -127,11 +124,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage>
     if (!_isLoading) setState(() => _isLoading = true);
 
     try {
-      print("Verificando credencial con Firebase...");
       await _auth.signInWithCredential(credential);
-      print("✅ Credencial de Firebase verificada con éxito.");
-
-      print("Intentando registrar en el backend de Laravel...");
       final response = await _authService.register(
         name: widget.name,
         email: widget.email,
@@ -139,242 +132,218 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage>
         phone: widget.phoneNumber,
         affiliateCode: widget.affiliateCode, // <-- AÑADE ESTA LÍNEA
       );
-      print(
-          "✅ Registro en backend exitoso. Usuario: ${response['user']['name']}");
 
       if (mounted) {
+        _showSuccessSnackBar("¡Cuenta creada con éxito! Bienvenido ${response['user']['name']}.");
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const AuthCheckMain()),
           (route) => false,
         );
       }
     } on FirebaseAuthException catch (e) {
-      print("🔥 ERROR DE FIREBASE: ${e.code} - ${e.message}");
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error de Firebase: ${e.message}"),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      _showErrorSnackBar("Código de verificación incorrecto.");
     } on AuthException catch (e) {
-      print("🔥 ERROR DEL BACKEND: ${e.message}");
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error de registro: ${e.message}"),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      _showErrorSnackBar("Error de registro: ${e.message}");
     } catch (e) {
-      print("🔥 ERROR INESPERADO: ${e.toString()}");
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Ocurrió un error inesperado: ${e.toString()}"),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      _showErrorSnackBar("Ocurrió un error inesperado.");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  // --- Widgets de UI y Helpers ---
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     final defaultPinTheme = PinTheme(
       width: 56,
       height: 60,
-      textStyle: GoogleFonts.lato(
-          fontSize: 22, color: const Color.fromARGB(255, 45, 45, 45)),
+      textStyle: GoogleFonts.lato(fontSize: 22, color: const Color.fromARGB(255, 45, 45, 45)),
       decoration: BoxDecoration(
-        color: FrutiaColors.primaryBackground.withOpacity(0.8),
+        color: Colors.white.withOpacity(0.7),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FrutiaColors.secondaryText),
-      ),
-    );
-
-    final focusedPinTheme = defaultPinTheme.copyWith(
-      decoration: defaultPinTheme.decoration!.copyWith(
-        border: Border.all(color: FrutiaColors.accent, width: 2),
-      ),
-    );
-
-    final submittedPinTheme = defaultPinTheme.copyWith(
-      decoration: defaultPinTheme.decoration!.copyWith(
-        color: FrutiaColors.accent.withOpacity(0.5),
-        border: Border.all(color: FrutiaColors.accent),
+        border: Border.all(color: FrutiaColors.secondaryText.withOpacity(0.5)),
       ),
     );
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text("Verificar Teléfono"),
+        titleTextStyle: GoogleFonts.lato(
+          color: const Color(0xFF2D2D2D),
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFFE63946)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFD1B3),
-              Color(0xFFFF6F61),
-            ],
+            colors: [Color(0xFFFFD1B3), Color(0xFFFF6F61)],
           ),
         ),
         child: SafeArea(
-          child: Stack(
+          child: Align( // <-- CAMBIO AQUÍ: Reemplacé Center por Align
+            alignment: const Alignment(0.0, -0.5), // <-- Mueve el contenido un 10% hacia arriba
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: _buildGlassCard(defaultPinTheme),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassCard(PinTheme defaultPinTheme) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25.0),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(25.0),
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Positioned(
-                top: size.height * 0.05,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    height: 150,
-                    width: 150,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/fondoAppFrutia.webp'),
-                        fit: BoxFit.contain,
+              Image.asset('assets/images/fondoAppFrutia.webp', height: 120),
+              const SizedBox(height: 20),
+              Text(
+                "Verificación de Código",
+                style: GoogleFonts.lato(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Text(
+                "Ingresa el código de 6 dígitos enviado a\n${widget.phoneNumber}",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  fontSize: 16,
+                  color: Colors.black.withOpacity(0.9),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 30),
+              Pinput(
+                length: 6,
+                controller: _smsController,
+                focusNode: _pinFocusNode,
+                defaultPinTheme: defaultPinTheme,
+                focusedPinTheme: defaultPinTheme.copyWith(
+                  decoration: defaultPinTheme.decoration!.copyWith(
+                    border: Border.all(color: FrutiaColors.accent, width: 2),
+                  ),
+                ),
+                submittedPinTheme: defaultPinTheme.copyWith(
+                  decoration: defaultPinTheme.decoration!.copyWith(
+                    color: FrutiaColors.accent.withOpacity(0.2),
+                  ),
+                ),
+                onCompleted: (pin) => _verifyAndRegisterWithSmsCode(pin),
+              ),
+              const SizedBox(height: 30),
+              if (_isLoading)
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_smsController.text.length == 6) {
+                        _verifyAndRegisterWithSmsCode(_smsController.text);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: FrutiaColors.accent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 8,
+                    ),
+                    child: Text(
+                      "Verificar y Crear Cuenta",
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: FrutiaColors.primaryBackground,
                       ),
                     ),
                   ),
                 ),
-              ),
-              Column(
-                children: [
-                  AppBar(
-                    title: const Text("Verificar Teléfono"),
-                    titleTextStyle: const TextStyle(
-                      color: Color(0xFF2D2D2D),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios,
-                          color: Color(0xFFE63946)),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Expanded(
-                    child: Center(
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 20.0),
-                          child: Card(
-                            elevation: 20,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Container(
-                              height: size.height * 0.5,
-                              width: size.width * 0.9,
-                              padding: const EdgeInsets.all(16.0),
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      "Enviamos un código de verificación a ${widget.phoneNumber}",
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.lato(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: FrutiaColors.accent,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 30),
-                                    SlideTransition(
-                                      position: _slideAnimation,
-                                      child: Pinput(
-                                        length: 6,
-                                        controller: _smsController,
-                                        focusNode: _pinFocusNode,
-                                        defaultPinTheme: defaultPinTheme,
-                                        focusedPinTheme: focusedPinTheme,
-                                        submittedPinTheme: submittedPinTheme,
-                                        pinputAutovalidateMode:
-                                            PinputAutovalidateMode.onSubmit,
-                                        showCursor: true,
-                                        onCompleted: (pin) async {
-                                          await _verifyAndRegisterWithSmsCode(
-                                              pin);
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(height: 40),
-                                    if (_isLoading)
-                                      const CircularProgressIndicator(
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                FrutiaColors.accent),
-                                      )
-                                    else
-                                      SlideTransition(
-                                        position: _slideAnimation,
-                                        child: Container(
-                                          width: size.width * 0.8,
-                                          child: ElevatedButton(
-                                            onPressed: () {
-                                              if (_smsController.text.length ==
-                                                  6) {
-                                                _verifyAndRegisterWithSmsCode(
-                                                    _smsController.text);
-                                              }
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  FrutiaColors.accent,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 16),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              elevation: 8,
-                                            ),
-                                            child: Text(
-                                              "Verificar y Crear Cuenta",
-                                              style: GoogleFonts.inter(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: FrutiaColors
-                                                    .primaryBackground,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              const SizedBox(height: 20),
+              _buildResendCodeWidget(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildResendCodeWidget() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "¿No recibiste el código?",
+          style: GoogleFonts.lato(color: Colors.white.withOpacity(0.8)),
+        ),
+        TextButton(
+          onPressed: _canResend
+              ? () {
+                  _resetTimer();
+                  _sendSmsCode();
+                }
+              : null,
+          child: Text(
+            _canResend ? "Reenviar ahora" : "Reenviar en $_start s",
+            style: GoogleFonts.lato(
+              fontWeight: FontWeight.bold,
+              color: _canResend ? Colors.white : Colors.white.withOpacity(0.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
