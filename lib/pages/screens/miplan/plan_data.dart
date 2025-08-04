@@ -49,7 +49,6 @@ Color _colorFromString(String colorName) {
   }
 }
 
-
 class MealPlanData {
   final NutritionPlan nutritionPlan;
 
@@ -91,18 +90,19 @@ class PriceInfo {
       };
 }
 
-
 class NutritionPlan {
   final TargetMacros targetMacros;
   final Map<String, Meal> meals;
   final List<String> generalRecommendations;
   final List<String> rememberRecommendations;
+  final String recommendation; // <-- AÑADE ESTA LÍNEA
 
   const NutritionPlan({
     required this.targetMacros,
     required this.meals,
     required this.generalRecommendations,
     required this.rememberRecommendations,
+    required this.recommendation, // <-- AÑADE ESTA LÍNEA
   });
 
   factory NutritionPlan.fromJson(Map<String, dynamic> json) {
@@ -115,15 +115,20 @@ class NutritionPlan {
       }
     });
 
-    final recommendations = json['recommendations'] as Map<String, dynamic>? ?? {};
+    final recommendations =
+        json['recommendations'] as Map<String, dynamic>? ?? {};
     final general = recommendations['general'] as List? ?? [];
     final remember = recommendations['remember'] as List? ?? [];
 
     return NutritionPlan(
       targetMacros: TargetMacros.fromJson(json['targetMacros'] ?? {}),
       meals: parsedMeals,
-      generalRecommendations: List<String>.from(general.map((item) => item.toString())),
-      rememberRecommendations: List<String>.from(remember.map((item) => item.toString())),
+      generalRecommendations:
+          List<String>.from(general.map((item) => item.toString())),
+      rememberRecommendations:
+          List<String>.from(remember.map((item) => item.toString())),
+      recommendation: json['recommendation'] as String? ??
+          '¡Tu plan está listo para que alcances tus metas!',
     );
   }
 }
@@ -147,8 +152,12 @@ class TargetMacros {
     return TargetMacros(
       calories: (json['calories'] as num?)?.toInt() ?? 0,
       protein: (json['protein'] as num?)?.toInt() ?? 0,
-      carbs: (json['carbohydrates'] as num?)?.toInt() ?? (json['carbs'] as num?)?.toInt() ?? 0,
-      fats: (json['fats'] as num?)?.toInt() ?? (json['fat'] as num?)?.toInt() ?? 0,
+      carbs: (json['carbohydrates'] as num?)?.toInt() ??
+          (json['carbs'] as num?)?.toInt() ??
+          0,
+      fats: (json['fats'] as num?)?.toInt() ??
+          (json['fat'] as num?)?.toInt() ??
+          0,
     );
   }
 }
@@ -173,7 +182,6 @@ class MealCategory {
 
 // --- Reemplaza tu clase MealOption por esta ---
 
- 
 class MealOption {
   final String name;
   final String portion;
@@ -184,7 +192,7 @@ class MealOption {
   final List<PriceInfo> prices;
   // Estos campos ya no se usan en el nuevo JSON, pero se mantienen por si acaso
   final String imageUrl;
-  final List<String> ingredients; 
+  final List<String> ingredients;
 
   const MealOption({
     required this.name,
@@ -205,13 +213,18 @@ class MealOption {
       portion: json['portion'] as String? ?? 'N/A',
       calories: (json['calories'] as num?)?.toInt() ?? 0,
       protein: (json['protein'] as num?)?.toInt() ?? 0,
-      carbs: (json['carbohydrates'] as num?)?.toInt() ?? (json['carbs'] as num?)?.toInt() ?? 0,
-      fats: (json['fats'] as num?)?.toInt() ?? (json['fat'] as num?)?.toInt() ?? 0,
+      carbs: (json['carbohydrates'] as num?)?.toInt() ??
+          (json['carbs'] as num?)?.toInt() ??
+          0,
+      fats: (json['fats'] as num?)?.toInt() ??
+          (json['fat'] as num?)?.toInt() ??
+          0,
       prices: pricesList
           .map((p) => PriceInfo.fromJson(p as Map<String, dynamic>))
           .toList(),
       imageUrl: json['imageUrl'] as String? ?? '',
-      ingredients: List<String>.from((json['ingredients'] as List? ?? []).map((item) => item.toString())),
+      ingredients: List<String>.from(
+          (json['ingredients'] as List? ?? []).map((item) => item.toString())),
     );
   }
 
@@ -249,7 +262,8 @@ class RecipeIngredient {
 // Modelo actualizado para las recetas de Spoonacular
 class InspirationRecipe {
   final String title;
-  final String? image;
+  final String? imageUrl;
+
   final int readyInMinutes;
   String? mealType; // <-- AÑADE ESTE CAMPO
 
@@ -265,7 +279,8 @@ class InspirationRecipe {
 
   InspirationRecipe({
     required this.title,
-    this.image,
+    this.imageUrl, // <-- Corregido
+
     required this.readyInMinutes,
     required this.servings,
     required this.instructions,
@@ -302,7 +317,7 @@ class InspirationRecipe {
 
     return InspirationRecipe(
       title: json['name'] ?? 'Sin título',
-      image: json['image'],
+      imageUrl: json['imageUrl'],
       readyInMinutes: json['readyInMinutes'] ?? 0,
       servings: json['servings'] ?? 1,
       instructions: json['instructions'] ?? 'No hay instrucciones.',
@@ -319,7 +334,6 @@ class InspirationRecipe {
 }
 
 // --- AÑADE ESTA NUEVA CLASE ---
-
 
 class Meal {
   final List<MealCategory> components;

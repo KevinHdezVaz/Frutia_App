@@ -11,6 +11,7 @@ class PhoneVerificationPage extends StatefulWidget {
   final String email;
   final String password;
   final String phoneNumber;
+  final String affiliateCode; // <-- AÑADE ESTA LÍNEA
 
   const PhoneVerificationPage({
     super.key,
@@ -18,6 +19,7 @@ class PhoneVerificationPage extends StatefulWidget {
     required this.email,
     required this.password,
     required this.phoneNumber,
+    required this.affiliateCode, // <-- AÑADE ESTA LÍNEA
   });
 
   @override
@@ -135,6 +137,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage>
         email: widget.email,
         password: widget.password,
         phone: widget.phoneNumber,
+        affiliateCode: widget.affiliateCode, // <-- AÑADE ESTA LÍNEA
       );
       print(
           "✅ Registro en backend exitoso. Usuario: ${response['user']['name']}");

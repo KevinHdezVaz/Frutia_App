@@ -55,6 +55,8 @@ class _ProfessionalMiPlanDiarioScreenState
     _fetchUserName();
   }
 
+  // Función _registerMeal completa y actualizada
+
   Future<void> _registerMeal(
       String mealTitle, List<MealOption> selections) async {
     setState(() {
@@ -62,16 +64,22 @@ class _ProfessionalMiPlanDiarioScreenState
     });
 
     try {
+      // 1. Guardamos la selección final en la memoria local del teléfono.
+      await _saveSelections();
+
+      // 2. Registramos la comida en el historial del servidor.
       await _planService.logMeal(
         date: DateTime.now(),
         mealType: mealTitle,
         selections: selections,
       );
 
+      // 3. Actualizamos la UI para marcar la comida como completada.
       setState(() {
         _completedMeals.add(mealTitle);
       });
 
+      // 4. Mostramos un mensaje de éxito.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$mealTitle registrado con éxito.'),
@@ -79,6 +87,7 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
       );
     } catch (e) {
+      // En caso de error, mostramos un mensaje.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al registrar: ${e.toString()}'),
@@ -86,6 +95,7 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
       );
     } finally {
+      // 5. Dejamos de mostrar el indicador de carga en el botón.
       setState(() {
         _registeringMeals.remove(mealTitle);
       });
@@ -200,6 +210,8 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
+  // CÓDIGO NUEVO ✅
+
   void _updateSelection(
       String mealTitle, String categoryTitle, MealOption option) {
     if (_completedMeals.contains(mealTitle)) return;
@@ -207,7 +219,7 @@ class _ProfessionalMiPlanDiarioScreenState
     setState(() {
       _dailySelections[mealTitle]![categoryTitle] = option;
       _calculateTotals();
-      _saveSelections();
+      // _saveSelections(); // Eliminamos la llamada al guardado automático
     });
   }
 
@@ -265,22 +277,20 @@ class _ProfessionalMiPlanDiarioScreenState
           await rootBundle.load('assets/images/fondoAppFrutia.webp');
       final Uint8List imageBytes = imageData.buffer.asUint8List();
 
-      // Nuevas recomendaciones y recordatorios
       final List<String> additionalRecommendations = [
-        'PROTEÍNAS se pesan CRUDAS, si la pesa cocida QUITAR 20g al gramaje indicado',
-        'CARBOHIDRATOS se pesan COCIDOS, excepto la avena que se pesa CRUDA',
-        'Consumir una adecuada cantidad de agua al día (3.2 litros) – Cuantifícala',
-        'Utiliza una balanza electrónica para pesar las comidas',
-        'Utiliza cucharas medidoras para mayor exactitud',
-        'Utiliza Pam (aceite en spray) o sino utiliza el aceite de oliva extra virgen',
-        'Los vegetales son LIBRES, dales variedad a tus comidas (Recuerda que aportan fibra)',
+        'Proteínas: se pesan crudas. Si están cocidas, resta 20 g al peso indicado.',
+        'Carbohidratos: se pesan cocidos o como indica tu plan, la avena se pesa cruda.',
+        'Vegetales: son libres, úsalos con variedad para sumar fibra.',
+        'Agua: Consume entre 30 a 40 ml por cada kg de peso corporal al día.',
+        'Usa balanza digital y cucharas medidoras para mayor precisión.',
+        'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad.',
       ];
 
       final List<String> additionalReminders = [
-        'Pon horarios de comida y respétalos',
-        'Busca recetas e inventa platos nuevos para no aburrirte',
-        'Prepara salsas en base a vegetales (Ají, rocoto, albahaca, tomate, pimientos, champiñones, etc.)',
-        'Organiza tus comidas en adelantado si vas a tener un día atípico (Piensa en adelantado)',
+        'Establece horarios fijos de comida y respétalos todos los días.',
+        'Varía tus recetas e innova en la cocina para evitar la monotonía.',
+        'Prepara salsas caseras a base de vegetales como ají, rocoto, albahaca, tomate, pimientos, champiñones, entre otros.',
+        'Si sabes que tendrás un día complicado, adelanta tus comidas o llévalas contigo. ¡Planifica con tiempo para no romper tu ritmo!',
       ];
 
       // Combinar las recomendaciones y recordatorios existentes con los nuevos
@@ -317,6 +327,46 @@ class _ProfessionalMiPlanDiarioScreenState
             pw.SizedBox(height: 20),
             _buildMacrosInfo(plan.targetMacros),
             pw.SizedBox(height: 20),
+
+            if (plan.recommendation.isNotEmpty) ...[
+              pw.Container(
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blueGrey50,
+                    border:
+                        pw.Border.all(color: PdfColors.blueGrey100, width: 1),
+                    borderRadius: pw.BorderRadius.circular(5),
+                  ),
+                  child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('¡Hola!:',
+                            style:
+                                pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          plan.recommendation,
+                          style: pw.TextStyle(
+                              color: PdfColors.grey800, lineSpacing: 2),
+                        ),
+                      ])),
+              pw.SizedBox(height: 20),
+            ],
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.yellow50,
+                border: pw.Border.all(color: PdfColors.amber300, width: 1),
+                borderRadius: pw.BorderRadius.circular(5),
+              ),
+              child: pw.Text(
+                'Instrucción Importante: De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.',
+                style: pw.TextStyle(color: PdfColors.grey800),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            pw.SizedBox(height: 15),
+
             ...plan.meals.entries.map((mealEntry) {
               return _buildMealPdfSection(mealEntry.key, mealEntry.value);
             }),

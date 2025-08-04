@@ -115,8 +115,6 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
               'Todos los días (alta frecuencia)',
         };
         final Map<String, String> mealCountMap = {
-          '🍽️ 2 comidas principales (Ej: almuerzo y cena)':
-              '2 comidas principales (Ej: almuerzo y cena)',
           '🥐 3 comidas principales (Desayuno, almuerzo y cena)':
               '3 comidas principales (Desayuno, almuerzo y cena)',
           '🥗 3 comidas + 1 o 2 snacks (Entre comidas o post entreno)':
@@ -955,7 +953,6 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
 
   List<Widget> _buildMealCountOptions(QuestionnaireProvider provider) {
     const options = {
-      '🍽️ 2 comidas principales (Ej: almuerzo y cena)',
       '🥐 3 comidas principales (Desayuno, almuerzo y cena)',
       '🥗 3 comidas + 1 o 2 snacks (Entre comidas o post entreno)',
       '🤗 No tengo estructura fija',

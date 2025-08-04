@@ -614,6 +614,7 @@ class _DashboardViewState extends State<_DashboardView> {
 
     // 2. Si hay un plan, recorremos las comidas para extraer las recetas
     final List<InspirationRecipe> suggestedRecipes = [];
+    final String? affiliateCode = user['applied_affiliate_code'];
 
     if (hasPlan) {
       for (var meal in widget.mealPlanData!.nutritionPlan.meals.values) {
@@ -676,6 +677,11 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 24),
           _buildStatsRow(
               context, streakDays, currentWeight, mainGoal, trialDaysRemaining),
+          if (affiliateCode != null && affiliateCode.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: _buildAffiliateCodeCard(affiliateCode),
+            ),
           const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -765,8 +771,53 @@ class _DashboardViewState extends State<_DashboardView> {
         .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms);
   }
 
+  Widget _buildAffiliateCodeCard(String affiliateCode) {
+    return Container(
+      margin: const EdgeInsets.symmetric(
+          horizontal: 40, vertical: 20), // Quitado margen horizontal
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: FrutiaColors.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade700, width: 1.5),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.star_rounded, color: Colors.amber.shade700, size: 24),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Código de afiliado usado:",
+                style: GoogleFonts.lato(
+                  color: FrutiaColors.secondaryText,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                affiliateCode,
+                style: GoogleFonts.poppins(
+                  color: FrutiaColors.primaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatsRow(BuildContext context, int streakDays,
       String currentWeight, String mainGoal, String trialDaysRemaining) {
+    // ▼▼▼ INICIO DEL CAMBIO ▼▼▼
+    // Obtenemos el código de afiliado directamente desde los datos del widget
+    final String? affiliateCode =
+        widget.userData['user']?['applied_affiliate_code'];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(

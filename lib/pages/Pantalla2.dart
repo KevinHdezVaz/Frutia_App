@@ -44,17 +44,15 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
       List<String> mealNames = [];
 
       if (planData?.nutritionPlan.meals != null) {
-        // Usamos .entries para obtener tanto el nombre de la comida como sus datos
         for (var entry in planData!.nutritionPlan.meals.entries) {
-          final String mealName = entry.key; // "Desayuno", "Almuerzo", etc.
+          final String mealName = entry.key;
           final Meal meal = entry.value;
 
-          mealNames.add(mealName); // Guardamos el nombre para los filtros
+          mealNames.add(mealName);
 
           if (meal.suggestedRecipes.isNotEmpty) {
-            // Asignamos el nombre de la comida a cada una de sus recetas
             for (var recipe in meal.suggestedRecipes) {
-              recipe.mealType = mealName; // ¡Aquí está la magia!
+              recipe.mealType = mealName;
             }
             foundRecipes.addAll(meal.suggestedRecipes);
           }
@@ -64,18 +62,18 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
       setState(() {
         _allRecipes = foundRecipes;
         _filteredRecipes = _allRecipes;
-        // Creamos la lista de filtros dinámicamente
-        _mealFilters = ['Todos', ...mealNames];
+        _mealFilters = [
+          'Todos',
+          ...mealNames.toSet().toList()
+        ]; // Evita duplicados
         _isLoading = false;
       });
-      debugPrint('Recipes loaded from meals: ${_allRecipes.length}');
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = "Error al cargar recetas: ${e.toString()}";
         _isLoading = false;
       });
-      debugPrint('Error loading plan data: $e');
     }
   }
 
@@ -301,6 +299,60 @@ class _InspiracionTab extends StatelessWidget {
   }
 }
 
+// --- WIDGET NUEVO PARA EL PLACEHOLDER ---
+class _GeneratingImagePlaceholder extends StatelessWidget {
+  final bool isError;
+  const _GeneratingImagePlaceholder({Key? key, this.isError = false})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/fondoAppFrutia.webp',
+          fit: BoxFit.cover,
+        ),
+        Container(
+          decoration: BoxDecoration(color: Colors.black.withOpacity(0.6)),
+        ),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isError)
+                  const Icon(Icons.error_outline, color: Colors.white, size: 28)
+                else
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Text(
+                  isError ? 'Error al cargar' : 'Cargando imagen...',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // --- NUEVO WIDGET PARA EL TÍTULO CON BORDE ---
 class _GradientTitle extends StatelessWidget {
   final String title;
@@ -505,6 +557,9 @@ class _RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasImage =
+        recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -521,34 +576,39 @@ class _RecipeCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Imagen estática de assets con overlay oscuro
-            ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.3),
-                BlendMode.darken,
-              ),
-              child: Image.asset(
-                'assets/images/fondoAppFrutia.webp',
+            // ▼▼▼ ESTE ES EL ÚNICO BLOQUE QUE CAMBIA ▼▼▼
+            if (hasImage)
+              Image.network(
+                recipe.imageUrl!,
                 fit: BoxFit.cover,
-              ),
-            ),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                      child: CircularProgressIndicator(
+                          color: FrutiaColors.accent));
+                },
+                errorBuilder: (context, error, stackTrace) =>
+                    const _GeneratingImagePlaceholder(isError: true),
+              )
+            else
+              // Antes aquí tenías Image.asset(...), ahora usa el placeholder
+              const _GeneratingImagePlaceholder(),
+            // ▲▲▲ FIN DEL CAMBIO ▲▲▲
 
-            // Gradiente encima de la imagen
+            // El resto del widget (gradiente y texto) no cambia
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.6),
+                    Colors.black.withOpacity(0.7),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.4, 1.0],
+                  stops: const [0.5, 1.0],
                 ),
               ),
             ),
-
-            // Contenido del card
             Positioned(
               bottom: 12,
               left: 12,
@@ -563,25 +623,26 @@ class _RecipeCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.timer_outlined, color: Colors.white, size: 14),
+                      const Icon(Icons.timer_outlined,
+                          color: Colors.white70, size: 14),
                       const SizedBox(width: 4),
                       Text('${recipe.readyInMinutes} min',
                           style: GoogleFonts.lato(
                               color: Colors.white, fontSize: 12)),
                       const SizedBox(width: 8),
-                      Icon(Icons.local_fire_department_outlined,
-                          color: Colors.white, size: 14),
+                      const Icon(Icons.local_fire_department_outlined,
+                          color: Colors.white70, size: 14),
                       const SizedBox(width: 4),
                       Text(
                         '~${recipe.calories} kcal',
-                        style: GoogleFonts.lato(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
+                        style:
+                            GoogleFonts.lato(color: Colors.white, fontSize: 12),
                       ),
                     ],
                   ),
@@ -599,41 +660,148 @@ class RecipeDetailScreen extends StatelessWidget {
   final InspirationRecipe recipe;
   const RecipeDetailScreen({Key? key, required this.recipe}) : super(key: key);
 
+  // --- MÉTODO NUEVO: Para mostrar la imagen en pantalla completa ---
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(10),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Visor interactivo para hacer zoom y mover la imagen
+              InteractiveViewer(
+                panEnabled: true,
+                boundaryMargin: const EdgeInsets.all(20),
+                minScale: 0.5,
+                maxScale: 4,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child:
+                        Icon(Icons.broken_image, color: Colors.white, size: 50),
+                  ),
+                ),
+              ),
+              // Botón para cerrar el visor
+              Positioned(
+                top: 10,
+                right: 10,
+                child: CircleAvatar(
+                  backgroundColor: Colors.black.withOpacity(0.6),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Extraemos los pasos de `analyzedInstructions` para una mejor visualización
-    final List<String> steps = recipe.analyzedInstructions.isNotEmpty &&
-            recipe.analyzedInstructions[0]['steps'] != null
-        ? (recipe.analyzedInstructions[0]['steps'] as List)
-            .map<String>((step) => step['step'].toString())
-            .toList()
-        : recipe.instructions
-            .split(RegExp(r'\. |\n')); // Fallback a instrucciones simples
+    final List<String> steps = recipe.instructions
+        .split(RegExp(r'Paso \d+: '))
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+
+    final bool hasImage =
+        recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
 
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       body: CustomScrollView(
         slivers: [
+          // ▼▼▼ SLIVERAPPBAR MEJORADO ▼▼▼
           SliverAppBar(
-            expandedHeight: 150.0,
+            expandedHeight: 250.0,
             pinned: true,
             stretch: true,
             backgroundColor: FrutiaColors.accent,
-            leading: const BackButton(color: Colors.white),
+            iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
               titlePadding:
-                  const EdgeInsets.symmetric(horizontal: 48.0, vertical: 12.0),
+                  const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
               title: Text(
                 recipe.title,
                 style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white),
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                          blurRadius: 4, color: Colors.black.withOpacity(0.8))
+                    ]),
                 textAlign: TextAlign.center,
               ),
+              background: hasImage
+                  ? GestureDetector(
+                      // --- AÑADIDO: Para hacer la imagen tappable
+                      onTap: () =>
+                          _showFullScreenImage(context, recipe.imageUrl!),
+                      child: Stack(
+                        // --- AÑADIDO: Para superponer el gradiente y el ícono
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(
+                            recipe.imageUrl!,
+                            fit: BoxFit.cover,
+                            // --- AÑADIDO: Indicador de carga
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                  child: CircularProgressIndicator(
+                                      color: FrutiaColors.accent));
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(color: Colors.grey);
+                            },
+                          ),
+                          // --- AÑADIDO: Gradiente para mejorar legibilidad
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.2),
+                                  Colors.black.withOpacity(0.6),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: const [0.5, 0.8, 1.0],
+                              ),
+                            ),
+                          ),
+                          // --- AÑADIDO: Icono como pista visual
+                          const Positioned(
+                            bottom: 12,
+                            right: 12,
+                            child: Icon(Icons.fullscreen,
+                                color: Colors.white70, size: 28),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Container(color: FrutiaColors.accent2),
             ),
           ),
+          // ▲▲▲ FIN DEL SLIVERAPPBAR MEJORADO ▲▲▲
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -656,25 +824,14 @@ class RecipeDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const Divider(height: 40),
-                  // En el método build de RecipeDetailScreen, busca esta parte:
-
                   _DetailSection(
                     title: 'Ingredientes',
                     icon: Icons.add_shopping_cart_outlined,
                     content: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: recipe.extendedIngredients.map((item) {
-                        // ▼▼▼ REEMPLAZA ESTAS LÍNEAS ▼▼▼
-                        // final amount = item['amount']?.toStringAsFixed(1) ?? '';
-                        // final unit = item['unitShort'] ?? item['unit'] ?? '';
-                        // final name = item['name'] ?? 'Ingrediente';
-                        // return _ChecklistItem(text: name, quantity: '$amount $unit');
-                        // ▲▲▲ POR ESTAS LÍNEAS DE ABAJO ▼▼▼
-
                         final name = item['name'] as String? ?? 'Ingrediente';
-                        final quantity = item['original'] as String? ??
-                            ''; // <-- Usamos el campo 'original'
-
+                        final quantity = item['original'] as String? ?? '';
                         return _ChecklistItem(text: name, quantity: quantity);
                       }).toList(),
                     ),
@@ -686,9 +843,7 @@ class RecipeDetailScreen extends StatelessWidget {
                       children: steps.asMap().entries.map((entry) {
                         int idx = entry.key + 1;
                         String step = entry.value;
-                        if (step.trim().isEmpty)
-                          return const SizedBox
-                              .shrink(); // No mostrar pasos vacíos
+                        if (step.trim().isEmpty) return const SizedBox.shrink();
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
@@ -715,8 +870,7 @@ class RecipeDetailScreen extends StatelessWidget {
   }
 }
 
-// --- 3. WIDGETS DE AYUDA ---
-// Estos son los componentes que usa la pantalla para organizarse.
+// --- WIDGETS DE AYUDA (necesarios para que la pantalla funcione) ---
 
 class _DetailSection extends StatelessWidget {
   final String title;

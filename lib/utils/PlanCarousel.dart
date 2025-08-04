@@ -1,9 +1,9 @@
-import 'package:Frutia/pages/Pantalla2.dart'; // Asumo que esta es tu pantalla de detalles
+import 'package:Frutia/pages/Pantalla2.dart';
+import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../pages/screens/miplan/plan_data.dart'; // Asegúrate que la ruta a tu modelo sea correcta
 
 class PlanCarousel extends StatelessWidget {
   final List<InspirationRecipe> recipes;
@@ -14,7 +14,7 @@ class PlanCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (recipes.isEmpty) {
       return const SizedBox(
-        height: 220, // Aumentamos un poco la altura para consistencia
+        height: 220,
         child: Center(
           child: Text(
             "No hay recetas de inspiración en tu plan.",
@@ -25,10 +25,9 @@ class PlanCarousel extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 220, // Aumentamos la altura para un mejor aspecto visual
+      height: 220,
       child: PageView.builder(
-        controller:
-            PageController(viewportFraction: 0.85), // Un poco más grande
+        controller: PageController(viewportFraction: 0.85),
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
@@ -47,6 +46,9 @@ class _PlanCarouselCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasImage =
+        recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -65,41 +67,36 @@ class _PlanCarouselCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                'assets/images/fondoAppFrutia.webp',
-                fit: BoxFit.cover,
-              ),
-
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      FrutiaColors.accent
-                          .withOpacity(0.2), // Color principal de tu app
-                      FrutiaColors.error
-                          .withOpacity(0.5), // Color secundario/acento
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+              if (hasImage)
+                Image.network(
+                  recipe.imageUrl!,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            color: FrutiaColors.accent));
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      const _GeneratingImagePlaceholder(isError: true),
+                )
+              else
+                const _GeneratingImagePlaceholder(),
+              if (hasImage) ...[
+                Container(),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.4),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.center,
+                    ),
                   ),
                 ),
-              ),
-
-              // --- 2. DEGRADADO OSCURO PARA LEGIBILIDAD ---
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.4),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.center,
-                  ),
-                ),
-              ),
-
-              // --- 3. CONTENIDO DE TEXTO ---
+              ],
               Positioned(
                 bottom: 16,
                 left: 16,
@@ -114,7 +111,11 @@ class _PlanCarouselCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                         shadows: [
-                          const Shadow(blurRadius: 4, color: Colors.black54)
+                          Shadow(
+                            blurRadius: 6,
+                            color: Colors.black.withOpacity(0.7),
+                            offset: const Offset(2, 2),
+                          ),
                         ],
                       ),
                       maxLines: 2,
@@ -129,9 +130,17 @@ class _PlanCarouselCard extends StatelessWidget {
                         Text(
                           '${recipe.readyInMinutes} min',
                           style: GoogleFonts.lato(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 4,
+                                color: Colors.black.withOpacity(0.6),
+                                offset: const Offset(1, 1),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 12),
                         const Icon(Icons.local_fire_department_outlined,
@@ -140,9 +149,17 @@ class _PlanCarouselCard extends StatelessWidget {
                         Text(
                           '~${recipe.calories} kcal',
                           style: GoogleFonts.lato(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 4,
+                                color: Colors.black.withOpacity(0.6),
+                                offset: const Offset(1, 1),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -154,6 +171,68 @@ class _PlanCarouselCard extends StatelessWidget {
         ),
       ).animate().fadeIn(
           delay: Duration(milliseconds: 400 + (index * 100)), duration: 500.ms),
+    );
+  }
+}
+
+class _GeneratingImagePlaceholder extends StatelessWidget {
+  final bool isError;
+  const _GeneratingImagePlaceholder({Key? key, this.isError = false})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/fondoAppFrutia.webp',
+          fit: BoxFit.cover,
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.6),
+          ),
+        ),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isError)
+                  const Icon(Icons.error_outline, color: Colors.white, size: 28)
+                else
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Text(
+                  isError ? 'Error al cargar' : 'Cargando imagen...',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 4,
+                        color: Colors.black.withOpacity(0.6),
+                        offset: const Offset(1, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

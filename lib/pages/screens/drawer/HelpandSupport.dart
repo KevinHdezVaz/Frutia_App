@@ -2,6 +2,7 @@ import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+// import 'package:url_launcher/url_launcher.dart'; // Uncomment if using URL launching
 
 class HelpAndSupportScreen extends StatelessWidget {
   const HelpAndSupportScreen({super.key});
@@ -58,9 +59,18 @@ class HelpAndSupportScreen extends StatelessWidget {
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
-                  // Replace with your actual FAQs page URL or navigation
-                  // launchUrl(Uri.parse('https://www.frutia.com/faqs'));
+                  // Replace with your actual FAQs page navigation
+                  // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => FAQsScreen()));
+                  // Or use: launchUrl(Uri.parse('https://www.frutia.com/faqs'));
                 },
+                child: Text(
+                  'Ver Preguntas Frecuentes',
+                  style: GoogleFonts.lato(
+                    fontSize: 14,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ).animate().fadeIn(delay: 800.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
@@ -72,6 +82,10 @@ class HelpAndSupportScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1000.ms, duration: 800.ms),
               const SizedBox(height: 8),
               GestureDetector(
+                onTap: () {
+                  // Replace with email action
+                  // Example: launchUrl(Uri.parse('mailto:soporte@frutia.com'));
+                },
                 child: Text(
                   'Correo: soporte@frutia.com',
                   style: GoogleFonts.lato(
@@ -90,33 +104,6 @@ class HelpAndSupportScreen extends StatelessWidget {
                 ),
               ).animate().fadeIn(delay: 1400.ms, duration: 800.ms),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      'Instagram',
-                      style: GoogleFonts.lato(
-                        fontSize: 14,
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      'Twitter',
-                      style: GoogleFonts.lato(
-                        fontSize: 14,
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
-              ).animate().fadeIn(delay: 1600.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
                 '4. Actualizaciones y Feedback\n¿Tienes alguna sugerencia para mejorar Frutia? Nos encantaría escucharte. Envía tus comentarios a través del formulario en la aplicación o por correo.',

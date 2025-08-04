@@ -6,66 +6,36 @@ class MyPlanDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> recipeData;
 
   const MyPlanDetailsScreen({super.key, required this.recipeData});
-
   @override
   Widget build(BuildContext context) {
-    print('MyPlanDetailsScreen: Construyendo UI para recipeData=$recipeData');
+    // --- EXTRACCIÓN DE DATOS CORREGIDA ---
+    // Leemos los datos directamente del mapa `recipeData`.
+    final title = recipeData['name'] as String? ?? 'Receta sin título';
 
-    // --- EXTRACCIÓN SEGURA DE DATOS ---
-    final details = recipeData['details'] as Map<String, dynamic>? ?? {};
-    final title = recipeData['opcion'] as String? ?? 'Receta sin título';
+    // Leemos la clave 'imageUrl' que ya viene con la URL completa.
+    final imageUrl = recipeData['imageUrl'] as String?;
 
-    final imagePath = details['image_url'] as String?;
+    final instructionsText = recipeData['instructions'] as String? ?? '';
+    // Dividimos las instrucciones en una lista de pasos.
+    final instructions = instructionsText
+        .split(RegExp(r'Paso \d+: '))
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
 
-    final imageUrl = details['image_url'] as String? ??
-        'https://placehold.co/600x400/cccccc/ffffff?text=Imagen+No Disponible';
-    final description =
-        details['description'] as String? ?? 'Sin descripción disponible.';
-    final calories = details['calories'] ?? 0;
-    final prepTime = details['prep_time_minutes'] ?? 0;
+    final calories = recipeData['calories'] as int? ?? 0;
+    final prepTime = recipeData['readyInMinutes'] as int? ?? 0;
 
-    // *** LA PARTE CRÍTICA: EXTRACCIÓN SÚPER ROBUSTA DE INGREDIENTES ***
-    final List<Map<String, dynamic>> ingredients = [];
-    final dynamic rawIngredients =
-        details['ingredients']; // Obtenemos como dynamic
-    print('MyPlanDetailsScreen: Raw ingredients data = $rawIngredients');
-
-    if (rawIngredients is List) {
-      for (var item in rawIngredients) {
-        if (item is Map<String, dynamic>) {
-          ingredients.add(item); // Ya es un Map, lo añadimos directamente
-        } else if (item is String) {
-          if (item.isNotEmpty) {
-            ingredients.add({'item': item, 'quantity': '', 'prices': []});
-          }
-        } else if (item == null) {
-          ingredients.add({
-            'item': 'Ingrediente no especificado',
-            'quantity': '',
-            'prices': []
-          });
-        }
-        // Cualquier otro tipo inesperado será ignorado con un mensaje de depuración
-        else {
-          print('MyPlanDetailsScreen: Tipo inesperado en ingredients: $item');
-        }
-      }
-    } else {
-      print(
-          'MyPlanDetailsScreen: ingredients no es una lista, es: $rawIngredients');
-    }
-
-    final instructions = List<String>.from(details['instructions'] ?? []);
-
-    print(
-        'MyPlanDetailsScreen: Datos extraídos - title=$title, imageUrl=$imageUrl, ingredients=${ingredients.length}, instructions=${instructions.length}');
+    // Extracción de la lista de ingredientes.
+    final List<Map<String, dynamic>> ingredients =
+        List<Map<String, dynamic>>.from(
+            recipeData['extendedIngredients'] ?? []);
 
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       body: CustomScrollView(
         slivers: [
-          // LÍNEA NUEVA
-          _buildSliverAppBar(context, title, imagePath),
+          // Pasamos la URL completa directamente al AppBar.
+          _buildSliverAppBar(context, title, imageUrl),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -73,28 +43,23 @@ class MyPlanDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildInfoRow(calories, prepTime),
-                  const SizedBox(height: 20),
-                  Text(description,
-                      style: GoogleFonts.lato(
-                          fontSize: 16,
-                          color: FrutiaColors.secondaryText,
-                          height: 1.5)),
                   const Divider(height: 40),
                   _buildSectionTitle('Ingredientes'),
                   const SizedBox(height: 16),
                   if (ingredients.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Text('No se especificaron ingredientes.',
-                          style: GoogleFonts.lato(
-                              fontSize: 14, color: FrutiaColors.secondaryText)),
-                    ),
+                    Text('No se especificaron ingredientes.',
+                        style: GoogleFonts.lato(
+                            fontSize: 14, color: FrutiaColors.secondaryText)),
                   ...ingredients
                       .map((itemData) => _buildIngredientTile(itemData))
                       .toList(),
                   const Divider(height: 40),
                   _buildSectionTitle('Preparación'),
                   const SizedBox(height: 16),
+                  if (instructions.isEmpty)
+                    Text('No se especificaron instrucciones.',
+                        style: GoogleFonts.lato(
+                            fontSize: 14, color: FrutiaColors.secondaryText)),
                   ...instructions.asMap().entries.map((entry) {
                     return _buildInstructionStep(entry.key + 1, entry.value);
                   }).toList(),
@@ -161,39 +126,25 @@ class MyPlanDetailsScreen extends StatelessWidget {
     );
   }
 
-// --- [MÉTODO MODIFICADO] ---
+  // --- [MÉTODO CORREGIDO] ---
+  // Este método ahora recibe la URL completa y la usa directamente.
   Widget _buildSliverAppBar(
-      BuildContext context, String title, String? imagePath) {
-    // Parámetro de context añadido
-    print('MyPlanDetailsScreen: Construyendo SliverAppBar para $title');
-
-    const String baseUrlApp = "https://frutia.aftconta.mx";
-
-    final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
-        ? baseUrlApp + imagePath
-        : null;
-
-    print('MyPlanDetailsScreen: URL completa construida: $fullImageUrl');
-
-    // Widget para la imagen de fondo, ahora interactivo
+      BuildContext context, String title, String? imageUrl) {
     Widget backgroundImageWidget;
-    if (fullImageUrl != null) {
+
+    // Si tenemos una URL válida...
+    if (imageUrl != null && imageUrl.isNotEmpty) {
       backgroundImageWidget = GestureDetector(
-        // --- NUEVO: GestureDetector para hacer la imagen tappable
-        onTap: () => _showFullScreenImageFromUrl(context,
-            fullImageUrl), // --- NUEVO: Llama a la función de pantalla completa
+        onTap: () => _showFullScreenImageFromUrl(context, imageUrl),
         child: Stack(
-          // --- NUEVO: Stack para superponer el icono
           fit: StackFit.expand,
           children: [
             Image.network(
-              fullImageUrl,
+              imageUrl, // Se usa la URL directamente, sin construirla.
               fit: BoxFit.cover,
               color: Colors.black.withOpacity(0.4),
               colorBlendMode: BlendMode.darken,
               errorBuilder: (context, error, stackTrace) {
-                print(
-                    'MyPlanDetailsScreen: Error cargando imagen desde $fullImageUrl: $error');
                 return Container(
                   color: Colors.grey,
                   child: const Center(
@@ -202,7 +153,6 @@ class MyPlanDetailsScreen extends StatelessWidget {
                 );
               },
             ),
-            // --- NUEVO: Icono de pantalla completa para dar una pista visual
             const Positioned(
               bottom: 10,
               right: 10,
@@ -212,7 +162,7 @@ class MyPlanDetailsScreen extends StatelessWidget {
         ),
       );
     } else {
-      // Si no hay URL, el placeholder no es interactivo
+      // Si no hay URL, mostramos un placeholder.
       backgroundImageWidget = Container(
         color: Colors.grey,
         child: const Center(
@@ -236,7 +186,6 @@ class MyPlanDetailsScreen extends StatelessWidget {
               fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
           textAlign: TextAlign.center,
         ),
-        // --- MODIFICADO: Se usa el nuevo widget interactivo
         background: backgroundImageWidget,
       ),
     );

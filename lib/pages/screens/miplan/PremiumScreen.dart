@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'package:Frutia/auth/auth_check.dart';
-import 'package:Frutia/pages/home_page.dart';
 import 'package:Frutia/services/MercadoPagoCheckoutScreen.dart';
 import 'package:Frutia/services/PaymentService.dart';
 import 'package:Frutia/utils/colors.dart';
+import 'package:http/http.dart' as http;
+import 'package:Frutia/utils/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PremiumScreen extends StatefulWidget {
   const PremiumScreen({Key? key}) : super(key: key);
@@ -19,6 +22,94 @@ class _PremiumScreenState extends State<PremiumScreen> {
   bool _isLoading = false;
   final PaymentService _paymentService = PaymentService();
 
+  final _affiliateCodeController = TextEditingController();
+  bool _isCodeValidating = false;
+  double? _discountPercentage;
+  String? _validatedCode;
+  String _codeMessage = '';
+  Color _messageColor = Colors.red;
+
+  bool _isLoadingPrices = true;
+  Map<String, double> _fetchedPrices = {
+    'monthly': 9.99,
+    'annual': 69.99,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPlans();
+    _loadAffiliateCodeFromProfile();
+  }
+
+  @override
+  void dispose() {
+    _affiliateCodeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchPlans() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/plans'));
+
+      if (mounted && response.statusCode == 200) {
+        final List<dynamic> plans = jsonDecode(response.body);
+        final Map<String, double> prices = {};
+
+        for (var plan in plans) {
+          prices[plan['plan_id']] =
+              double.tryParse(plan['price'].toString()) ?? 0.0;
+        }
+
+        setState(() {
+          _fetchedPrices = prices;
+          _isLoadingPrices = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingPrices = false;
+        });
+      }
+    } catch (e) {
+      print("Error al obtener los planes: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingPrices = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadAffiliateCodeFromProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (mounted && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final user = data['user'];
+        final String? affiliateCode = user['applied_affiliate_code'];
+
+        if (affiliateCode != null && affiliateCode.isNotEmpty) {
+          _affiliateCodeController.text = affiliateCode;
+          await _validateAffiliateCode();
+        }
+      }
+    } catch (e) {
+      print("Error al cargar el perfil para el código de afiliado: $e");
+    }
+  }
+
   void _navigateToHome() {
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
@@ -28,17 +119,104 @@ class _PremiumScreenState extends State<PremiumScreen> {
     }
   }
 
+  String? _getDiscountTag() {
+    if (_discountPercentage != null) {
+      // Si hay un descuento, muestra la etiqueta
+      return 'AHORRA ${_discountPercentage!.toStringAsFixed(0)}%';
+    }
+    // Si no hay descuento, no devuelve nada (la etiqueta no se mostrará)
+    return null;
+  }
+
+  Map<String, String?> _getPlanPrice(String planKey, double originalPrice) {
+    double finalPrice = originalPrice;
+    String? originalPriceStr;
+
+    if (_discountPercentage != null) {
+      final discountAmount = (originalPrice * _discountPercentage!) / 100;
+      finalPrice = originalPrice - discountAmount;
+      originalPriceStr = '\$${originalPrice.toStringAsFixed(2)}';
+    }
+
+    // Lógica simplificada: ya no se divide entre 12
+    String priceStr = '\$${finalPrice.toStringAsFixed(2)}';
+
+    return {
+      'price': priceStr,
+      'originalPrice': originalPriceStr,
+    };
+  }
+
+  Future<void> _validateAffiliateCode() async {
+    final code = _affiliateCodeController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isCodeValidating = true;
+      _codeMessage = '';
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/affiliates/validate-code'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'code': code}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (mounted && response.statusCode == 200 && data['valid'] == true) {
+        setState(() {
+          _discountPercentage =
+              double.tryParse(data['discount_percentage'].toString());
+          _validatedCode = code;
+          _codeMessage =
+              '¡Código aplicado! Tienes un ${_discountPercentage?.toStringAsFixed(0)}% de descuento.';
+          _messageColor = Colors.green;
+        });
+      } else {
+        setState(() {
+          _discountPercentage = null;
+          _validatedCode = null;
+          _codeMessage = data['message'] ?? 'El código no es válido.';
+          _messageColor = Colors.redAccent;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _discountPercentage = null;
+        _validatedCode = null;
+        _codeMessage = 'Error al validar el código. Intenta de nuevo.';
+        _messageColor = Colors.redAccent;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCodeValidating = false;
+        });
+      }
+    }
+  }
+
   Future<void> _initiatePayment() async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
 
     try {
-      // 1. Llama a tu backend para obtener la URL de pago (init_point)
-      final checkoutUrl = await _paymentService.createPreference(_selectedPlan);
+      final checkoutUrl = await _paymentService.createPreference(
+        _selectedPlan,
+        affiliateCode: _validatedCode,
+      );
 
       if (!mounted) return;
 
-      // 2. Navega a la pantalla del WebView y espera un resultado
       final result = await Navigator.push<String>(
         context,
         MaterialPageRoute(
@@ -47,7 +225,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
         ),
       );
 
-      // 3. Maneja el resultado devuelto por la pantalla del WebView
       if (result == 'success') {
         _showPaymentSuccessDialog();
       } else if (result == 'failure') {
@@ -57,7 +234,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
         _showPaymentMessage(
             'Tu pago está pendiente de aprobación.', Colors.orange);
       } else {
-        // El usuario cerró la pantalla de pago sin completar
         _showPaymentMessage('El proceso de pago fue cancelado.', Colors.grey);
       }
     } catch (e) {
@@ -72,51 +248,40 @@ class _PremiumScreenState extends State<PremiumScreen> {
   }
 
   void _showPaymentMessage(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: color),
     );
   }
 
   void _showPaymentSuccessDialog() {
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        elevation: 10,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 80,
-              ),
+              const Icon(Icons.check_circle, color: Colors.green, size: 80),
               const SizedBox(height: 20),
-              const Text(
-                '¡Pago Exitoso!',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
+              const Text('¡Pago Exitoso!',
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green)),
               const SizedBox(height: 15),
               const Text(
-                '¡Felicidades! Tu suscripción Premium ha sido activada.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
+                  '¡Felicidades! Tu suscripción Premium ha sido activada.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16)),
               const SizedBox(height: 5),
-              const Text(
-                'La app se reiniciará para aplicar los cambios.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
+              const Text('La app se reiniciará para aplicar los cambios.',
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -124,19 +289,15 @@ class _PremiumScreenState extends State<PremiumScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
                   onPressed: _navigateToHome,
-                  child: const Text(
-                    'GENIAL',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: const Text('GENIAL',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
                 ),
               ),
             ],
@@ -148,9 +309,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... El resto de tu widget build y los métodos _build... se quedan exactamente igual que antes.
-    // No es necesario volver a pegarlos todos aquí. Solo asegúrate de que el onPressed del
-    // botón de pago llame a la nueva función _initiatePayment.
     return WillPopScope(
       onWillPop: () async {
         _navigateToHome();
@@ -165,9 +323,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                   image: const AssetImage('assets/images/fondoPantalla1.png'),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.1),
-                    BlendMode.darken,
-                  ),
+                      Colors.black.withOpacity(0.1), BlendMode.darken),
                 ),
               ),
             ),
@@ -184,6 +340,8 @@ class _PremiumScreenState extends State<PremiumScreen> {
                       const SizedBox(height: 32),
                       _buildPlanSelection(),
                       const SizedBox(height: 32),
+                      _buildAffiliateCodeInput(),
+                      const SizedBox(height: 24),
                       _buildCtaButton(),
                       const SizedBox(height: 16),
                       _buildFooterText(),
@@ -206,6 +364,101 @@ class _PremiumScreenState extends State<PremiumScreen> {
     );
   }
 
+  Widget _buildAffiliateCodeInput() {
+    IconData statusIcon = Icons.star_border_rounded;
+    Color iconColor = FrutiaColors.secondaryText;
+
+    if (_validatedCode != null) {
+      statusIcon = Icons.check_circle_outline_rounded;
+      iconColor = Colors.green;
+    } else if (_codeMessage.isNotEmpty && _validatedCode == null) {
+      statusIcon = Icons.error_outline_rounded;
+      iconColor = Colors.red;
+    }
+
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _affiliateCodeController,
+                style: const TextStyle(
+                    color: FrutiaColors.primaryText,
+                    fontWeight: FontWeight.bold),
+                cursorColor: FrutiaColors.accent,
+                decoration: InputDecoration(
+                  prefixIcon: Icon(statusIcon, color: iconColor),
+                  labelText: '¿Tienes un código de descuento?',
+                  labelStyle: const TextStyle(
+                      color: Color.fromARGB(255, 142, 140, 140), fontSize: 12),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: FrutiaColors.accent, width: 2),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton(
+              onPressed: _isCodeValidating ? null : _validateAffiliateCode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FrutiaColors.accent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                minimumSize: const Size(60, 60),
+              ),
+              child: _isCodeValidating
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.arrow_forward_ios_rounded,
+                      color: Colors.white),
+            ),
+          ],
+        ),
+        if (_codeMessage.isNotEmpty)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ],
+            ),
+            child: Text(
+              _codeMessage,
+              textAlign: TextAlign.center,
+              style:
+                  TextStyle(color: _messageColor, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ],
+    ).animate().fadeIn(delay: 950.ms);
+  }
+
   Widget _buildHeader() {
     return Column(
       children: [
@@ -213,8 +466,8 @@ class _PremiumScreenState extends State<PremiumScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: FrutiaColors.accent, // Color del borde circular
-              width: 2.0, // Grosor del borde
+              color: FrutiaColors.accent,
+              width: 2.0,
             ),
             boxShadow: [
               BoxShadow(
@@ -227,16 +480,15 @@ class _PremiumScreenState extends State<PremiumScreen> {
           child: ClipOval(
             child: Image.asset(
               'assets/images/fondoAppFrutia.webp',
-              width: 56, // Un poco menos para compensar el borde
+              width: 56,
               height: 56,
-              fit: BoxFit.cover, // Para que la imagen llene el círculo
+              fit: BoxFit.cover,
             ),
           ),
         )
             .animate()
             .scale(delay: 200.ms, duration: 600.ms, curve: Curves.elasticOut),
         const SizedBox(height: 16),
-        // ... (el resto de tu código permanece igual)
         Text(
           'Eleva tu Experiencia Frutia',
           textAlign: TextAlign.center,
@@ -311,13 +563,27 @@ class _PremiumScreenState extends State<PremiumScreen> {
   }
 
   Widget _buildPlanSelection() {
+    if (_isLoadingPrices) {
+      return const Center(
+          child: CircularProgressIndicator(color: FrutiaColors.accent));
+    }
+
+    final monthlyPriceDetails =
+        _getPlanPrice('monthly', _fetchedPrices['monthly']!);
+    final annualPriceDetails =
+        _getPlanPrice('annual', _fetchedPrices['annual']!);
+    final String? discountTag =
+        _getDiscountTag(); // Obtenemos la etiqueta de descuento
+
     return Row(
       children: [
         Expanded(
           child: _PlanOptionCard(
             title: 'Mensual',
-            price: '\$10.99',
-            period: '/mes',
+            price: monthlyPriceDetails['price'] ?? '',
+            period: '/mes', // El periodo del plan mensual sigue siendo por mes
+            originalPrice: monthlyPriceDetails['originalPrice'],
+            tag: discountTag, // La etiqueta de descuento se muestra si existe
             isSelected: _selectedPlan == 'monthly',
             onTap: () => setState(() => _selectedPlan = 'monthly'),
           ),
@@ -326,10 +592,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
         Expanded(
           child: _PlanOptionCard(
             title: 'Anual',
-            price: '\$7.99',
-            period: '/mes',
-            originalPrice: '\$131.88',
-            tag: 'AHORRA 27%',
+            price: annualPriceDetails['price'] ?? '',
+            period: '/año', // CAMBIO: El periodo ahora es por año
+            originalPrice: annualPriceDetails['originalPrice'],
+            tag: discountTag, // La etiqueta de descuento se muestra si existe
             isSelected: _selectedPlan == 'annual',
             onTap: () => setState(() => _selectedPlan = 'annual'),
           ),
@@ -473,8 +739,7 @@ class _PlanOptionCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding:
-            const EdgeInsets.fromLTRB(12, 20, 12, 12), // Reducido el padding
+        padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
         decoration: BoxDecoration(
           color: isSelected
               ? Colors.black.withOpacity(0.2)
@@ -496,44 +761,59 @@ class _PlanOptionCard extends StatelessWidget {
                   title,
                   style: GoogleFonts.lato(
                     color: Colors.white,
-                    fontSize: 16, // Reducido de 18 a 16
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
-                  overflow:
-                      TextOverflow.ellipsis, // Evita desbordamiento del texto
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+
+                // Sección del precio en dos filas
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Flexible(
-                      child: Text(
-                        price,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    // Fila 1: El Precio
                     Text(
-                      period,
-                      style: GoogleFonts.lato(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 14,
+                      price,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    // Fila 2: La Moneda y el Periodo
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'USD',
+                          style: GoogleFonts.lato(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          period,
+                          style: GoogleFonts.lato(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    )
                   ],
                 ),
+
                 if (originalPrice != null)
-                  Text(
-                    originalPrice!,
-                    style: GoogleFonts.lato(
-                      color: Colors.white.withOpacity(0.6),
-                      decoration: TextDecoration.lineThrough,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      originalPrice!,
+                      style: GoogleFonts.lato(
+                        color: Colors.white.withOpacity(0.6),
+                        decoration: TextDecoration.lineThrough,
+                      ),
                     ),
                   ),
               ],

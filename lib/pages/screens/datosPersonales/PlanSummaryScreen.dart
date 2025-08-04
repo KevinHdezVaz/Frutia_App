@@ -160,6 +160,9 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
                         _buildSummarySection(
                             context, planData.nutritionPlan.targetMacros),
                         const SizedBox(height: 30),
+                        _buildRecommendationCard(
+                            context, planData.nutritionPlan.recommendation),
+                        const SizedBox(height: 30),
                         _buildMealOptionsSummary(
                             context, planData.nutritionPlan.meals),
                         const SizedBox(height: 15),
@@ -219,6 +222,45 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
       ),
     );
   }
+}
+
+// --- WIDGET NUEVO PARA LA RECOMENDACIÓN ---
+Widget _buildRecommendationCard(BuildContext context, String recommendation) {
+  if (recommendation.isEmpty) return const SizedBox.shrink();
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          FrutiaColors.accent.withOpacity(0.1),
+          FrutiaColors.accent2.withOpacity(0.1),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: FrutiaColors.accent.withOpacity(0.3)),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.lightbulb_outline_rounded,
+            color: FrutiaColors.accent, size: 28),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            recommendation,
+            style: GoogleFonts.lato(
+              fontSize: 15,
+              color: FrutiaColors.primaryText,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.3);
 }
 
 Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
@@ -432,7 +474,7 @@ Widget _buildMealExpansionTile(BuildContext context, InspirationRecipe recipe) {
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(8.0),
         child: Image.network(
-          recipe.image!,
+          recipe.imageUrl!,
           width: 50,
           height: 50,
           fit: BoxFit.cover,

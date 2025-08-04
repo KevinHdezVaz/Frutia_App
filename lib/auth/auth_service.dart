@@ -31,36 +31,43 @@ class AuthService {
     serverClientId:
         '730095641142-2sc256o1n605r12hshom8sop83l5p4sk.apps.googleusercontent.com', // De google-services.json (client_type 3)
   );
+// En AuthService.dart
 
-  /// Intenta registrar un nuevo usuario.
-  /// Devuelve el mapa del usuario y el token si es exitoso.
-  /// Lanza una AuthException si falla.
   Future<Map<String, dynamic>> register({
     required String name,
     required String email,
     required String phone,
     required String password,
+    String? affiliateCode, // <-- CAMBIO: Nuevo parámetro opcional
   }) async {
+    // ▼▼▼ INICIO DEL CAMBIO ▼▼▼
+    final body = {
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'password': password,
+    };
+
+    // Si el código de afiliado no está vacío, lo añadimos al cuerpo de la petición
+    if (affiliateCode != null && affiliateCode.isNotEmpty) {
+      body['affiliate_code'] = affiliateCode;
+    }
+    // ▲▲▲ FIN DEL CAMBIO ▲▲▲
+
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: json.encode({
-        'name': name,
-        'email': email,
-          'phone': phone,
-        'password': password,
-      }),
+      body: json.encode(body), // Usamos el nuevo cuerpo
     );
 
     final data = json.decode(response.body);
 
     if (response.statusCode == 201) {
       await _storage.saveToken(data['token']);
-      // Despúes de un registro exitoso, intenta enviar el Player ID
-      await _sendOneSignalPlayerIdToBackend(); // <--- Llamada aquí
+      await _sendOneSignalPlayerIdToBackend();
       return data;
     } else {
       String errorMessage = data['message'] ?? 'Ocurrió un error desconocido.';
@@ -93,7 +100,7 @@ class AuthService {
         throw AuthException("No se obtuvo token de Firebase");
       }
 
-      final success = await _sendTokenToBackend(firebaseToken, 'google');
+      final success = await sendTokenToBackend(firebaseToken, 'google');
       if (success) {
         await _sendOneSignalPlayerIdToBackend(); // <--- Llamada aquí
       }
@@ -107,8 +114,7 @@ class AuthService {
     }
   }
 
-  Future<bool> _sendTokenToBackend(
-      String firebaseToken, String provider) async {
+  Future<bool> sendTokenToBackend(String firebaseToken, String provider) async {
     try {
       final endpoint = provider == 'google' ? 'google-login' : 'facebook-login';
       final response = await http.post(

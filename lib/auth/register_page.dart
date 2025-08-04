@@ -38,6 +38,9 @@ class _RegisterPageState extends State<RegisterPage>
         '237230625824-uhg81q3ro2at559t31bnorjqrlooe3lr.apps.googleusercontent.com',
   );
 
+  final _affiliateCodeController =
+      TextEditingController(); // <-- CAMBIO: Nuevo controlador para el código de afiliado
+
   // Animations
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -73,7 +76,39 @@ class _RegisterPageState extends State<RegisterPage>
     _phoneController.dispose(); // <-- AÑADIR ESTE
     _nameController.dispose();
     _ageController.dispose();
+    _affiliateCodeController
+        .dispose(); // <-- CAMBIO: Dispose del nuevo controlador
     super.dispose();
+  }
+
+// En RegisterPage.dart
+
+  // ▼▼▼ AGREGA ESTE MÉTODO COMPLETO ▼▼▼
+  Future<void> signInWithGoogle() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+          child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent))),
+    );
+
+    try {
+      final bool success = await _authService.signInWithGoogle();
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      if (success) {
+        // Si es exitoso, navega a la pantalla principal de la app
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthCheckMain()),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      showErrorSnackBar('Error al unirse con Google. Inténtalo de nuevo.');
+    }
   }
 
   Future<void> signUp() async {
@@ -92,8 +127,10 @@ class _RegisterPageState extends State<RegisterPage>
       final response = await _authService.register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: _fullPhoneNumber, // <- Usamos la variable que se actualiza
         password: _passwordController.text,
+        affiliateCode:
+            _affiliateCodeController.text.trim(), // <-- AÑADE ESTA LÍNEA
       );
 
       Navigator.of(context).pop();
@@ -394,16 +431,17 @@ class _RegisterPageState extends State<RegisterPage>
                                                 phone.completeNumber;
                                           });
                                         },
-                                          validator: (phoneNumber) {
-        if (phoneNumber == null || phoneNumber.number.isEmpty) {
-          return 'Por favor ingresa un número';
-        }
-        // La librería puede validar si el número es plausiblemente correcto en longitud
-        if (!phoneNumber.isValidNumber()) { 
-          return 'El número de teléfono no es válido para el país seleccionado.';
-        }
-        return null; // Retorna null si es válido
-      },
+                                        validator: (phoneNumber) {
+                                          if (phoneNumber == null ||
+                                              phoneNumber.number.isEmpty) {
+                                            return 'Por favor ingresa un número';
+                                          }
+                                          // La librería puede validar si el número es plausiblemente correcto en longitud
+                                          if (!phoneNumber.isValidNumber()) {
+                                            return 'El número de teléfono no es válido para el país seleccionado.';
+                                          }
+                                          return null; // Retorna null si es válido
+                                        },
                                         // Estilo del texto y cursor
                                         style:
                                             TextStyle(color: Color(0xFF2D2D2D)),
@@ -518,7 +556,48 @@ class _RegisterPageState extends State<RegisterPage>
                                             TextStyle(color: Color(0xFF2D2D2D)),
                                       ),
                                     ),
+                                    SizedBox(height: 20),
+
+                                    SlideTransition(
+                                      position: _slideAnimation,
+                                      child: TextField(
+                                        cursorColor: FrutiaColors.accent,
+                                        controller: _affiliateCodeController,
+                                        decoration: InputDecoration(
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.secondaryText,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: FrutiaColors.accent,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          labelText:
+                                              "Código de afiliado (Opcional)",
+                                          labelStyle: TextStyle(
+                                              color: Color(0xFF2D2D2D)),
+                                          prefixIcon: Icon(
+                                            Icons.star_border_rounded,
+                                            color: FrutiaColors.accent,
+                                          ),
+                                          filled: true,
+                                          fillColor:
+                                              FrutiaColors.primaryBackground,
+                                        ),
+                                        style:
+                                            TextStyle(color: Color(0xFF2D2D2D)),
+                                      ),
+                                    ),
                                     SizedBox(height: 40),
+
                                     // Sign Up Button
                                     SlideTransition(
                                       position: _slideAnimation,
@@ -542,7 +621,11 @@ class _RegisterPageState extends State<RegisterPage>
                                                         _passwordController
                                                             .text,
                                                     phoneNumber:
-                                                        _fullPhoneNumber, // La variable del intl_phone_field
+                                                        _fullPhoneNumber,
+                                                    affiliateCode:
+                                                        _affiliateCodeController
+                                                            .text
+                                                            .trim(), // <-- AÑADE ESTA LÍNEA
                                                   ),
                                                 ),
                                               );
@@ -578,7 +661,7 @@ class _RegisterPageState extends State<RegisterPage>
                                       child: Container(
                                         width: size.width * 0.8,
                                         child: OutlinedButton(
-                                          onPressed: () => {},
+                                          onPressed: () => signInWithGoogle(),
                                           style: OutlinedButton.styleFrom(
                                             padding: EdgeInsets.symmetric(
                                                 vertical: 16),
