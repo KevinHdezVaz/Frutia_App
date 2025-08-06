@@ -132,8 +132,6 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         final Map<String, String> budgetMap = {
           '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)':
               'Bajo - Solo lo básico (Ej: arroz, huevo, lentejas',
-          '💵 Medio - Balanceado y variado (Ej: frutas, yogur, pescado)':
-              'Medio - Balanceado y variado (Ej: frutas, yogur, pescado)',
           '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)':
               'Alto - Sin restricciones (Ej: salmón, proteína, superfoods)',
         };
@@ -1071,7 +1069,6 @@ class _GustosScreenState extends State<GustosScreen> {
   List<Widget> _buildBudgetOptions(QuestionnaireProvider provider) {
     const options = [
       '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)',
-      '💵 Medio - Balanceado y variado (Ej: frutas, yogur, pescado)',
       '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)',
     ];
     return options

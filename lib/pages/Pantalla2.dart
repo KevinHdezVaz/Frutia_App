@@ -924,9 +924,16 @@ class _ChecklistItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle_outline,
-              color: FrutiaColors.accent, size: 22),
+          const Padding(
+            padding: EdgeInsets.only(
+                top: 2.0), // Alinea el ícono con la primera línea de texto
+            child: Icon(Icons.check_circle_outline,
+                color: FrutiaColors.accent, size: 22),
+          ),
           const SizedBox(width: 12),
+          // --- CAMBIO CLAVE: Expanded para el texto principal ---
+          // Esto asegura que el nombre del ingrediente ocupe todo el espacio posible
+          // y se ajuste en varias líneas si es necesario.
           Expanded(
             child: Text(
               text,
@@ -934,11 +941,23 @@ class _ChecklistItem extends StatelessWidget {
                   fontSize: 16, color: FrutiaColors.primaryText, height: 1.4),
             ),
           ),
+          // Se muestra la cantidad solo si existe
           if (quantity != null && quantity!.trim().isNotEmpty)
-            Text(
-              quantity!,
-              style: GoogleFonts.lato(
-                  fontSize: 16, color: FrutiaColors.secondaryText),
+            // Se añade un pequeño espacio para que no se peguen los textos
+            const SizedBox(width: 8),
+          if (quantity != null && quantity!.trim().isNotEmpty)
+            // --- CAMBIO CLAVE: Contenedor para la cantidad ---
+            // Se limita el ancho para forzar el ajuste de línea y se reduce el tamaño del texto.
+            Container(
+              width: 90, // Ancho máximo para la cantidad
+              alignment: Alignment.centerRight,
+              child: Text(
+                quantity!,
+                textAlign: TextAlign.right, // Alinea el texto a la derecha
+                style: GoogleFonts.lato(
+                    fontSize: 14, // Texto más pequeño
+                    color: FrutiaColors.secondaryText),
+              ),
             ),
         ],
       ),
