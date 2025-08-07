@@ -350,7 +350,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            message.text,
+            message.text!,
             style: const TextStyle(
               fontSize: 16,
               color: Colors.black,

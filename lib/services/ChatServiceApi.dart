@@ -65,6 +65,51 @@ class ChatServiceApi {
     }
   }
 
+  // En: lib/services/ChatServiceApi.dart
+
+// ▼▼▼ CAMBIO EN LA FIRMA DEL MÉTODO Y EL CUERPO DE LA PETICIÓN ▼▼▼
+  Future<Map<String, dynamic>> analyzeBodyImage(File imageFile,
+      {String? text}) async {
+    debugPrint(
+        '[AnalysisService] Iniciando análisis de imagen con texto: "$text"');
+
+    try {
+      final imageBytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+
+      // Creamos el cuerpo de la petición dinámicamente
+      final body = <String, dynamic>{
+        'image': base64Image,
+      };
+
+      // Si el texto no es nulo ni vacío, lo añadimos al cuerpo
+      if (text != null && text.isNotEmpty) {
+        body['text'] = text;
+      }
+
+      final response = await _authenticatedRequest(
+        method: 'POST',
+        endpoint: 'body-analysis',
+        body: body, // Enviamos el cuerpo dinámico
+      );
+
+      debugPrint(
+          '[AnalysisService] Respuesta COMPLETA recibida del servidor: $response');
+
+      if (response is Map<String, dynamic> && response['success'] == true) {
+        return response['data'];
+      } else {
+        final errorMessage =
+            response['message'] ?? 'Respuesta inválida del servidor.';
+        throw Exception('El análisis de la imagen falló: $errorMessage');
+      }
+    } catch (e) {
+      debugPrint(
+          '[AnalysisService] EXCEPCIÓN CATASTRÓFICA durante la petición: ${e.toString()}');
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> sendVoiceMessage({
     required String message,
     int? sessionId,
@@ -279,6 +324,39 @@ class ChatServiceApi {
       endpoint: 'update-name',
       body: {'name': name},
     );
+  }
+
+// En: lib/services/ChatServiceApi.dart
+
+  Future<String> uploadImage(File imageFile) async {
+    final token = await storage.getToken();
+    if (token == null) throw Exception('No autenticado');
+
+    final uri = Uri.parse('$baseUrl/chat/upload-image');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    request.files.add(await http.MultipartFile.fromPath(
+      'image',
+      imageFile.path,
+      // Ayuda al backend a identificar el tipo de archivo
+      contentType:
+          MediaType.parse(lookupMimeType(imageFile.path) ?? 'image/jpeg'),
+    ));
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    debugPrint('[UploadService] Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['url']; // Devuelve la URL de la imagen subida
+    } else {
+      throw Exception('Error al subir la imagen: ${response.body}');
+    }
   }
 
   Future<void> saveSession(int sessionId, String title) async {

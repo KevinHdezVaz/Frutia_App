@@ -361,7 +361,10 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               child: pw.Text(
                 'Instrucción Importante: De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.',
-                style: pw.TextStyle(color: PdfColors.grey800),
+                style: pw.TextStyle(
+                  color: PdfColors.grey800,
+                  fontSize: 17, // Aumenta el tamaño aquí (ej. 16, 18, 20...)
+                ),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -489,18 +492,6 @@ class _ProfessionalMiPlanDiarioScreenState
             2: const pw.FlexColumnWidth(2),
           },
         ),
-
-        // La sección de recetas sugeridas se queda igual, ya estaba bien
-        if (meal.suggestedRecipes.isNotEmpty)
-          pw.Padding(
-              padding: const pw.EdgeInsets.only(top: 15, bottom: 5),
-              child: pw.Text('Recetas de Inspiración:',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-        ...meal.suggestedRecipes.map((recipe) {
-          return pw.Padding(
-              padding: const pw.EdgeInsets.only(left: 10, bottom: 8),
-              child: pw.Bullet(text: recipe.title));
-        }),
         pw.SizedBox(height: 20),
       ],
     );

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/model/ChatMessage.dart';
@@ -8,6 +11,9 @@ import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
 import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/services/ChatServiceApi.dart';
 import 'package:Frutia/services/RachaProgreso.dart';
+import 'package:Frutia/utils/constantes.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -17,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -57,6 +64,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   String _transcribedText = '';
   bool _isTyping = false;
   int _typingIndex = 0;
+  File? _stagedImageFile; // Guardará la imagen que está lista para ser enviada
 
   // --- NUEVAS VARIABLES DE ESTADO ---
   bool _isPremium = false;
@@ -64,6 +72,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final int _messageLimit = 3;
 
   Timer? _typingTimer; // Nullable
+  final ImagePicker _picker = ImagePicker();
 
   bool _isSpeechInitialized = false;
   AnimationController?
@@ -89,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   final Color user_text_color =
       Colors.white; // Texto blanco para mejor contraste
-  final Color bot_text_color = Colors.white; // Texto blanco también para el bot
+  final Color bot_text_color = Colors.white;
   final Color time_text_color = Colors.white70; // Color más suave para la hora
 
   List<ChatMessage> _messages = [];
@@ -104,19 +113,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final int _tokenLimit = 500;
   int _totalTokens = 0;
 
-  List<TextSpan> _parseTextToSpans(String text) {
+  List<TextSpan> _parseTextToSpans(String text, Color textColor) {
     final List<TextSpan> spans = [];
     final RegExp boldRegex = RegExp(r'\*\*(.*?)\*\*');
     int lastIndex = 0;
 
     for (final match in boldRegex.allMatches(text)) {
-      // Texto antes del match
       if (match.start > lastIndex) {
         spans.add(
           TextSpan(
             text: text.substring(lastIndex, match.start),
-            style: const TextStyle(
-              color: Colors.black87,
+            style: TextStyle(
+              color: textColor, // Usar el color pasado
               fontFamily: 'Lora',
               fontSize: 15,
               height: 1.6,
@@ -125,32 +133,27 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
         );
       }
-
-      // Texto en negrita
       spans.add(
         TextSpan(
-          text: match.group(1), // El texto dentro de **
-          style: const TextStyle(
-            color: Colors.black87,
+          text: match.group(1),
+          style: TextStyle(
+            color: textColor, // Usar el color pasado
             fontFamily: 'Lora',
             fontSize: 15,
             height: 1.6,
             letterSpacing: 0.2,
-            fontWeight: FontWeight.bold, // Negrita
+            fontWeight: FontWeight.bold,
           ),
         ),
       );
-
       lastIndex = match.end;
     }
-
-    // Texto restante después del último match
     if (lastIndex < text.length) {
       spans.add(
         TextSpan(
           text: text.substring(lastIndex),
-          style: const TextStyle(
-            color: Colors.black87,
+          style: TextStyle(
+            color: textColor, // Usar el color pasado
             fontFamily: 'Lora',
             fontSize: 15,
             height: 1.6,
@@ -159,7 +162,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         ),
       );
     }
-
     return spans;
   }
 
@@ -177,6 +179,196 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     super.initState();
     // En lugar de llamar a _checkUserPlanStatus, llamamos a una función más completa
     _initializeScreen();
+  }
+
+  // En: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
+
+  Future<void> _performBodyAnalysis() async {
+    // 1. Abrir la galería para que el usuario elija una imagen.
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85, // Opcional: comprime un poco la imagen
+    );
+
+    // Si el usuario cancela la selección, no hacemos nada.
+    if (pickedFile == null) return;
+
+    final imageFile = File(pickedFile.path);
+
+    // ▼▼▼ CAMBIOS CLAVE SIN DIÁLOGO ▼▼▼
+    // 2. Capturar el texto que ya está escrito en el TextField.
+    final String userText = _controller.text;
+
+    // 3. Limpiar el TextField y ocultar el teclado para una mejor experiencia.
+    _controller.clear();
+    FocusManager.instance.primaryFocus?.unfocus();
+    // ▲▲▲ FIN DE LOS CAMBIOS ▲▲▲
+
+    // 4. Crear el mensaje del usuario que contiene AMBOS, la imagen y el texto.
+    final userMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch,
+      chatSessionId: _currentSessionId ?? -1,
+      isUser: true,
+      imagePath: imageFile.path,
+      text: userText.isNotEmpty ? userText : null, // Guarda el texto capturado
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    setState(() {
+      _messages.insert(0, userMessage);
+      _isTyping = true;
+    });
+
+    // 5. Llamar al servicio, pasándole ambos datos.
+    try {
+      final analysisResult = await _chatService.analyzeBodyImage(
+        imageFile,
+        text: userText, // Pasamos el texto al servicio
+      );
+
+      // El resto de la lógica para manejar la respuesta exitosa no cambia.
+      final assistantResponseMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch + 1,
+        chatSessionId: _currentSessionId ?? -1,
+        isUser: false,
+        analysisData: analysisResult,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      setState(() {
+        _messages.insert(0, assistantResponseMessage);
+      });
+    } catch (e) {
+      // El manejo de errores tampoco cambia.
+      final errorMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch + 1,
+        chatSessionId: _currentSessionId ?? -1,
+        isUser: false,
+        text: 'Lo siento, no pude analizar la imagen. Inténtalo de nuevo. 😥',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      setState(() {
+        _messages.insert(0, errorMessage);
+      });
+    } finally {
+      setState(() {
+        _isTyping = false;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1000,
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() => _isLoading = true);
+
+      // Leer la imagen como bytes y convertir a base64
+      final bytes = await pickedFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      // Obtener el usuario actual
+      final currentUser = await _storageService.getUser();
+
+      // Llamar al backend para análisis
+      final response = await http.post(
+        Uri.parse('$baseUrl/analyze-body-fat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'image': base64Image,
+          'user_id': currentUser?.id,
+          'session_id': _currentSessionId,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Crear mensaje con la imagen
+        final imageMessage = ChatMessage(
+          id: -1,
+          chatSessionId: _currentSessionId ?? -1,
+          userId: currentUser?.id ?? -1,
+          imagePath: pickedFile.path,
+          isUser: true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        // Crear mensaje con los resultados
+        final analysisMessage = ChatMessage(
+          id: -1,
+          chatSessionId: _currentSessionId ?? -1,
+          userId: 0, // ID del bot
+          text: data['analysis'],
+          isUser: false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        setState(() {
+          _messages.insert(0, analysisMessage);
+          _messages.insert(0, imageMessage);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Error al analizar la imagen');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Error: ${e.toString()}');
+      }
+    }
+  }
+
+  // ▼▼▼ NUEVO: Función para manejar el envío de mensajes con imagen ▼▼▼
+  Future<void> _sendImageMessage(String imagePath) async {
+    final currentUser = await _storageService.getUser();
+    final newMessage = ChatMessage(
+      id: -1,
+      chatSessionId: _currentSessionId ?? -1,
+      userId: currentUser?.id ?? -1,
+      imagePath: imagePath, // Usamos el nuevo campo
+      isUser: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    setState(() {
+      _messages.insert(0, newMessage);
+      _isTyping = true;
+    });
+
+    // Aquí iría la lógica para subir la imagen a tu backend
+    // y obtener una respuesta del modelo de IA sobre la imagen.
+    // Por ahora, simulamos una respuesta después de 2 segundos.
+    await Future.delayed(const Duration(seconds: 2));
+
+    final aiResponse = ChatMessage(
+      id: -1,
+      chatSessionId: _currentSessionId ?? -1,
+      userId: 0,
+      text: "¡Qué buena foto! Analizándola...",
+      isUser: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    setState(() {
+      _messages.insert(0, aiResponse);
+      _isTyping = false;
+    });
   }
 
   // --- NUEVO WIDGET PAYWALL ---
@@ -705,7 +897,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
         if (mounted) setState(() => _typingIndex = (_typingIndex + 1) % 3);
       });
-      _updateTokenCount(newMessage.text);
+      _updateTokenCount(newMessage.text!);
     });
     _controller.clear();
 
@@ -751,7 +943,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           _userMessageCount = response['user_message_count'];
         }
 
-        _updateTokenCount(aiMessage.text);
+        _updateTokenCount(aiMessage.text!);
       });
 
       Vibration.vibrate(duration: 200);
@@ -825,6 +1017,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             .map((m) => {
                   'text': m.text,
                   'is_user': m.isUser,
+                  'image_url': m.imageUrl, // <-- Enviamos la URL de la imagen
+
                   'created_at': m.createdAt.toIso8601String(),
                 })
             .toList(),
@@ -951,121 +1145,228 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
+// In: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
+
   Widget _buildMessageBubble(ChatMessage message) {
+    // This part for the analysis card is correct.
+    if (message.analysisData != null) {
+      return _buildAnalysisResultCard(message.analysisData!);
+    }
+
     final time = DateFormat('HH:mm').format(message.createdAt);
+    final bool isUser = message.isUser;
+
+    // ▼▼▼ CHANGE 1: CORRECTLY IDENTIFY IMAGE MESSAGES ▼▼▼
+    // An image message now has either a local path OR a network URL.
+    final bool isImageMessage =
+        (message.imagePath != null && message.imagePath!.isNotEmpty) ||
+            (message.imageUrl != null && message.imageUrl!.isNotEmpty);
+    // ▲▲▲ END OF CHANGE 1 ▲▲▲
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
         crossAxisAlignment:
-            message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           GestureDetector(
             onLongPress: () {
-              FlutterClipboard.copy(message.text).then((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Texto copiado'),
-                    duration: Duration(seconds: 1),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              });
-            },
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.75,
-              ),
-              child: PhysicalModel(
-                color: Colors.transparent,
-                elevation: 2,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(message.isUser ? 16 : 4),
-                  topRight: Radius.circular(message.isUser ? 4 : 16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color:
-                        message.isUser ? user_bubble_color : bot_bubble_color,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(message.isUser ? 16 : 4),
-                      topRight: Radius.circular(message.isUser ? 4 : 16),
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
+              if (!isImageMessage && message.text != null) {
+                FlutterClipboard.copy(message.text!).then((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Texto copiado'),
+                      backgroundColor: FrutiaColors.accent,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 2,
-                        offset: Offset(0, 2),
-                      )
-                    ],
-                  ),
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: message.isUser
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      if (message.imageUrl != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              message.imageUrl!,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                  );
+                });
+              }
+            },
+            child: ChatBubble(
+              clipper: ChatBubbleClipper1(
+                type:
+                    isUser ? BubbleType.sendBubble : BubbleType.receiverBubble,
+              ),
+              alignment: isUser ? Alignment.topRight : Alignment.topLeft,
+              margin: const EdgeInsets.only(top: 10),
+              backGroundColor: isUser ? user_bubble_color : bot_bubble_color,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ▼▼▼ CHANGE 2: LOGIC TO DISPLAY THE CORRECT IMAGE TYPE ▼▼▼
+                    if (isImageMessage)
+                      Padding(
+                        padding: EdgeInsets.only(
+                            bottom:
+                                message.text != null && message.text!.isNotEmpty
+                                    ? 8.0
+                                    : 0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Builder(
+                            builder: (context) {
+                              // If there's an internet URL, use Image.network
+                              if (message.imageUrl != null &&
+                                  message.imageUrl!.isNotEmpty) {
+                                return Image.network(
+                                  message.imageUrl!,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                        child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Text('Error al cargar imagen');
+                                  },
+                                );
+                              }
+                              // Otherwise, use the local file path with Image.file
+                              else {
+                                return Image.file(File(message.imagePath!));
+                              }
+                            },
                           ),
                         ),
-                      SelectableText.rich(
-                        TextSpan(
-                          children: _parseTextToSpans(message.text).map((span) {
-                            return TextSpan(
-                              text: span.text,
-                              style: span.style?.copyWith(
-                                    color: message.isUser
-                                        ? user_text_color
-                                        : bot_text_color,
-                                  ) ??
-                                  TextStyle(
-                                    color: message.isUser
-                                        ? user_text_color
-                                        : bot_text_color,
-                                  ),
-                            );
-                          }).toList(),
-                        ),
-                        textAlign:
-                            message.isUser ? TextAlign.end : TextAlign.start,
-                        style: TextStyle(
-                          color:
-                              message.isUser ? user_text_color : bot_text_color,
-                          fontSize: 16,
-                          height: 1.4,
+                      ),
+                    // ▲▲▲ END OF CHANGE 2 ▲▲▲
+
+                    // This logic for displaying text is correct.
+                    if (message.text != null && message.text!.isNotEmpty)
+                      RichText(
+                        text: TextSpan(
+                          children: _parseTextToSpans(message.text!,
+                              isUser ? user_text_color : bot_text_color),
+                          style: TextStyle(
+                            color: isUser ? user_text_color : bot_text_color,
+                            fontSize: 16,
+                            fontFamily: 'Lora',
+                          ),
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          color: time_text_color,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w300,
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 10, right: 10),
+            child: Text(
+              time,
+              style: TextStyle(
+                color: FrutiaColors.secondaryText.withOpacity(0.7),
+                fontSize: 12,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// 2. Widget para mostrar la IMAGEN y el TEXTO del usuario.
+  Widget _buildUserImageBubble(ChatMessage message) {
+    return ChatBubble(
+      clipper: ChatBubbleClipper1(type: BubbleType.sendBubble),
+      alignment: Alignment.topRight,
+      margin: const EdgeInsets.only(top: 20),
+      backGroundColor: user_bubble_color, // Usando tu color definido
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
+        // ▼▼▼ CAMBIO PRINCIPAL AQUÍ ▼▼▼
+        // Usamos una Columna para apilar la imagen y el texto.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment
+              .start, // Alinea el texto a la izquierda dentro de la burbuja
+          children: [
+            // La imagen
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8.0),
+              child: Image.file(File(message.imagePath!)),
+            ),
+
+            // El texto (solo si existe y no está vacío)
+            if (message.text != null && message.text!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(
+                    top: 8.0, left: 4, right: 4, bottom: 4),
+                child: Text(
+                  message.text!,
+                  style: TextStyle(
+                    color:
+                        user_text_color, // Usa el color de texto que ya definiste
+                    fontSize: 16,
+                    fontFamily: 'Lora',
+                  ),
+                ),
+              ),
+          ],
+        ),
+        // ▲▲▲ FIN DEL CAMBIO ▲▲▲
+      ),
+    );
+  }
+
+  Widget _buildAnalysisResultCard(Map<String, dynamic> result) {
+    final double percentage = result['percentage']?.toDouble() ?? 0.0;
+    final String recommendation = result['recommendation'] ?? 'No disponible.';
+    final List<dynamic> observations = result['observations'] ?? [];
+
+    return ChatBubble(
+      clipper: ChatBubbleClipper1(type: BubbleType.receiverBubble),
+      backGroundColor: const Color(0xffE7E7ED),
+      margin: const EdgeInsets.only(top: 20, left: 12, right: 12),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
+        child: Card(
+          elevation: 0,
+          color: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${percentage.toStringAsFixed(1)}% Grasa Corporal',
+                  style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal.shade800),
+                ),
+                const Text('(Estimado)',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const Divider(height: 20),
+                Text('Recomendación:',
+                    style: GoogleFonts.lato(
+                        fontWeight: FontWeight.bold, color: Colors.black87)),
+                const SizedBox(height: 4),
+                Text(recommendation,
+                    style: GoogleFonts.lato(color: Colors.black87)),
+                const SizedBox(height: 12),
+                if (observations.isNotEmpty) ...[
+                  Text('Observaciones:',
+                      style: GoogleFonts.lato(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
+                  const SizedBox(height: 4),
+                  ...observations
+                      .map((obs) => Text('• $obs',
+                          style: GoogleFonts.lato(color: Colors.black87)))
+                      .toList(),
+                ]
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 500.ms);
   }
 
   String _getEmotionalStateText(String? state) {
@@ -1220,11 +1521,45 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
+// En: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
   Widget _buildKeyboardInput() {
+    final bool canSend =
+        _controller.text.isNotEmpty || _stagedImageFile != null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
+          if (_stagedImageFile != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(_stagedImageFile!,
+                        width: 60, height: 60, fit: BoxFit.cover),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                      child: Text("Imagen adjunta",
+                          style: TextStyle(color: Colors.black54))),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.grey.shade600),
+                    onPressed: () {
+                      setState(() {
+                        _stagedImageFile = null;
+                      });
+                    },
+                  )
+                ],
+              ),
+            ).animate().fadeIn(),
           if (_isListening) _buildVoiceVisualizer(),
           const SizedBox(height: 8),
           LayoutBuilder(
@@ -1266,54 +1601,49 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // --- SHOWCASE FOR MIC ICON ---
-                        Showcase(
-                          key: _micButtonKey,
-                          title: 'Entrada de Voz',
-                          description:
-                              'Si no qiueres escribir, puedes tocar aqui para grabar tu mensaje o detener la grabación.',
-                          tooltipBackgroundColor: FrutiaColors.accent,
-                          targetShapeBorder: const CircleBorder(),
-                          titleTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                          descTextStyle: const TextStyle(
-                              color: Colors.white, fontSize: 14),
-                          disableMovingAnimation: true,
-                          disableScaleAnimation: true,
-                          child: IconButton(
-                            icon: Icon(
-                              _isListening ? Icons.stop_circle : Icons.mic_none,
-                              color: _isListening
-                                  ? Colors.red
-                                  : FrutiaColors.accent,
-                              size: _isListening ? 30 : 24,
-                            ),
-                            tooltip: _isListening
-                                ? 'Detener grabación'
-                                : 'Iniciar grabación',
-                            onPressed: () async {
-                              if (_isListening) {
-                                await _stopListening();
-                              } else {
-                                await _startListening();
-                              }
-                            },
-                          ),
+                        IconButton(
+                          icon: Icon(Icons.image, color: FrutiaColors.accent),
+                          onPressed: _pickAndStageImage,
+                          tooltip: 'Adjuntar imagen',
                         ),
-                        if (_controller.text.isNotEmpty)
-                          IconButton(
-                            icon: Icon(Icons.send, color: FrutiaColors.accent),
-                            onPressed: () {
-                              _sendMessage(_controller.text);
-                              _controller.clear();
-                              // Ocultar el teclado
-                              FocusManager.instance.primaryFocus?.unfocus();
-                            },
+                        if (!canSend) ...[
+                          Showcase(
+                            key: _micButtonKey,
+                            title: 'Entrada de Voz',
+                            description:
+                                'Si no quieres escribir, puedes tocar aqui para grabar tu mensaje o detener la grabación.',
+                            tooltipBackgroundColor: FrutiaColors.accent,
+                            targetShapeBorder: const CircleBorder(),
+                            titleTextStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                            descTextStyle: const TextStyle(
+                                color: Colors.white, fontSize: 14),
+                            disableMovingAnimation: true,
+                            disableScaleAnimation: true,
+                            child: IconButton(
+                              icon: Icon(
+                                _isListening
+                                    ? Icons.stop_circle
+                                    : Icons.mic_none,
+                                color: _isListening
+                                    ? Colors.red
+                                    : FrutiaColors.accent,
+                                size: _isListening ? 30 : 24,
+                              ),
+                              tooltip: _isListening
+                                  ? 'Detener grabación'
+                                  : 'Iniciar grabación',
+                              onPressed: () async {
+                                if (_isListening) {
+                                  await _stopListening();
+                                } else {
+                                  await _startListening();
+                                }
+                              },
+                            ),
                           ),
-                        if (_controller.text.isEmpty)
-                          // --- SHOWCASE FOR VOICE CHAT ICON ---
                           Showcase(
                             key: _voiceChatButtonKey,
                             title: 'Chat de Voz Avanzado',
@@ -1336,7 +1666,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 color: Colors.white,
                                 boxShadow: const [
                                   BoxShadow(
-                                    color: Colors.black12,
+                                    color: Colors.white,
                                     blurRadius: 4,
                                     offset: Offset(0, 2),
                                   ),
@@ -1361,11 +1691,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               ),
                             ),
                           ),
+                        ],
+                        if (canSend)
+                          IconButton(
+                            icon: Icon(Icons.send, color: FrutiaColors.accent),
+                            onPressed: _handleSend,
+                          ),
                       ],
                     ),
                   ),
                   onChanged: (text) {
-                    setState(() {}); // Reconstruir para actualizar la altura
+                    setState(() {});
                   },
                   scrollController: ScrollController(),
                 ),
@@ -1376,6 +1712,121 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+// En: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
+
+  /// NUEVA FUNCIÓN 1: Solo elige y "adjunta" la imagen.
+  Future<void> _pickAndStageImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (pickedFile == null) return;
+
+    setState(() {
+      _stagedImageFile = File(pickedFile.path);
+    });
+  }
+
+  /// NUEVA FUNCIÓN 2: Decide qué hacer cuando se presiona "Enviar".
+  void _handleSend() {
+    // Si hay una imagen adjunta, llama a la función de análisis.
+    if (_stagedImageFile != null) {
+      _sendImageAndTextForAnalysis();
+    }
+    // Si no, y hay texto, llama a la función de envío de texto normal.
+    else if (_controller.text.isNotEmpty) {
+      _sendMessage(_controller.text); // Asumo que ya tienes esta función
+    }
+  }
+
+  // En: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
+
+  Future<void> _sendImageAndTextForAnalysis() async {
+    // 1. Comprobación de seguridad (esto está bien)
+    if (_stagedImageFile == null) return;
+
+    // 2. Guardamos los datos y limpiamos la UI (esto está bien)
+    final imageToSend = _stagedImageFile!;
+    final userText = _controller.text;
+
+    setState(() {
+      _stagedImageFile = null;
+      _controller.clear();
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+
+    // ▼▼▼ LÓGICA CORREGIDA Y MEJORADA ▼▼▼
+
+    // 3. Creamos un ID temporal para encontrar y actualizar nuestro mensaje después.
+    final tempMessageId = DateTime.now().millisecondsSinceEpoch;
+    final userMessage = ChatMessage(
+      id: tempMessageId,
+      chatSessionId: _currentSessionId ?? -1,
+      isUser: true,
+      imagePath: imageToSend
+          .path, // Usamos la ruta LOCAL para mostrar la imagen al instante
+      text: userText.isNotEmpty ? userText : null,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    // 4. Mostramos el mensaje del usuario en el chat inmediatamente.
+    setState(() {
+      _messages.insert(0, userMessage);
+      _isTyping = true;
+    });
+
+    try {
+      // 5. PRIMERO, subimos la imagen para obtener la URL remota.
+      final imageUrl = await _chatService.uploadImage(imageToSend);
+
+      // 6. AHORA, actualizamos nuestro mensaje en la lista con la URL obtenida.
+      // Esto es CRUCIAL para que la función de "Guardar Chat" funcione después.
+      setState(() {
+        final index = _messages.indexWhere((m) => m.id == tempMessageId);
+        if (index != -1) {
+          _messages[index] = ChatMessage(
+            id: _messages[index].id,
+            chatSessionId: _messages[index].chatSessionId,
+            isUser: true,
+            imagePath: _messages[index].imagePath,
+            imageUrl: imageUrl, // <-- ¡AQUÍ GUARDAMOS LA URL!
+            text: _messages[index].text,
+            createdAt: _messages[index].createdAt,
+            updatedAt: DateTime.now(),
+          );
+        }
+      });
+
+      // 7. SEGUNDO, llamamos a la API de análisis.
+      final analysisResult =
+          await _chatService.analyzeBodyImage(imageToSend, text: userText);
+
+      final assistantResponseMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch + 1,
+        chatSessionId: _currentSessionId ?? -1,
+        isUser: false,
+        analysisData: analysisResult,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      setState(() => _messages.insert(0, assistantResponseMessage));
+    } catch (e) {
+      // Tu lógica para manejar errores
+      final errorMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch + 1,
+        chatSessionId: _currentSessionId ?? -1,
+        isUser: false,
+        text: 'Ocurrió un error al procesar la imagen.',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      setState(() => _messages.insert(0, errorMessage));
+    } finally {
+      setState(() => _isTyping = false);
+    }
   }
 
   Widget _buildVoiceInput() {
