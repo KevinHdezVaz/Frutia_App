@@ -7,7 +7,8 @@ import 'dart:ui';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:Frutia/services/ChatServiceApi.dart'; // Asegúrate de importar tu servicio de chat
-import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart'; // Importa la pantalla del cuestionario
+import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:permission_handler/permission_handler.dart'; // Importa la pantalla del cuestionario
 
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({Key? key}) : super(key: key);
@@ -86,9 +87,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     );
   }
 
-  Future<void> _pickAndAnalyzeImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
+Future<void> _pickAndAnalyzeImage() async {
+  // ▼▼▼ 2. LÓGICA DE PERMISOS ▼▼▼
+  final status = await Permission.photos.request();
+
+  if (status.isGranted) {
+    // Si el permiso fue concedido, continúa con la selección de imagen
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) {
       _showSnackBar('No se seleccionó ninguna imagen.', isError: true);
       return;
@@ -108,8 +113,16 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);
     }
-  }
 
+  } else if (status.isPermanentlyDenied) {
+    // Si el usuario denegó permanentemente, lo mandamos a la configuración
+    _showSnackBar('Permiso a la galería denegado. Habilítalo en la configuración.', isError: true);
+   } else {
+    // Si denegó una vez, le informamos
+    _showSnackBar('El permiso a la galería es necesario para seleccionar una foto.', isError: true);
+  }
+  // ▲▲▲ FIN DE LA LÓGICA DE PERMISOS ▲▲▲
+}
   Future<void> _saveWeight() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
