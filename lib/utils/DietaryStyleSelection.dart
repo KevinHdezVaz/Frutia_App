@@ -20,7 +20,7 @@ class DietaryStyleSelection extends StatelessWidget {
       'Omnívoro': Icons.restaurant_menu,
       'Vegetariano': Icons.eco,
       'Vegano': Icons.grass,
-      'Keto / Low carb': Icons.egg_alt_outlined,
+      'Keto': Icons.egg_alt_outlined,
     };
 
     return FormBuilderField<String>(

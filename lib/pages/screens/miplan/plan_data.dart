@@ -96,6 +96,7 @@ class NutritionPlan {
   final List<String> generalRecommendations;
   final List<String> rememberRecommendations;
   final String recommendation; // <-- AÑADE ESTA LÍNEA
+  final String? currencySymbol; // <-- 1. AÑADE ESTA LÍNEA
 
   const NutritionPlan({
     required this.targetMacros,
@@ -103,6 +104,7 @@ class NutritionPlan {
     required this.generalRecommendations,
     required this.rememberRecommendations,
     required this.recommendation, // <-- AÑADE ESTA LÍNEA
+    this.currencySymbol, // <-- 2. AÑADE ESTO AL CONSTRUCTOR
   });
 
   factory NutritionPlan.fromJson(Map<String, dynamic> json) {
@@ -129,6 +131,8 @@ class NutritionPlan {
           List<String>.from(remember.map((item) => item.toString())),
       recommendation: json['recommendation'] as String? ??
           '¡Tu plan está listo para que alcances tus metas!',
+      currencySymbol: json['currency_symbol']
+          as String?, // <-- 3. LEE EL NUEVO CAMPO DEL JSON
     );
   }
 }

@@ -126,7 +126,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           '🍖 Omnívoro': 'Omnívoro',
           '🥕 Vegetariano': 'Vegetariano',
           '🌱 Vegano': 'Vegano',
-          '🥚 Keto / Low carb': 'Keto / Low carb',
+          '🥚 Keto': 'Keto',
         };
 
         final Map<String, String> budgetMap = {
@@ -1096,7 +1096,7 @@ class _DietaryStyleSelection extends StatelessWidget {
       '🍖 Omnívoro': 'Omnívoro',
       '🥕 Vegetariano': 'Vegetariano',
       '🌱 Vegano': 'Vegano',
-      '🥚 Keto / Low carb': 'Keto / Low carb',
+      '🥚 Keto': 'Keto',
     };
     bool isOtherSelected = provider.dietStyle != null &&
         !predefinedStyles.keys.contains(provider.dietStyle!);

@@ -81,6 +81,9 @@ class _ComprasScreenState extends State<ComprasScreen> {
   final PlanService _planService = PlanService();
   late SharedPreferences _prefs;
 
+  // --- CAMBIO 1: Añadir estado para el símbolo de la moneda ---
+  String? _currencySymbol;
+
   final Map<String, bool> _isCategoryExpanded = {};
   final Map<String, String> _categoryImages = {
     'Desayuno': 'assets/images/desayun.webp',
@@ -113,6 +116,9 @@ class _ComprasScreenState extends State<ComprasScreen> {
       if (planData == null) {
         throw Exception('No se encontró un plan de alimentación activo.');
       }
+
+      // --- CAMBIO 2: Extraer y guardar el símbolo de la moneda ---
+      final String? currency = planData.nutritionPlan.currencySymbol;
 
       final List<ShoppingIngredientItem> tempShoppingList = [];
 
@@ -156,6 +162,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
 
       setState(() {
         _ingredients = tempShoppingList;
+        _currencySymbol = currency; // Guardar en el estado
         _isLoading = false;
       });
     } catch (e) {
@@ -344,18 +351,16 @@ class _ComprasScreenState extends State<ComprasScreen> {
             });
           },
         ),
-        // --- INICIO DE LA OPTIMIZACIÓN ---
-        // Se reemplaza AnimatedCrossFade por una construcción condicional simple.
         if (isExpanded)
           ListView.builder(
             itemCount: items.length,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
-              return _buildIngredientCard(items[index]);
+              // --- CAMBIO 3: Pasar el símbolo de la moneda al widget ---
+              return _buildIngredientCard(items[index], _currencySymbol);
             },
           ),
-        // --- FIN DE LA OPTIMIZACIÓN ---
         const SizedBox(height: 16),
       ],
     );
@@ -426,15 +431,12 @@ class _ComprasScreenState extends State<ComprasScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    // --- INICIO DE LA OPTIMIZACIÓN ---
-                    // Se reemplaza AnimatedRotation por un Transform.rotate estático.
                     Transform.rotate(
                       angle:
                           isExpanded ? 0 : -3.14159, // -180 grados en radianes
                       child: const Icon(Icons.expand_more,
                           color: Colors.white, size: 28),
                     ),
-                    // --- FIN DE LA OPTIMIZACIÓN ---
                   ],
                 ),
               ),
@@ -445,7 +447,9 @@ class _ComprasScreenState extends State<ComprasScreen> {
     );
   }
 
-  Widget _buildIngredientCard(ShoppingIngredientItem ingredient) {
+  // --- CAMBIO 4: Actualizar la firma del método ---
+  Widget _buildIngredientCard(
+      ShoppingIngredientItem ingredient, String? currencySymbol) {
     return GestureDetector(
       onTap: () => _toggleIngredientCheck(ingredient),
       child: Card(
@@ -483,8 +487,9 @@ class _ComprasScreenState extends State<ComprasScreen> {
                       const SizedBox(height: 8),
                       const Divider(),
                       const SizedBox(height: 8),
+                      // --- CAMBIO 5: Usar el símbolo de la moneda ---
                       ...ingredient.prices.map((price) => Text(
-                            '${price.store}: \$${price.price.toStringAsFixed(2)} ${price.currency ?? ''}',
+                            '${price.store}: ${price.price.toStringAsFixed(2)} ${currencySymbol ?? ''}',
                             style: GoogleFonts.lato(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
