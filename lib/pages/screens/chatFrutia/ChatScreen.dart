@@ -590,20 +590,26 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     ),
                 ],
               ),
-              // ▲▲▲ FIN DE LA ACTUALIZACIÓN DEL APPBAR ▲▲▲
 
               Expanded(
-                child: ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  itemCount: _messages.length + (_isTyping ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (_isTyping && index == 0) {
-                      return _buildTypingIndicator();
-                    }
-                    final messageIndex = _isTyping ? index - 1 : index;
-                    return _buildMessageBubble(_messages[messageIndex]);
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
                   },
+                  behavior: HitTestBehavior
+                      .opaque, // Esto hace que todo el área sea tappable
+                  child: ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    itemCount: _messages.length + (_isTyping ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (_isTyping && index == 0) {
+                        return _buildTypingIndicator();
+                      }
+                      final messageIndex = _isTyping ? index - 1 : index;
+                      return _buildMessageBubble(_messages[messageIndex]);
+                    },
+                  ),
                 ),
               ),
               _buildInput(),
@@ -1601,11 +1607,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: Icon(Icons.image, color: FrutiaColors.accent),
-                          onPressed: _pickAndStageImage,
-                          tooltip: 'Adjuntar imagen',
-                        ),
                         if (!canSend) ...[
                           Showcase(
                             key: _micButtonKey,

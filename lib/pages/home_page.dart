@@ -7,6 +7,7 @@ import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
 import 'package:Frutia/pages/screens/drawer/HelpandSupport.dart';
 import 'package:Frutia/pages/screens/drawer/PrivacyPolitice.dart';
 import 'package:Frutia/pages/screens/drawer/TermsAndConditions.dart';
+import 'package:Frutia/pages/screens/miplan/PersonalizedTipsCarousel.dart';
 import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/pages/screens/miplan/TrialExpiredDialog.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
@@ -633,6 +634,10 @@ class _DashboardViewState extends State<_DashboardView> {
         children: [
           _buildProfileHeader(context),
           const SizedBox(height: 24),
+          if (hasPlan) ...[
+            PersonalizedMessageCard(mealPlanData: widget.mealPlanData),
+            const SizedBox(height: 24),
+          ],
           if (hasPlan && widget.canCompleteStreakToday)
             Showcase(
               key: _streakReminderKey,
@@ -675,6 +680,10 @@ class _DashboardViewState extends State<_DashboardView> {
             child: _buildWeekCalendar(context, widget.streakHistory),
           ),
           const SizedBox(height: 24),
+          if (hasPlan) ...[
+            NutritionalProfileCard(mealPlanData: widget.mealPlanData),
+            const SizedBox(height: 24),
+          ],
           _buildStatsRow(
               context, streakDays, currentWeight, mainGoal, trialDaysRemaining),
           if (affiliateCode != null && affiliateCode.isNotEmpty)
@@ -714,6 +723,10 @@ class _DashboardViewState extends State<_DashboardView> {
                     child: _buildCreatePlanCard(context),
                   ),
           ),
+          if (hasPlan) ...[
+            const SizedBox(height: 30),
+            PersonalizedTipsCarousel(mealPlanData: widget.mealPlanData),
+          ],
           if (hasPlan) const SizedBox(height: 16),
           const SizedBox(height: 40),
           _buildUpcomingMealCard(),
@@ -849,58 +862,11 @@ class _DashboardViewState extends State<_DashboardView> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Showcase(
-                  key: _weightStatKey,
-                  title: 'Tu peso',
-                  description:
-                      'Consulta tu peso actual para seguir tu progreso.',
-                  tooltipBackgroundColor: FrutiaColors.accent,
-                  targetShapeBorder: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12))),
-                  titleTextStyle: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                  descTextStyle:
-                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                  disableMovingAnimation: true,
-                  disableScaleAnimation: true,
-                  child: _StatCard(
-                      icon: Icons.monitor_weight_rounded,
-                      value: '$currentWeight kg',
-                      label: 'Peso actual',
-                      color: Colors.blue),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: Showcase(
-                  key: _goalStatKey,
-                  title: 'Tu objetivo',
-                  description: 'Tu meta de salud principal. ¡A por ella!',
-                  tooltipBackgroundColor: FrutiaColors.accent,
-                  targetShapeBorder: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12))),
-                  titleTextStyle: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                  descTextStyle:
-                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                  disableMovingAnimation: true,
-                  disableScaleAnimation: true,
-                  child: _StatCard(
-                      icon: Icons.flag_rounded,
-                      value: mainGoal,
-                      label: 'Objetivo',
-                      color: Colors.green),
-                ),
-              ),
               if (widget.isInTrial) ...[
                 const SizedBox(width: 12),
                 Expanded(

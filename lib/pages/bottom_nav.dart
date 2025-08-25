@@ -49,7 +49,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
       ChatHistoryScreen(), // Al tocar "Frutia", irá a ChatHistoryPage
       PlaceholderScreen(),
       ProgressScreen(),
-      ProfilePage(),
+      PlanSummaryScreen(),
     ];
   }
 

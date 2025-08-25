@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 // --- Helper Functions para convertir Strings a Widgets ---
-
 IconData _iconFromString(String iconName) {
   switch (iconName) {
     case 'wb_sunny_outlined':
@@ -64,10 +63,9 @@ class MealPlanData {
 }
 
 // ==========================================================
-// 2. MODELOS PARA 'nutritionPlan'
+// 2. MODELOS ACTUALIZADOS PARA 'nutritionPlan'
 // ==========================================================
 
-// --- Añade esta nueva clase ---
 class PriceInfo {
   final String store;
   final double price;
@@ -90,21 +88,149 @@ class PriceInfo {
       };
 }
 
+class AnthropometricSummary {
+  final String clientName;
+  final int age;
+  final String sex;
+  final double weight;
+  final double height;
+  final double bmi;
+  final String weightStatus;
+  final IdealWeightRange idealWeightRange;
+
+  const AnthropometricSummary({
+    required this.clientName,
+    required this.age,
+    required this.sex,
+    required this.weight,
+    required this.height,
+    required this.bmi,
+    required this.weightStatus,
+    required this.idealWeightRange,
+  });
+
+  factory AnthropometricSummary.fromJson(Map<String, dynamic> json) {
+    return AnthropometricSummary(
+      clientName: json['clientName'] as String? ?? 'Usuario',
+      age: (json['age'] as num?)?.toInt() ?? 0,
+      sex: json['sex'] as String? ?? '',
+      weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+      height: (json['height'] as num?)?.toDouble() ?? 0.0,
+      bmi: (json['bmi'] as num?)?.toDouble() ?? 0.0,
+      weightStatus: json['weightStatus'] as String? ?? '',
+      idealWeightRange:
+          IdealWeightRange.fromJson(json['idealWeightRange'] ?? {}),
+    );
+  }
+}
+
+class IdealWeightRange {
+  final double min;
+  final double max;
+
+  const IdealWeightRange({required this.min, required this.max});
+
+  factory IdealWeightRange.fromJson(Map<String, dynamic> json) {
+    return IdealWeightRange(
+      min: (json['min'] as num?)?.toDouble() ?? 0.0,
+      max: (json['max'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class NutritionalSummary {
+  final int tmb;
+  final int get;
+  final int targetCalories;
+  final String goal;
+  final String monthlyProgression;
+  final String activityFactor;
+  final double caloriesPerKg;
+  final double proteinPerKg;
+  final List<String> specialConsiderations;
+
+  const NutritionalSummary({
+    required this.tmb,
+    required this.get,
+    required this.targetCalories,
+    required this.goal,
+    required this.monthlyProgression,
+    required this.activityFactor,
+    required this.caloriesPerKg,
+    required this.proteinPerKg,
+    required this.specialConsiderations,
+  });
+
+  factory NutritionalSummary.fromJson(Map<String, dynamic> json) {
+    return NutritionalSummary(
+      tmb: (json['tmb'] as num?)?.toInt() ?? 0,
+      get: (json['get'] as num?)?.toInt() ?? 0,
+      targetCalories: (json['targetCalories'] as num?)?.toInt() ?? 0,
+      goal: json['goal'] as String? ?? '',
+      monthlyProgression: json['monthlyProgression'] as String? ?? '',
+      activityFactor: json['activityFactor'] as String? ?? '',
+      caloriesPerKg: (json['caloriesPerKg'] as num?)?.toDouble() ?? 0.0,
+      proteinPerKg: (json['proteinPerKg'] as num?)?.toDouble() ?? 0.0,
+      specialConsiderations: List<String>.from(
+          (json['specialConsiderations'] as List? ?? [])
+              .map((item) => item.toString())),
+    );
+  }
+}
+
+class PersonalizedTips {
+  final String anthropometricGuidance;
+  final String difficultySupport;
+  final String motivationalElements;
+  final String eatingOutGuidance;
+  final String ageSpecificAdvice;
+
+  const PersonalizedTips({
+    required this.anthropometricGuidance,
+    required this.difficultySupport,
+    required this.motivationalElements,
+    required this.eatingOutGuidance,
+    required this.ageSpecificAdvice,
+  });
+
+  factory PersonalizedTips.fromJson(Map<String, dynamic> json) {
+    return PersonalizedTips(
+      anthropometricGuidance: json['anthropometricGuidance'] as String? ?? '',
+      difficultySupport: json['difficultySupport'] as String? ?? '',
+      motivationalElements: json['motivationalElements'] as String? ?? '',
+      eatingOutGuidance: json['eatingOutGuidance'] as String? ?? '',
+      ageSpecificAdvice: json['ageSpecificAdvice'] as String? ?? '',
+    );
+  }
+}
+
 class NutritionPlan {
   final TargetMacros targetMacros;
   final Map<String, Meal> meals;
   final List<String> generalRecommendations;
   final List<String> rememberRecommendations;
-  final String recommendation; // <-- AÑADE ESTA LÍNEA
-  final String? currencySymbol; // <-- 1. AÑADE ESTA LÍNEA
+  final String recommendation;
+  final String? currencySymbol;
+
+  // CAMPOS NUEVOS COMPLETOS:
+  final String? personalizedMessage;
+  final AnthropometricSummary? anthropometricSummary;
+  final NutritionalSummary? nutritionalSummary;
+  final PersonalizedTips? personalizedTips;
+  final Map<String, String>? mealSchedule;
 
   const NutritionPlan({
     required this.targetMacros,
     required this.meals,
     required this.generalRecommendations,
     required this.rememberRecommendations,
-    required this.recommendation, // <-- AÑADE ESTA LÍNEA
-    this.currencySymbol, // <-- 2. AÑADE ESTO AL CONSTRUCTOR
+    required this.recommendation,
+    this.currencySymbol,
+    this.personalizedMessage,
+    this.anthropometricSummary,
+    this.nutritionalSummary,
+    this.personalizedTips,
+    this.mealSchedule,
   });
 
   factory NutritionPlan.fromJson(Map<String, dynamic> json) {
@@ -122,6 +248,14 @@ class NutritionPlan {
     final general = recommendations['general'] as List? ?? [];
     final remember = recommendations['remember'] as List? ?? [];
 
+    // Parse meal schedule
+    final mealScheduleData =
+        json['mealSchedule'] as Map<String, dynamic>? ?? {};
+    final Map<String, String> parsedMealSchedule = {};
+    mealScheduleData.forEach((key, value) {
+      parsedMealSchedule[key] = value.toString();
+    });
+
     return NutritionPlan(
       targetMacros: TargetMacros.fromJson(json['targetMacros'] ?? {}),
       meals: parsedMeals,
@@ -131,25 +265,35 @@ class NutritionPlan {
           List<String>.from(remember.map((item) => item.toString())),
       recommendation: json['recommendation'] as String? ??
           '¡Tu plan está listo para que alcances tus metas!',
-      currencySymbol: json['currency_symbol']
-          as String?, // <-- 3. LEE EL NUEVO CAMPO DEL JSON
+      currencySymbol: json['currency_symbol'] as String?,
+      personalizedMessage: json['personalizedMessage'] as String?,
+      anthropometricSummary: json['anthropometricSummary'] != null
+          ? AnthropometricSummary.fromJson(json['anthropometricSummary'])
+          : null,
+      nutritionalSummary: json['nutritionalSummary'] != null
+          ? NutritionalSummary.fromJson(json['nutritionalSummary'])
+          : null,
+      personalizedTips: json['personalizedTips'] != null
+          ? PersonalizedTips.fromJson(json['personalizedTips'])
+          : null,
+      mealSchedule: parsedMealSchedule.isNotEmpty ? parsedMealSchedule : null,
     );
   }
 }
-
-// Esto es un ejemplo de cómo debería verse tu clase en plan_data.dart
 
 class TargetMacros {
   final int calories;
   final int protein;
   final int carbs;
   final int fats;
+  final DetailedMacroBreakdown? detailedBreakdown;
 
   const TargetMacros({
     required this.calories,
     required this.protein,
     required this.carbs,
     required this.fats,
+    this.detailedBreakdown,
   });
 
   factory TargetMacros.fromJson(Map<String, dynamic> json) {
@@ -162,6 +306,52 @@ class TargetMacros {
       fats: (json['fats'] as num?)?.toInt() ??
           (json['fat'] as num?)?.toInt() ??
           0,
+      detailedBreakdown: json['detailedBreakdown'] != null
+          ? DetailedMacroBreakdown.fromJson(json['detailedBreakdown'])
+          : null,
+    );
+  }
+}
+
+class DetailedMacroBreakdown {
+  final MacroDetail protein;
+  final MacroDetail fats;
+  final MacroDetail carbohydrates;
+
+  const DetailedMacroBreakdown({
+    required this.protein,
+    required this.fats,
+    required this.carbohydrates,
+  });
+
+  factory DetailedMacroBreakdown.fromJson(Map<String, dynamic> json) {
+    return DetailedMacroBreakdown(
+      protein: MacroDetail.fromJson(json['protein'] ?? {}),
+      fats: MacroDetail.fromJson(json['fats'] ?? {}),
+      carbohydrates: MacroDetail.fromJson(json['carbohydrates'] ?? {}),
+    );
+  }
+}
+
+class MacroDetail {
+  final int grams;
+  final int calories;
+  final double percentage;
+  final double perKg;
+
+  const MacroDetail({
+    required this.grams,
+    required this.calories,
+    required this.percentage,
+    required this.perKg,
+  });
+
+  factory MacroDetail.fromJson(Map<String, dynamic> json) {
+    return MacroDetail(
+      grams: (json['grams'] as num?)?.toInt() ?? 0,
+      calories: (json['calories'] as num?)?.toInt() ?? 0,
+      percentage: (json['percentage'] as num?)?.toDouble() ?? 0.0,
+      perKg: (json['perKg'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -184,8 +374,6 @@ class MealCategory {
   }
 }
 
-// --- Reemplaza tu clase MealOption por esta ---
-
 class MealOption {
   final String name;
   final String portion;
@@ -194,7 +382,6 @@ class MealOption {
   final int carbs;
   final int fats;
   final List<PriceInfo> prices;
-  // Estos campos ya no se usan en el nuevo JSON, pero se mantienen por si acaso
   final String imageUrl;
   final List<String> ingredients;
 
@@ -263,28 +450,28 @@ class RecipeIngredient {
   }
 }
 
-// Modelo actualizado para las recetas de Spoonacular
 class InspirationRecipe {
   final String title;
   final String? imageUrl;
-
   final int readyInMinutes;
-  String? mealType; // <-- AÑADE ESTE CAMPO
-
+  String? mealType;
   final int servings;
   final String instructions;
-  final List<dynamic>
-      extendedIngredients; // Lista de ingredientes para el súper
-  final List<dynamic> analyzedInstructions; // Pasos detallados
+  final List<dynamic> extendedIngredients;
+  final List<dynamic> analyzedInstructions;
   final int calories;
   final int protein;
   final int carbs;
   final int fats;
+  final String? personalizedNote;
+  final String? goalAlignment;
+  final String? sportsSupport;
+  final String? cuisineType;
+  final String? difficultyLevel;
 
   InspirationRecipe({
     required this.title,
-    this.imageUrl, // <-- Corregido
-
+    this.imageUrl,
     required this.readyInMinutes,
     required this.servings,
     required this.instructions,
@@ -294,11 +481,15 @@ class InspirationRecipe {
     required this.protein,
     required this.carbs,
     required this.fats,
-    this.mealType = 'General', // Asignación por defecto
+    this.mealType = 'General',
+    this.personalizedNote,
+    this.goalAlignment,
+    this.sportsSupport,
+    this.cuisineType,
+    this.difficultyLevel,
   });
 
   factory InspirationRecipe.fromJson(Map<String, dynamic> json) {
-    // Función para determinar el tipo de comida
     String determineMealType(String title) {
       title = title.toLowerCase();
       if (title.contains('desayuno') ||
@@ -316,63 +507,94 @@ class InspirationRecipe {
           title.contains('sopa')) {
         return 'Cena';
       }
-      return 'General'; // Por defecto
+      return 'General';
     }
 
     return InspirationRecipe(
-      title: json['name'] ?? 'Sin título',
-      imageUrl: json['imageUrl'],
-      readyInMinutes: json['readyInMinutes'] ?? 0,
-      servings: json['servings'] ?? 1,
+      title: json['name'] ?? json['title'] ?? 'Sin título',
+      imageUrl: json['imageUrl'] ?? json['image'],
+      readyInMinutes: (json['readyInMinutes'] as num?)?.toInt() ?? 0,
+      servings: (json['servings'] as num?)?.toInt() ?? 1,
       instructions: json['instructions'] ?? 'No hay instrucciones.',
       extendedIngredients: json['extendedIngredients'] as List<dynamic>? ?? [],
       analyzedInstructions:
           json['analyzedInstructions'] as List<dynamic>? ?? [],
-      calories: json['calories'] ?? 0,
-      protein: json['protein'] ?? 0,
-      carbs: json['carbs'] ?? 0,
-      fats: json['fats'] ?? 0,
-      mealType: determineMealType(json['name'] ?? ''),
+      calories: (json['calories'] as num?)?.toInt() ?? 0,
+      protein: (json['protein'] as num?)?.toInt() ?? 0,
+      carbs: (json['carbs'] as num?)?.toInt() ?? 0,
+      fats: (json['fats'] as num?)?.toInt() ?? 0,
+      mealType: json['mealType'] ??
+          determineMealType(json['name'] ?? json['title'] ?? ''),
+      personalizedNote: json['personalizedNote'],
+      goalAlignment: json['goalAlignment'],
+      sportsSupport: json['sportsSupport'],
+      cuisineType: json['cuisineType'],
+      difficultyLevel: json['difficultyLevel'],
     );
   }
 }
 
-// --- AÑADE ESTA NUEVA CLASE ---
-
 class Meal {
   final List<MealCategory> components;
   final List<InspirationRecipe> suggestedRecipes;
+  final String? mealTiming;
+  final List<String>? personalizedTips;
 
-  const Meal({required this.components, required this.suggestedRecipes});
+  const Meal({
+    required this.components,
+    required this.suggestedRecipes,
+    this.mealTiming,
+    this.personalizedTips,
+  });
 
   factory Meal.fromJson(Map<String, dynamic> json) {
-    // ▼▼▼ LÓGICA CLAVE ACTUALIZADA ▼▼▼
-    // Lee 'components' como un Mapa en lugar de una Lista
+    // Parse components from the new structure
     final componentsData = json['components'] as Map<String, dynamic>? ?? {};
     final List<MealCategory> parsedComponents = [];
 
-    // Itera sobre el mapa para crear las categorías
-    componentsData.forEach((title, optionsData) {
-      if (optionsData is Map<String, dynamic>) {
-        parsedComponents.add(MealCategory.fromJson({
-          'title': title,
-          'options': optionsData['options'] ?? [],
-        }));
-      }
-    });
+    // If it's the old structure, parse directly
+    if (json.containsKey('Proteínas') ||
+        json.containsKey('Carbohidratos') ||
+        json.containsKey('Grasas') ||
+        json.containsKey('Vegetales')) {
+      ['Proteínas', 'Carbohidratos', 'Grasas', 'Vegetales'].forEach((key) {
+        if (json.containsKey(key) && json[key] is Map<String, dynamic>) {
+          parsedComponents.add(MealCategory.fromJson({
+            'title': key,
+            'options': json[key]['options'] ?? [],
+          }));
+        }
+      });
+    } else {
+      // New structure with components wrapper
+      componentsData.forEach((title, optionsData) {
+        if (optionsData is Map<String, dynamic>) {
+          parsedComponents.add(MealCategory.fromJson({
+            'title': title,
+            'options': optionsData['options'] ?? [],
+          }));
+        }
+      });
+    }
 
     final recipesList = json['suggested_recipes'] as List? ?? [];
     final parsedRecipes = recipesList
         .map((r) => InspirationRecipe.fromJson(r as Map<String, dynamic>))
         .toList();
 
+    final tipsList = json['personalized_tips'] as List? ?? [];
+    final parsedTips = tipsList.map((tip) => tip.toString()).toList();
+
     return Meal(
       components: parsedComponents,
       suggestedRecipes: parsedRecipes,
+      mealTiming: json['meal_timing'] as String?,
+      personalizedTips: parsedTips.isNotEmpty ? parsedTips : null,
     );
   }
 }
 
+// Legacy classes for backward compatibility
 class FormulaOption {
   final String description;
   final IconData icon;

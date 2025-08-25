@@ -1,23 +1,21 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/historyScreen.dart';
 import 'package:Frutia/pages/screens/miplan/DescargarPDFDialog.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/services/profile_service.dart';
+import 'package:Frutia/services/plan_service.dart';
+import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-
-import 'package:Frutia/utils/colors.dart';
-import 'package:Frutia/services/plan_service.dart';
 import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfessionalMiPlanDiarioScreen extends StatefulWidget {
@@ -35,16 +33,13 @@ class _ProfessionalMiPlanDiarioScreenState
   bool _isLoading = true;
   String? _errorMessage;
   String? _userName;
-
   Map<String, dynamic>? _userProfile;
   final ProfileService _profileService = ProfileService();
-
   final Map<String, Map<String, MealOption>> _dailySelections = {};
   int _totalCalories = 0;
   int _totalProtein = 0;
   int _totalCarbs = 0;
   int _totalFats = 0;
-
   final Set<String> _registeringMeals = {};
   final Set<String> _completedMeals = {};
 
@@ -53,64 +48,6 @@ class _ProfessionalMiPlanDiarioScreenState
     super.initState();
     _fetchPlanAndInitialState();
     _fetchUserName();
-  }
-
-  // Función _registerMeal completa y actualizada
-
-  Future<void> _registerMeal(
-      String mealTitle, List<MealOption> selections) async {
-    setState(() {
-      _registeringMeals.add(mealTitle);
-    });
-
-    try {
-      // 1. Guardamos la selección final en la memoria local del teléfono.
-      await _saveSelections();
-
-      // 2. Registramos la comida en el historial del servidor.
-      await _planService.logMeal(
-        date: DateTime.now(),
-        mealType: mealTitle,
-        selections: selections,
-      );
-
-      // 3. Actualizamos la UI para marcar la comida como completada.
-      setState(() {
-        _completedMeals.add(mealTitle);
-      });
-
-      // 4. Mostramos un mensaje de éxito.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$mealTitle registrado con éxito.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      // En caso de error, mostramos un mensaje.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al registrar: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      // 5. Dejamos de mostrar el indicador de carga en el botón.
-      setState(() {
-        _registeringMeals.remove(mealTitle);
-      });
-    }
-  }
-
-// En ProfessionalMiPlanDiarioScreen.dart
-
-  bool get _isUserPremium {
-    if (_userProfile == null) return false;
-
-    // Ahora _userProfile contiene el objeto 'user', por lo que podemos buscar el status directamente.
-    final status = _userProfile?['subscription_status']?.toLowerCase();
-
-    return status == 'active' || status == 'premium';
   }
 
   Future<void> _fetchUserName() async {
@@ -132,6 +69,67 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
+  Future<void> _registerMeal(
+      String mealTitle, List<MealOption> selections) async {
+    setState(() {
+      _registeringMeals.add(mealTitle);
+    });
+
+    try {
+      await _saveSelections();
+      await _planService.logMeal(
+        date: DateTime.now(),
+        mealType: mealTitle,
+        selections: selections,
+      );
+      setState(() {
+        _completedMeals.add(mealTitle);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$mealTitle registrado con éxito.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al registrar: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _registeringMeals.remove(mealTitle);
+      });
+    }
+  }
+
+  bool get _isUserPremium {
+    if (_userProfile == null) return false;
+    final status = _userProfile?['subscription_status']?.toLowerCase();
+    return status == 'active' || status == 'premium';
+  }
+
+  Future<void> _fetchUserNews() async {
+    try {
+      final name = await _planService.getUserName();
+      if (mounted) {
+        setState(() {
+          _userName = name;
+        });
+      }
+      debugPrint('User name loaded: $name');
+    } catch (e) {
+      debugPrint('Error fetching user name: $e');
+      if (mounted) {
+        setState(() {
+          _userName = 'Usuario';
+        });
+      }
+    }
+  }
+
   Future<void> _fetchPlanAndInitialState() async {
     if (mounted) setState(() => _isLoading = true);
 
@@ -145,8 +143,6 @@ class _ProfessionalMiPlanDiarioScreenState
       final plan = results[0] as MealPlanData?;
       final history = results[1] as List<MealLog>;
       final profile = results[2] as Map<String, dynamic>?;
-
-      print("DEBUG: Datos recibidos del ProfileService: $profile");
 
       if (plan == null) {
         if (mounted) {
@@ -206,11 +202,8 @@ class _ProfessionalMiPlanDiarioScreenState
           _dailySelections[meal] = loadedSelections;
         }
       });
-      print("Selecciones locales cargadas!");
     }
   }
-
-  // CÓDIGO NUEVO ✅
 
   void _updateSelection(
       String mealTitle, String categoryTitle, MealOption option) {
@@ -219,7 +212,6 @@ class _ProfessionalMiPlanDiarioScreenState
     setState(() {
       _dailySelections[mealTitle]![categoryTitle] = option;
       _calculateTotals();
-      // _saveSelections(); // Eliminamos la llamada al guardado automático
     });
   }
 
@@ -271,8 +263,6 @@ class _ProfessionalMiPlanDiarioScreenState
       final pdf = pw.Document();
       final plan = _mealPlanData!.nutritionPlan;
       final profile = _userProfile!;
-
-      // Cargar la imagen del logo
       final ByteData imageData =
           await rootBundle.load('assets/images/fondoAppFrutia.webp');
       final Uint8List imageBytes = imageData.buffer.asUint8List();
@@ -293,26 +283,22 @@ class _ProfessionalMiPlanDiarioScreenState
         'Si sabes que tendrás un día complicado, adelanta tus comidas o llévalas contigo. ¡Planifica con tiempo para no romper tu ritmo!',
       ];
 
-      // Combinar las recomendaciones y recordatorios existentes con los nuevos
       final allGeneralRecommendations = [
         ...plan.generalRecommendations,
-        ...additionalRecommendations,
+        ...additionalRecommendations
       ];
       final allRememberRecommendations = [
         ...plan.rememberRecommendations,
-        ...additionalReminders,
+        ...additionalReminders
       ];
 
-      // Cargar las fuentes desde los assets
       final font =
           pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Regular.ttf"));
       final boldFont =
           pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Bold.ttf"));
-
       final pw.ThemeData theme =
           pw.ThemeData.withFont(base: font, bold: boldFont);
 
-      // PÁGINA 1: PLAN DE COMIDAS
       pdf.addPage(
         pw.MultiPage(
           theme: theme,
@@ -321,13 +307,10 @@ class _ProfessionalMiPlanDiarioScreenState
           header: (context) =>
               _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
           build: (pw.Context context) => [
-            _buildProfileInfo(
-                profile['profile']), // <-- ¡Ese es todo el cambio!
-
+            _buildProfileInfo(profile['profile']),
             pw.SizedBox(height: 20),
             _buildMacrosInfo(plan.targetMacros),
             pw.SizedBox(height: 20),
-
             if (plan.recommendation.isNotEmpty) ...[
               pw.Container(
                   padding: const pw.EdgeInsets.all(12),
@@ -344,11 +327,9 @@ class _ProfessionalMiPlanDiarioScreenState
                             style:
                                 pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                         pw.SizedBox(height: 5),
-                        pw.Text(
-                          plan.recommendation,
-                          style: pw.TextStyle(
-                              color: PdfColors.grey800, lineSpacing: 2),
-                        ),
+                        pw.Text(plan.recommendation,
+                            style: pw.TextStyle(
+                                color: PdfColors.grey800, lineSpacing: 2)),
                       ])),
               pw.SizedBox(height: 20),
             ],
@@ -361,23 +342,17 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               child: pw.Text(
                 'Instrucción Importante: De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.',
-                style: pw.TextStyle(
-                  color: PdfColors.grey800,
-                  fontSize: 17, // Aumenta el tamaño aquí (ej. 16, 18, 20...)
-                ),
+                style: pw.TextStyle(color: PdfColors.grey800, fontSize: 17),
                 textAlign: pw.TextAlign.center,
               ),
             ),
             pw.SizedBox(height: 15),
-
-            ...plan.meals.entries.map((mealEntry) {
-              return _buildMealPdfSection(mealEntry.key, mealEntry.value);
-            }),
+            ...plan.meals.entries.map((mealEntry) =>
+                _buildMealPdfSection(mealEntry.key, mealEntry.value)),
           ],
         ),
       );
 
-      // PÁGINA 2: RECOMENDACIONES
       pdf.addPage(pw.MultiPage(
           theme: theme,
           pageFormat: PdfPageFormat.a4,
@@ -411,19 +386,13 @@ class _ProfessionalMiPlanDiarioScreenState
         alignment: pw.Alignment.center,
         margin: const pw.EdgeInsets.only(bottom: 20.0),
         child: pw.Column(children: [
-          // Imagen del logo
-
           pw.Text('Frutia',
               style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 24,
                   color: PdfColors.red)),
-          pw.Image(
-            pw.MemoryImage(imageBytes),
-            height: 60,
-          ),
-
-          pw.Text('Plan de Alimentación Personalizado para $_userName',
+          pw.Image(pw.MemoryImage(imageBytes), height: 60),
+          pw.Text('Plan de Alimentación Personalizado para $userName',
               style: pw.TextStyle(fontSize: 18)),
           pw.Divider(color: PdfColors.grey400),
         ]));
@@ -450,26 +419,14 @@ class _ProfessionalMiPlanDiarioScreenState
         ]);
   }
 
-  // En el archivo ProfessionalMiPlanDiarioScreen.dart
-
   pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
-    // ▼▼▼ INICIO DE LA CORRECCIÓN ▼▼▼
-
-    // 1. Creamos la cabecera de nuestra nueva tabla de 3 columnas
     final List<List<String>> tableData = [
       <String>['Componente', 'Opción de Alimento', 'Porción Sugerida'],
     ];
 
-    // 2. Recorremos cada categoría y cada opción para crear una fila para cada alimento
     for (var category in meal.components) {
       for (var option in category.options) {
-        tableData.add([
-          category
-              .title, // Columna 1: El título del componente (ej: "Proteínas")
-          option
-              .name, // Columna 2: El nombre del alimento (ej: "Tortilla de Claras")
-          option.portion, // Columna 3: La porción (ej: "4 claras")
-        ]);
+        tableData.add([category.title, option.name, option.portion]);
       }
     }
 
@@ -483,8 +440,6 @@ class _ProfessionalMiPlanDiarioScreenState
           cellAlignment: pw.Alignment.centerLeft,
           cellPadding: const pw.EdgeInsets.all(5),
           headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-
-          // 3. Usamos los nuevos datos y ajustamos el ancho de las columnas
           data: tableData,
           columnWidths: {
             0: const pw.FlexColumnWidth(2),
@@ -492,10 +447,23 @@ class _ProfessionalMiPlanDiarioScreenState
             2: const pw.FlexColumnWidth(2),
           },
         ),
+        if (meal.suggestedRecipes.isNotEmpty) ...[
+          pw.SizedBox(height: 10),
+          pw.Text('Recetas Sugeridas:',
+              style:
+                  pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+          pw.SizedBox(height: 5),
+          ...meal.suggestedRecipes.take(2).map((recipe) => pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 10, bottom: 3),
+                child: pw.Text(
+                    '• ${recipe.title} (${recipe.readyInMinutes} min)',
+                    style:
+                        pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+              )),
+        ],
         pw.SizedBox(height: 20),
       ],
     );
-    // ▲▲▲ FIN DE LA CORRECCIÓN ▲▲▲
   }
 
   pw.Widget _buildRecommendationsSection(String title, List<String> items) {
@@ -525,10 +493,7 @@ class _ProfessionalMiPlanDiarioScreenState
         title: Text(
           'Mi Plan de Hoy',
           style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Colors.white,
-          ),
+              fontWeight: FontWeight.w700, fontSize: 24, color: Colors.white),
         ),
         centerTitle: true,
         elevation: 4,
@@ -536,6 +501,74 @@ class _ProfessionalMiPlanDiarioScreenState
       ),
       body: _buildBody(),
     );
+  }
+
+  Widget _buildUserInfoHeader() {
+    final plan = _mealPlanData!.nutritionPlan;
+    if (plan.anthropometricSummary == null) return const SizedBox.shrink();
+
+    final anthro = plan.anthropometricSummary!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            FrutiaColors.accent.withOpacity(0.1),
+            FrutiaColors.accent2.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FrutiaColors.accent.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: FrutiaColors.accent.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person_outline,
+                  color: FrutiaColors.accent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hola, ${anthro.clientName}! 👋",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: FrutiaColors.primaryText,
+                      ),
+                    ),
+                    Text(
+                      "${anthro.age} años • BMI: ${anthro.bmi.toStringAsFixed(1)} • ${anthro.weightStatus}",
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: FrutiaColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 500.ms);
   }
 
   Widget _buildBody() {
@@ -548,11 +581,9 @@ class _ProfessionalMiPlanDiarioScreenState
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.red, fontSize: 16),
-          ),
+          child: Text(_errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red, fontSize: 16)),
         ),
       );
     }
@@ -579,16 +610,12 @@ class _ProfessionalMiPlanDiarioScreenState
             fats: _totalFats,
             targetFats: plan.targetMacros.fats,
             onDownloadPDF: _generateAndDownloadPDF,
-            isPremium: _isUserPremium, // <-- ASEGÚRATE DE QUE ESTA LÍNEA EXISTA
+            isPremium: _isUserPremium,
           ).animate().fadeIn(duration: 500.ms),
           const SizedBox(height: 24),
-
-          // ▼▼▼ INICIO DE LA CORRECCIÓN PRINCIPAL ▼▼▼
-          // Dentro de tu método _buildBody en ProfessionalMiPlanDiarioScreen
-
           ...plan.meals.entries.map((entry) {
             final mealTitle = entry.key;
-            final meal = entry.value; // 'meal' es ahora un objeto Meal
+            final meal = entry.value;
             final icon = _getIconForMeal(mealTitle);
             final delay =
                 (plan.meals.keys.toList().indexOf(mealTitle) * 200).ms;
@@ -598,9 +625,8 @@ class _ProfessionalMiPlanDiarioScreenState
               child: _MealCard(
                 title: mealTitle,
                 icon: icon,
-                categories: meal.components, // Pasamos los componentes
-                suggestedRecipes: meal
-                    .suggestedRecipes, // <-- ASÍ QUEDA LA LLAMADA CORRECTA (en plural)
+                categories: meal.components,
+                suggestedRecipes: meal.suggestedRecipes,
                 selections: _dailySelections[mealTitle]!,
                 onOptionSelected: (category, option) =>
                     _updateSelection(mealTitle, category, option),
@@ -645,7 +671,7 @@ class _MetricsDashboard extends StatelessWidget {
       fats,
       targetFats;
   final VoidCallback onDownloadPDF;
-  final bool isPremium; // <-- 1. DECLARA LA VARIABLE AQUÍ
+  final bool isPremium;
 
   const _MetricsDashboard({
     required this.calories,
@@ -657,7 +683,7 @@ class _MetricsDashboard extends StatelessWidget {
     required this.fats,
     required this.targetFats,
     required this.onDownloadPDF,
-    required this.isPremium, // <-- 2. AÑÁDELA AL CONSTRUCTOR AQUÍ
+    required this.isPremium,
   });
 
   @override
@@ -671,10 +697,9 @@ class _MetricsDashboard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -682,10 +707,9 @@ class _MetricsDashboard extends StatelessWidget {
             Text(
               "Resumen de tu Día",
               style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: FrutiaColors.primaryText,
-              ),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.primaryText),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -720,26 +744,22 @@ class _MetricsDashboard extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const HistoryScreen()),
-                );
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const HistoryScreen()));
               },
               icon: const Icon(Icons.history, color: FrutiaColors.accent),
               label: Text(
                 'Ver Historial',
                 style: GoogleFonts.poppins(
-                  color: FrutiaColors.accent,
-                  fontWeight: FontWeight.bold,
-                ),
+                    color: FrutiaColors.accent, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: FrutiaColors.accent,
                 side: const BorderSide(color: FrutiaColors.accent, width: 1.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),
@@ -749,34 +769,23 @@ class _MetricsDashboard extends StatelessWidget {
                 if (isPremium) {
                   onDownloadPDF();
                 } else {
-                  // ▼▼▼ MUESTRA TU NUEVO DIÁLOGO AQUÍ ▼▼▼
                   showDialog(
-                    context: context,
-                    builder: (context) => const PremiumFeatureDialog(),
-                  );
+                      context: context,
+                      builder: (context) => const PremiumFeatureDialog());
                 }
               },
-              icon: Icon(
-                isPremium
-                    ? Icons.download
-                    : Icons.lock, // Cambia el ícono a un candado
-                color: Colors.white,
-              ),
+              icon: Icon(isPremium ? Icons.download : Icons.lock,
+                  color: Colors.white),
               label: Text(
                 'Descargar PDF',
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                    color: Colors.white, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isPremium
-                    ? FrutiaColors.accent
-                    : Colors.grey, // Cambia el color a gris
+                backgroundColor: isPremium ? FrutiaColors.accent : Colors.grey,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
                 minimumSize: const Size(double.infinity, 40),
               ),
             ),
@@ -807,26 +816,20 @@ class _MacroStatCard extends StatelessWidget {
     return Column(
       children: [
         CircleAvatar(
-          radius: 40,
-          backgroundColor: color.withOpacity(0.1),
-          child: Icon(icon, color: color, size: 32),
-        ),
+            radius: 40,
+            backgroundColor: color.withOpacity(0.1),
+            child: Icon(icon, color: color, size: 32)),
         const SizedBox(height: 8),
         Text(
           '${value}g / ${target}g',
           style: GoogleFonts.lato(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: FrutiaColors.primaryText,
-          ),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: FrutiaColors.primaryText),
         ),
-        Text(
-          label,
-          style: GoogleFonts.lato(
-            fontSize: 12,
-            color: FrutiaColors.secondaryText,
-          ),
-        ),
+        Text(label,
+            style: GoogleFonts.lato(
+                fontSize: 12, color: FrutiaColors.secondaryText)),
         const SizedBox(height: 4),
         SizedBox(
           width: 70,
@@ -839,195 +842,6 @@ class _MacroStatCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _MealCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final List<MealCategory> categories;
-  // CAMBIO: Ahora recibe una LISTA de recetas
-  final List<InspirationRecipe> suggestedRecipes;
-  final Map<String, MealOption> selections;
-  final Function(String, MealOption) onOptionSelected;
-  final bool isRegistering;
-  final bool isCompleted;
-  final VoidCallback onRegister;
-
-  const _MealCard({
-    required this.title,
-    required this.icon,
-    required this.categories,
-    required this.suggestedRecipes, // Constructor actualizado
-    required this.selections,
-    required this.onOptionSelected,
-    required this.isRegistering,
-    required this.isCompleted,
-    required this.onRegister,
-  });
-
-  int get _totalCalories =>
-      selections.values.fold(0, (sum, item) => sum + item.calories);
-  bool get _isSelectionComplete => selections.length == categories.length;
-
-  @override
-  Widget build(BuildContext context) {
-    final cardColor = isCompleted
-        ? Colors.green.withOpacity(0.05)
-        : FrutiaColors.secondaryBackground;
-    final borderColor = isCompleted
-        ? Colors.green.withOpacity(0.3)
-        : Colors.black.withOpacity(0.1);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: borderColor,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Icon(icon, color: FrutiaColors.accent, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: FrutiaColors.primaryText,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '~$_totalCalories kcal',
-                  style: GoogleFonts.lato(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: FrutiaColors.accent,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(indent: 16, endIndent: 16),
-          if (!isCompleted)
-            ...categories.map((category) => _MealCategorySection(
-                  category: category,
-                  groupValue: selections[category.title],
-                  onChanged: (option) =>
-                      onOptionSelected(category.title, option),
-                )),
-          if (suggestedRecipes.isNotEmpty && !isCompleted)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Recetas Sugeridas",
-                    style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  // Creamos un botón por cada receta en la lista
-                  ...suggestedRecipes
-                      .map((recipe) => Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.menu_book_outlined,
-                                  size: 18),
-                              label: Text(recipe.title,
-                                  overflow: TextOverflow.ellipsis, maxLines: 1),
-                              style: OutlinedButton.styleFrom(
-                                  foregroundColor: FrutiaColors.accent,
-                                  side: const BorderSide(
-                                      color: FrutiaColors.accent),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  minimumSize: const Size(double.infinity, 45)),
-                              onPressed: () {
-                                // Navega a la pantalla de detalle que ya tienes
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        RecipeDetailScreen(recipe: recipe),
-                                  ),
-                                );
-                              },
-                            ),
-                          ))
-                      .toList(),
-                ],
-              ),
-            ),
-          if (title != 'Shake' && !isCompleted) _FreeSaladInfo(),
-          if (isCompleted)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 28),
-                  const SizedBox(width: 12),
-                  Text(
-                    '$title Registrado, \nregresa mañana.',
-                    style: GoogleFonts.poppins(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else if (_isSelectionComplete)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton.icon(
-                onPressed: isRegistering ? null : onRegister,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FrutiaColors.accent,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: isRegistering
-                    ? Container(
-                        width: 24,
-                        height: 24,
-                        padding: const EdgeInsets.all(2.0),
-                        child: const CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
-                    : const Icon(Icons.check_circle, color: Colors.white),
-                label: Text(
-                  isRegistering ? 'Registrando...' : 'Registrar $title',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }
@@ -1053,10 +867,9 @@ class _MealCategorySection extends StatelessWidget {
           Text(
             category.title,
             style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: FrutiaColors.primaryText,
-            ),
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: FrutiaColors.primaryText),
           ),
           const SizedBox(height: 12),
           ...category.options.map((option) => _MealOptionTile(
@@ -1069,8 +882,6 @@ class _MealCategorySection extends StatelessWidget {
     );
   }
 }
-
-// En tu archivo ProfessionalMiPlanDiarioScreen.dart, reemplaza este widget
 
 class _MealOptionTile extends StatelessWidget {
   final MealOption option;
@@ -1097,7 +908,7 @@ class _MealOptionTile extends StatelessWidget {
                 ? LinearGradient(
                     colors: [
                       FrutiaColors.accent.withOpacity(0.1),
-                      FrutiaColors.accent2.withOpacity(0.1),
+                      FrutiaColors.accent2.withOpacity(0.1)
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1120,10 +931,9 @@ class _MealOptionTile extends StatelessWidget {
                       TextSpan(
                         text: option.name,
                         style: GoogleFonts.lato(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: FrutiaColors.primaryText,
-                        ),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: FrutiaColors.primaryText),
                         children: [
                           TextSpan(
                             text: ' ${option.portion}',
@@ -1138,9 +948,8 @@ class _MealOptionTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 6, // Espacio horizontal entre píldoras
-                      runSpacing:
-                          4, // Espacio vertical si se van a una nueva línea
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
                         _StatPill(
                             label: '~${option.calories} kcal',
@@ -1174,8 +983,6 @@ class _MealOptionTile extends StatelessWidget {
   }
 }
 
-// Añade esta clase al final de tu archivo .dart
-
 class _StatPill extends StatelessWidget {
   final String label;
   final Color color;
@@ -1187,16 +994,14 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12)),
       child: Text(
         label,
         style: GoogleFonts.lato(
-          color: color.withOpacity(0.9),
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
+            color: color.withOpacity(0.9),
+            fontWeight: FontWeight.bold,
+            fontSize: 12),
       ),
     );
   }
@@ -1214,7 +1019,7 @@ class _FreeSaladInfo extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               FrutiaColors.accent.withOpacity(0.1),
-              FrutiaColors.accent2.withOpacity(0.1),
+              FrutiaColors.accent2.withOpacity(0.1)
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -1228,13 +1033,327 @@ class _FreeSaladInfo extends StatelessWidget {
               child: Text(
                 'Acompañar con Ensalada LIBRE',
                 style: GoogleFonts.lato(
-                  fontWeight: FontWeight.w600,
-                  color: FrutiaColors.accent,
-                ),
+                    fontWeight: FontWeight.w600, color: FrutiaColors.accent),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MealCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final List<MealCategory> categories;
+  final List<InspirationRecipe> suggestedRecipes;
+  final Map<String, MealOption> selections;
+  final Function(String, MealOption) onOptionSelected;
+  final bool isRegistering;
+  final bool isCompleted;
+  final VoidCallback onRegister;
+
+  const _MealCard({
+    required this.title,
+    required this.icon,
+    required this.categories,
+    required this.suggestedRecipes,
+    required this.selections,
+    required this.onOptionSelected,
+    required this.isRegistering,
+    required this.isCompleted,
+    required this.onRegister,
+  });
+
+  int get _totalCalories =>
+      selections.values.fold(0, (sum, item) => sum + item.calories);
+  bool get _isSelectionComplete => selections.length == categories.length;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardColor = isCompleted
+        ? Colors.green.withOpacity(0.05)
+        : FrutiaColors.secondaryBackground;
+    final borderColor = isCompleted
+        ? Colors.green.withOpacity(0.3)
+        : Colors.black.withOpacity(0.1);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: borderColor, blurRadius: 8, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: FrutiaColors.accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: FrutiaColors.accent, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: FrutiaColors.primaryText,
+                        ),
+                      ),
+                      if (_totalCalories > 0)
+                        Text(
+                          'Seleccionado: ~$_totalCalories kcal',
+                          style: GoogleFonts.lato(
+                              fontSize: 12, color: FrutiaColors.secondaryText),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getProgressColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${selections.length}/${categories.length}',
+                    style: GoogleFonts.lato(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _getProgressColor()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!isCompleted) ...[
+            const Divider(indent: 16, endIndent: 16, height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Selecciona UNA opción de cada grupo para completar tu $title',
+                        style: GoogleFonts.lato(
+                            fontSize: 13,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ...categories.map((category) => _MealCategorySection(
+                  category: category,
+                  groupValue: selections[category.title],
+                  onChanged: (option) =>
+                      onOptionSelected(category.title, option),
+                )),
+            if (title != 'Shake') _FreeSaladInfo(),
+            if (suggestedRecipes.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.restaurant_menu,
+                            color: FrutiaColors.accent, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Ideas de Recetas para $title",
+                          style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: FrutiaColors.accent),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Usa los ingredientes de arriba para crear estas deliciosas recetas",
+                      style: GoogleFonts.lato(
+                          fontSize: 12,
+                          color: FrutiaColors.secondaryText,
+                          fontStyle: FontStyle.italic),
+                    ),
+                    const SizedBox(height: 12),
+                    ...suggestedRecipes.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final recipe = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: _RecipeCard(recipe: recipe, index: index + 1),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+          ],
+          if (isCompleted)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.check_circle,
+                        color: Colors.green, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$title Completado ✨',
+                        style: GoogleFonts.poppins(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
+                      ),
+                      Text(
+                        'Regresa mañana para un nuevo día',
+                        style: GoogleFonts.lato(
+                            color: Colors.green.shade600, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          else if (_isSelectionComplete)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: isRegistering ? null : onRegister,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: FrutiaColors.accent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 55),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                ),
+                icon: isRegistering
+                    ? Container(
+                        width: 20,
+                        height: 20,
+                        padding: const EdgeInsets.all(2.0),
+                        child: const CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle,
+                        color: Colors.white, size: 22),
+                label: Text(
+                  isRegistering
+                      ? 'Registrando $title...'
+                      : '¡Confirmar $title! ($_totalCalories kcal)',
+                  style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _getProgressColor() {
+    if (selections.length == 0) return Colors.grey;
+    if (selections.length < categories.length) return Colors.orange;
+    return Colors.green;
+  }
+}
+
+class _RecipeCard extends StatelessWidget {
+  final InspirationRecipe recipe;
+  final int index;
+
+  const _RecipeCard({required this.recipe, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: FrutiaColors.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FrutiaColors.accent.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: FrutiaColors.accent.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$index',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: FrutiaColors.accent,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  recipe.title,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: FrutiaColors.primaryText,
+                  ),
+                ),
+                Text(
+                  '${recipe.readyInMinutes} min',
+                  style: GoogleFonts.lato(
+                    fontSize: 12,
+                    color: FrutiaColors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

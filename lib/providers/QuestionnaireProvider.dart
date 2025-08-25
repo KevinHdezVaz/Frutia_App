@@ -9,8 +9,15 @@ class QuestionnaireProvider extends ChangeNotifier {
 
   // --- Pantalla 2: Tu Rutina ---
   List<String> sport = [];
-  String? trainingFrequency;
-  String? dailyActivityLevel;
+
+  // --- LÍNEAS ELIMINADAS ---
+  // String? trainingFrequency;
+  // String? dailyActivityLevel;
+
+  // --- NUEVA LÍNEA ---
+  String? weeklyActivity; // <--- AQUÍ SE AGREGA LA NUEVA VARIABLE
+
+  // --- Moviendo estas variables a la sección de alimentación para mejor orden ---
   TimeOfDay? breakfastTime;
   TimeOfDay? lunchTime;
   TimeOfDay? dinnerTime;
@@ -27,9 +34,8 @@ class QuestionnaireProvider extends ChangeNotifier {
   // --- Pantalla 4: Tus Preferencias ---
   String? communicationTone;
   String? preferredName;
-  Set<String> dietDifficulties =
-      {}; // Nuevo: Dificultades en el plan alimenticio
-  Set<String> dietMotivations = {}; // Nuevo: Motivaciones para seguir el plan
+  Set<String> dietDifficulties = {};
+  Set<String> dietMotivations = {};
 
   // Método para actualizar y notificar
   void update(VoidCallback callback) {
@@ -43,8 +49,14 @@ class QuestionnaireProvider extends ChangeNotifier {
     medicalConditionDetails = '';
     mainGoal = null;
     sport = [];
-    trainingFrequency = null;
-    dailyActivityLevel = null;
+
+    // --- CAMBIO EN RESET ---
+    // Se eliminan las variables viejas
+    // trainingFrequency = null;
+    // dailyActivityLevel = null;
+    // Se añade la nueva variable a limpiar
+    weeklyActivity = null;
+
     breakfastTime = null;
     lunchTime = null;
     dinnerTime = null;
@@ -59,7 +71,7 @@ class QuestionnaireProvider extends ChangeNotifier {
     preferredName = null;
     dietDifficulties = {};
     dietMotivations = {};
-    notifyListeners(); // Important: Notify listeners after resetting
+    notifyListeners();
   }
 
   // Para debugging
@@ -70,7 +82,12 @@ class QuestionnaireProvider extends ChangeNotifier {
         'Condición Médica: $hasMedicalCondition, Detalles: $medicalConditionDetails');
     debugPrint('Objetivo Principal: $mainGoal');
     debugPrint('---');
-    debugPrint('Deporte: $sport, Frecuencia: $trainingFrequency');
+
+    // --- CAMBIO EN EL RESUMEN ---
+    debugPrint('Deporte: $sport');
+    debugPrint(
+        'Actividad Semanal: $weeklyActivity'); // Se muestra la nueva variable
+
     debugPrint('Horarios: D: $breakfastTime, A: $lunchTime, C: $dinnerTime');
     debugPrint('Come fuera: $eatsOut');
     debugPrint('---');
@@ -80,8 +97,8 @@ class QuestionnaireProvider extends ChangeNotifier {
     debugPrint('Comidas al día: $mealCount');
     debugPrint('---');
     debugPrint('Tono: $communicationTone, Nombre preferido: $preferredName');
-    debugPrint('Dificultades: $dietDifficulties'); // Nuevo
-    debugPrint('Motivaciones: $dietMotivations'); // Nuevo
+    debugPrint('Dificultades: $dietDifficulties');
+    debugPrint('Motivaciones: $dietMotivations');
     debugPrint('------------------------------------------');
   }
 }

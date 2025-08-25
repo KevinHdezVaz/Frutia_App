@@ -97,23 +97,24 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           '🥗 Comer más saludable': 'Comer más saludable',
           '📈 Mejorar rendimiento': 'Mejorar rendimiento',
         };
-        final Map<String, String> activityLevelMap = {
-          'Sedentario (casi todo el día sentado - oficina)':
-              'Sedentario (casi todo el día sentado - oficina)',
-          'Moderado (caminas o haces tareas del hogar)':
-              'Moderado (caminas o haces tareas del hogar)',
-          'Muy activo (te mueves todo el día por trabajo)':
-              'Muy activo (te mueves todo el dia por trabajo)',
+
+        final Map<String, String> weeklyActivityMap = {
+          'No me muevo y no entreno (Ej: oficina + sofá)':
+              'No me muevo y no entreno',
+          'Oficina + entreno 1-2 veces (Ej: gym lunes y jueves)':
+              'Oficina + entreno 1-2 veces',
+          'Oficina + entreno 3-4 veces (Ej: gym lunes a jueves)':
+              'Oficina + entreno 3-4 veces',
+          'Oficina + entreno 5-6 veces (Ej: gym casi todos los días)':
+              'Oficina + entreno 5-6 veces',
+          'Trabajo activo + entreno 1-2 veces (Ej: mozo + gym 2 días)':
+              'Trabajo activo + entreno 1-2 veces',
+          'Trabajo activo + entreno 3-4 veces (Ej: mozo + gym 4 días)':
+              'Trabajo activo + entreno 3-4 veces',
+          'Trabajo muy físico + entreno 5-6 veces (Ej: construcción + gym diario)':
+              'Trabajo muy físico + entreno 5-6 veces',
         };
-        final Map<String, String> trainingFrequencyMap = {
-          'No entreno 🚶': 'No entreno',
-          '1-2 días/semana (ocasional)🏋️': '1-2 días/semana (ocasional)',
-          '3–4 veces por semana (regular) 💪': '3-4 veces por semana (regular)',
-          '5–6 veces por semana (frecuente) �':
-              '5–6 veces por semana (frecuente)',
-          'Todos los días (alta frecuencia) 🏃‍♂️':
-              'Todos los días (alta frecuencia)',
-        };
+
         final Map<String, String> mealCountMap = {
           '🥐 3 comidas principales (Desayuno, almuerzo y cena)':
               '3 comidas principales (Desayuno, almuerzo y cena)',
@@ -131,7 +132,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
 
         final Map<String, String> budgetMap = {
           '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)':
-              'Bajo - Solo lo básico (Ej: arroz, huevo, lentejas',
+              'Bajo - Solo lo básico (Ej: arroz , huevo, lentejas',
           '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)':
               'Alto - Sin restricciones (Ej: salmón, proteína, superfoods)',
         };
@@ -186,8 +187,10 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           provider.name = profile['name'] ?? '';
           provider.mainGoal =
               findUiKeyByCleanedDbValue(profile['goal'], goalMap);
-          provider.dailyActivityLevel = findUiKeyByCleanedDbValue(
-              profile['activity_level'], activityLevelMap);
+          provider.weeklyActivity = findUiKeyByCleanedDbValue(
+              profile[
+                  'weekly_activity'], // Asegúrate que este sea el nombre del campo en tu DB
+              weeklyActivityMap);
           provider.dietStyle = findUiKeyByCleanedDbValue(
               profile['dietary_style'], dietaryStyleMap);
           provider.weeklyBudget =
@@ -204,8 +207,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
               profile['communication_style'], communicationStyleMap);
           provider.preferredName = profile['preferred_name'] ?? '';
           provider.sport = List<String>.from(profile['sport'] ?? []);
-          provider.trainingFrequency = findUiKeyByCleanedDbValue(
-              profile['training_frequency'], trainingFrequencyMap);
+          //  provider.trainingFrequency = findUiKeyByCleanedDbValue(profile['training_frequency'], trainingFrequencyMap);
           provider.mealCount =
               findUiKeyByCleanedDbValue(profile['meal_count'], mealCountMap);
           provider.breakfastTime = _parseTimeOfDay(profile['breakfast_time']);
@@ -296,12 +298,13 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
       case 2:
         if (provider.sport.isEmpty)
           errorMessages.add('Selecciona al menos un deporte.');
-        if (provider.trainingFrequency == null)
-          errorMessages.add('Selecciona tu frecuencia de entrenamiento.');
-        if (provider.dailyActivityLevel == null)
-          errorMessages.add('Selecciona tu nivel de actividad diaria.');
+        //  if (provider.trainingFrequency == null)
+        //   errorMessages.add('Selecciona tu frecuencia de entrenamiento.');
+        // if (provider.dailyActivityLevel == null)
+        // errorMessages.add('Selecciona tu nivel de actividad diaria.');
         isValid = errorMessages.isEmpty;
         break;
+
       case 3:
         if (provider.mealCount == null)
           errorMessages.add('Selecciona cuántas veces al día quieres comer.');
@@ -394,8 +397,12 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           'goal': questionnaireProvider.mainGoal != null
               ? removeEmojis(questionnaireProvider.mainGoal!)
               : null,
-          'activity_level': questionnaireProvider.dailyActivityLevel != null
-              ? removeEmojis(questionnaireProvider.dailyActivityLevel!)
+          // 'activity_level': questionnaireProvider.dailyActivityLevel != null
+          //    ? removeEmojis(questionnaireProvider.dailyActivityLevel!)
+          //   : null,
+
+          'weekly_activity': questionnaireProvider.weeklyActivity != null
+              ? removeEmojis(questionnaireProvider.weeklyActivity!)
               : null,
           'dietary_style': questionnaireProvider.dietStyle != null
               ? removeEmojis(questionnaireProvider.dietStyle!)
@@ -428,9 +435,9 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           'sport': questionnaireProvider.sport.isNotEmpty
               ? questionnaireProvider.sport
               : null,
-          'training_frequency': questionnaireProvider.trainingFrequency != null
-              ? removeEmojis(questionnaireProvider.trainingFrequency!)
-              : null,
+          //   'training_frequency': questionnaireProvider.trainingFrequency != null
+          //      ? removeEmojis(questionnaireProvider.trainingFrequency!)
+          //     : null,
           'meal_count': questionnaireProvider.mealCount != null
               ? removeEmojis(questionnaireProvider.mealCount!)
               : null,
@@ -447,7 +454,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
 
         await ProfileService().saveProfile(profileData);
 
-// 2. Guardamos el momento exacto en que pedimos el plan.
+        // 2. Guardamos el momento exacto en que pedimos el plan.
         //    Este timestamp se enviará al backend para saber si el plan es nuevo.
         final requestTime = DateTime.now();
         await PlanService().generatePlan();
@@ -794,8 +801,6 @@ class RoutineScreen extends StatefulWidget {
 }
 
 class _RoutineScreenState extends State<RoutineScreen> {
-  final Color titleColor = const Color.fromARGB(221, 205, 104, 104);
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
@@ -804,11 +809,15 @@ class _RoutineScreenState extends State<RoutineScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const QuestionnaireTitleARRIBA(title: 'Tu Rutina 🏃‍♂️'),
-          Text('¿Qué deporte practicas? (puedes seleccionar varios)🏀',
-              style: GoogleFonts.lato(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: titleColor)),
+          const SizedBox(height: 16),
+          Text(
+            '¿Qué deporte practicas? (puedes seleccionar varios) 🏀',
+            style: GoogleFonts.lato(
+              fontSize: 18,
+              fontWeight: FontWeight.w600, // Consistente con QuestionnaireTitle
+              color: FrutiaColors.primaryText, // Usar color del tema
+            ),
+          ),
           const SizedBox(height: 16),
           SportSelection(
             name: 'sport',
@@ -816,80 +825,89 @@ class _RoutineScreenState extends State<RoutineScreen> {
             onChanged: (List<String>? values) {
               provider.update(() => provider.sport = values ?? []);
             },
-          ),
-          const SizedBox(height: 40),
+          ).animate().fadeIn(duration: 300.ms),
+          const SizedBox(height: 24), // Consistente con otras pantallas
           const QuestionnaireTitle(
-              title:
-                  '¿Con qué frecuencia entrenas o haces ejercicio físico en una semana?',
-              isSub: true),
-          ..._buildChipOptions([
-            'No entreno 🚶',
-            '1-2 días/semana (ocasional)🏋️',
-            '3–4 veces por semana (regular) 💪',
-            '5–6 veces por semana (frecuente) 🔥',
-            'Todos los días (alta frecuencia) 🏃‍♂️'
-          ], provider.trainingFrequency,
-              (val) => provider.update(() => provider.trainingFrequency = val)),
-          const SizedBox(height: 40),
-          const QuestionnaireTitle(
-              title:
-                  '¿Cómo es tu nivel de actividad diaria (fuera del entrenamiento)?',
-              isSub: true),
-          ..._buildChipOptions(
-            [
-              'Sedentario (casi todo el día sentado - oficina)',
-              'Moderado (caminas o haces tareas del hogar)',
-              'Muy activo (te mueves todo el día por trabajo)',
-            ],
-            provider.dailyActivityLevel,
-            (val) => provider.update(() => provider.dailyActivityLevel = val),
+            title: '¿Cuál se parece más a tu semana?',
+            isSub: true,
           ),
-          const SizedBox(height: 24),
-        ],
+          const SizedBox(height: 12), // Consistente con otras pantallas
+          ..._buildWeeklyActivityOptions(provider),
+        ].animate(interval: 50.ms).fadeIn(duration: 300.ms),
       ),
     );
   }
 
-  List<Widget> _buildChipOptions(
+  List<Widget> _buildWeeklyActivityOptions(QuestionnaireProvider provider) {
+    const options = [
+      'No me muevo y no entreno (Ej: oficina + sofá)',
+      'Oficina + entreno 1-2 veces (Ej: gym lunes y jueves)',
+      'Oficina + entreno 3-4 veces (Ej: gym lunes a jueves)',
+      'Oficina + entreno 5-6 veces (Ej: gym casi todos los días)',
+      'Trabajo activo + entreno 1-2 veces (Ej: mozo + gym 2 días)',
+      'Trabajo activo + entreno 3-4 veces (Ej: mozo + gym 4 días)',
+      'Trabajo muy físico + entreno 5-6 veces (Ej: construcción + gym diario)',
+    ];
+    return options
+        .map((opt) => Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: SelectionCard(
+                title: opt,
+                value: opt,
+                groupValue: provider.weeklyActivity,
+                onTap: (val) => setState(
+                    () => provider.update(() => provider.weeklyActivity = val)),
+              ),
+            ))
+        .toList();
+  }
+
+  Widget _buildChipOptions(
       List<String> options, String? groupValue, Function(String) updateFn) {
-    return [
-      Wrap(
-        spacing: 8.0,
-        runSpacing: 4.0,
-        children: options.map((opt) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: GestureDetector(
-              onTap: () => setState(() => context
-                  .read<QuestionnaireProvider>()
-                  .update(() => updateFn(opt))),
-              child: Chip(
-                label: Text(
-                  opt,
-                  style: TextStyle(
-                    color: groupValue == opt
-                        ? Colors.white
-                        : FrutiaColors.primaryText,
-                    fontWeight: FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: Wrap(
+            alignment: WrapAlignment.start,
+            spacing: 8.0,
+            runSpacing: 12.0,
+            children: options.map((opt) {
+              return ChoiceChip(
+                label: Container(
+                  constraints: BoxConstraints(
+                    maxWidth:
+                        constraints.maxWidth * 0.9, // Limita el ancho máximo
                   ),
-                  softWrap: true,
-                  overflow: TextOverflow.visible,
+                  child: Text(
+                    opt,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    maxLines: 3, // Permite hasta 3 líneas de texto
+                    overflow: TextOverflow.ellipsis, // Maneja el desbordamiento
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: groupValue == opt
+                          ? Colors.white
+                          : FrutiaColors.primaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                backgroundColor:
-                    groupValue == opt ? FrutiaColors.accent : Colors.grey[200]!,
-                side: BorderSide(
-                  color: groupValue == opt
-                      ? FrutiaColors.accent
-                      : Colors.grey[300]!,
-                ),
+                selected: groupValue == opt,
+                onSelected: (isSelected) => isSelected ? updateFn(opt) : null,
+                backgroundColor: Colors.grey[200],
+                selectedColor: FrutiaColors.accent,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-            ),
-          );
-        }).toList(),
-      )
-    ];
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
   }
 }
 
