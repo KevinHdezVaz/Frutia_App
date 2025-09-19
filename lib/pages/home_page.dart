@@ -522,13 +522,7 @@ class _DashboardViewState extends State<_DashboardView> {
   final GlobalKey _weekCalendarKey =
       GlobalKey(debugLabel: 'homepageWeekCalendarShowcase');
   final GlobalKey _streakStatKey =
-      GlobalKey(debugLabel: 'homepageStreakStatShowcase');
-  final GlobalKey _weightStatKey =
-      GlobalKey(debugLabel: 'homepageWeightStatShowcase');
-  final GlobalKey _goalStatKey =
-      GlobalKey(debugLabel: 'homepageGoalStatShowcase');
-  final GlobalKey _createPlanCardKey =
-      GlobalKey(debugLabel: 'homepageCreatePlanCardShowcase');
+      GlobalKey(debugLabel: 'homepageStreakStatShowcase'); 
 
   @override
   void initState() {
@@ -561,10 +555,7 @@ class _DashboardViewState extends State<_DashboardView> {
       }
       keysToShow.add(_weekCalendarKey);
       keysToShow.add(_streakStatKey);
-      if (!hasPlan) {
-        keysToShow.add(_createPlanCardKey);
-      }
-
+      
       if (keysToShow.isNotEmpty &&
           mounted &&
           ShowCaseWidget.of(context).mounted) {
@@ -704,24 +695,7 @@ class _DashboardViewState extends State<_DashboardView> {
             child: hasPlan
                 ? PlanCarousel(recipes: suggestedRecipes) // <-- ¡Solucionado!
 
-                : Showcase(
-                    key: _createPlanCardKey,
-                    title: 'Crea tu plan de alimentación',
-                    description:
-                        'Toca aquí para iniciar tu viaje con un plan totalmente personalizado. ¡Es tu primer paso!',
-                    tooltipBackgroundColor: FrutiaColors.accent,
-                    targetShapeBorder: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12))),
-                    titleTextStyle: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
-                    descTextStyle:
-                        GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                    disableMovingAnimation: true,
-                    disableScaleAnimation: true,
-                    child: _buildCreatePlanCard(context),
-                  ),
+                : _buildCreatePlanCard(context),
           ),
           if (hasPlan) ...[
             const SizedBox(height: 30),
@@ -838,28 +812,11 @@ class _DashboardViewState extends State<_DashboardView> {
           Row(
             children: [
               Expanded(
-                child: Showcase(
-                  key: _streakStatKey,
-                  title: 'Tu racha actual',
-                  description:
-                      'Los días consecutivos que has completado tu plan.',
-                  tooltipBackgroundColor: FrutiaColors.accent,
-                  targetShapeBorder: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12))),
-                  titleTextStyle: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                  descTextStyle:
-                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
-                  disableMovingAnimation: true,
-                  disableScaleAnimation: true,
-                  child: _StatCard(
-                      icon: Icons.local_fire_department_rounded,
-                      value: '$streakDays días',
-                      label: 'Racha',
-                      color: Colors.orange),
-                ),
+                child: _StatCard(
+                    icon: Icons.local_fire_department_rounded,
+                    value: '$streakDays días',
+                    label: 'Racha',
+                    color: Colors.orange),
               ),
               const SizedBox(width: 12),
             ],

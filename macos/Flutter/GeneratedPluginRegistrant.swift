@@ -21,7 +21,7 @@ import share_plus
 import shared_preferences_foundation
 import smart_auth
 import speech_to_text
-import sqflite
+import sqflite_darwin
 import video_player_avfoundation
 import webview_flutter_wkwebview
 

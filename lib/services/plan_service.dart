@@ -59,6 +59,46 @@ class PlanService {
     }
   }
 
+
+  // En plan_service.dart, agregar:
+
+Future<Map<String, dynamic>> validateMealSelection({
+  required List<MealOption> selections,
+  required String mealType,
+  required TargetMacros targetMacros,
+}) async {
+  final token = await _storage.getToken();
+  if (token == null) throw AuthException('No autenticado.');
+
+  final url = Uri.parse('$baseUrl/meal-plans/validate-selection');
+  
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: json.encode({
+      'selections': selections.map((s) => s.toJson()).toList(),
+      'meal_type': mealType,
+      'target_macros': {
+        'protein': targetMacros.protein,
+        'carbs': targetMacros.carbs,
+        'fats': targetMacros.fats,
+        'calories': targetMacros.calories,
+      }
+    }),
+  );
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception('Error al validar selección');
+  }
+}
+
+
   Future<List<String>> getShoppingListIngredients() async {
     // Nuevo método
     final token = await _storage.getToken();

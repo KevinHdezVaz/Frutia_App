@@ -381,6 +381,9 @@ class MealOption {
   final int protein;
   final int carbs;
   final int fats;
+   final bool isHighBudget;  // AGREGAR
+  final bool isLowBudget;   // AGREGAR
+  final bool isEgg;         // AGREGAR
   final List<PriceInfo> prices;
   final String imageUrl;
   final List<String> ingredients;
@@ -392,6 +395,9 @@ class MealOption {
     required this.protein,
     required this.carbs,
     required this.fats,
+    required this.isHighBudget,
+    required this.isLowBudget,
+    required this.isEgg,
     required this.prices,
     required this.imageUrl,
     required this.ingredients,
@@ -404,12 +410,11 @@ class MealOption {
       portion: json['portion'] as String? ?? 'N/A',
       calories: (json['calories'] as num?)?.toInt() ?? 0,
       protein: (json['protein'] as num?)?.toInt() ?? 0,
-      carbs: (json['carbohydrates'] as num?)?.toInt() ??
-          (json['carbs'] as num?)?.toInt() ??
-          0,
-      fats: (json['fats'] as num?)?.toInt() ??
-          (json['fat'] as num?)?.toInt() ??
-          0,
+      carbs: (json['carbohydrates'] as num?)?.toInt() ??  (json['carbs'] as num?)?.toInt() ?? 0,
+      fats: (json['fats'] as num?)?.toInt() ?? (json['fat'] as num?)?.toInt() ??       0,
+        isHighBudget: json['isHighBudget'] ?? false,  // NUEVO
+      isLowBudget: json['isLowBudget'] ?? false,    // NUEVO
+      isEgg: json['isEgg'] ?? false,                // NUEVO
       prices: pricesList
           .map((p) => PriceInfo.fromJson(p as Map<String, dynamic>))
           .toList(),
@@ -419,6 +424,8 @@ class MealOption {
     );
   }
 
+ 
+  
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -539,12 +546,16 @@ class Meal {
   final List<InspirationRecipe> suggestedRecipes;
   final String? mealTiming;
   final List<String>? personalizedTips;
+    final TrialMessage? trialMessage; // NUEVO
+
 
   const Meal({
     required this.components,
     required this.suggestedRecipes,
     this.mealTiming,
     this.personalizedTips,
+        this.trialMessage, // NUEVO
+
   });
 
   factory Meal.fromJson(Map<String, dynamic> json) {
@@ -590,6 +601,29 @@ class Meal {
       suggestedRecipes: parsedRecipes,
       mealTiming: json['meal_timing'] as String?,
       personalizedTips: parsedTips.isNotEmpty ? parsedTips : null,
+        trialMessage: json['trial_message'] != null 
+          ? TrialMessage.fromJson(json['trial_message'])
+          : null, // NUEVO
+    );
+  }
+}
+
+class TrialMessage {
+  final String title;
+  final String message;
+  final String upgradeHint;
+
+  const TrialMessage({
+    required this.title,
+    required this.message,
+    required this.upgradeHint,
+  });
+
+  factory TrialMessage.fromJson(Map<String, dynamic> json) {
+    return TrialMessage(
+      title: json['title'] as String? ?? '',
+      message: json['message'] as String? ?? '',
+      upgradeHint: json['upgrade_hint'] as String? ?? '',
     );
   }
 }

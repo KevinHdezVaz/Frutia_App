@@ -97,7 +97,7 @@ class PlanGenerationDialog extends StatelessWidget {
 
                 // Mensaje de tiempo estimado
                 Text(
-                  'El proceso puede tomar 1-2 minutos aproximadamente.',
+                  'El proceso puede tomar 4-6 minutos aproximadamente.',
                   style: GoogleFonts.lato(
                     fontSize: 15,
                     height: 1.4,

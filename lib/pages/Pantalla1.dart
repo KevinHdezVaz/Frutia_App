@@ -40,6 +40,9 @@ class _ProfessionalMiPlanDiarioScreenState
   int _totalProtein = 0;
   int _totalCarbs = 0;
   int _totalFats = 0;
+   final Map<String, List<String>> _validationWarnings = {};
+  final Map<String, bool> _hasEggSelection = {};
+  String? _userBudget;
   final Set<String> _registeringMeals = {};
   final Set<String> _completedMeals = {};
 
@@ -48,6 +51,8 @@ class _ProfessionalMiPlanDiarioScreenState
     super.initState();
     _fetchPlanAndInitialState();
     _fetchUserName();
+        _extractUserBudget(); // NUEVO
+
   }
 
   Future<void> _fetchUserName() async {
@@ -68,6 +73,110 @@ class _ProfessionalMiPlanDiarioScreenState
       }
     }
   }
+
+  // NUEVO: Extraer el presupuesto del usuario
+  void _extractUserBudget() {
+    if (_userProfile != null) {
+      _userBudget = _userProfile!['budget']?.toString().toLowerCase();
+      debugPrint('Presupuesto del usuario: $_userBudget');
+    }
+  }
+
+
+
+// MODIFICAR: Actualizar método de selección con validación
+  void _updateSelection(String mealTitle, String categoryTitle, MealOption option) {
+    if (_completedMeals.contains(mealTitle)) return;
+
+    // Validar antes de actualizar
+    final warnings = _validateOption(mealTitle, categoryTitle, option);
+    
+    setState(() {
+      _dailySelections[mealTitle]![categoryTitle] = option;
+      _validationWarnings[mealTitle] = warnings;
+      
+      // Verificar si hay huevos en esta comida
+      if (option.isEgg) {
+        _hasEggSelection[mealTitle] = true;
+      }
+      
+      _calculateTotals();
+    });
+
+    // Mostrar warnings si existen
+    if (warnings.isNotEmpty) {
+      _showValidationWarning(warnings);
+    }
+  }
+
+
+
+  // NUEVO: Método de validación
+  List<String> _validateOption(String mealTitle, String categoryTitle, MealOption option) {
+    List<String> warnings = [];
+    
+    // 1. Validar presupuesto
+    if (_userBudget != null) {
+      bool isLowBudget = _userBudget!.contains('bajo');
+      
+      if (isLowBudget && option.isHighBudget) {
+        warnings.add('⚠️ "${option.name}" es de presupuesto alto, pero tu plan es económico');
+      } else if (!isLowBudget && option.isLowBudget) {
+        warnings.add('💡 Tienes presupuesto alto, podrías elegir opciones premium');
+      }
+    }
+    
+    // 2. Validar repetición de huevos
+    if (option.isEgg) {
+      // Verificar si ya hay huevos en otras comidas
+      int eggCount = 0;
+      _hasEggSelection.forEach((meal, hasEgg) {
+        if (meal != mealTitle && hasEgg) eggCount++;
+      });
+      
+      if (eggCount > 0) {
+        warnings.add('🥚 Ya seleccionaste huevos en otra comida. Máximo 1 vez al día');
+      }
+    }
+     
+    
+    return warnings;
+  }
+
+
+
+ 
+
+  // NUEVO: Obtener porcentaje de macros por comida
+  double _getMealPercentage(String mealTitle) {
+    switch (mealTitle.toLowerCase()) {
+      case 'desayuno': return 0.30;
+      case 'almuerzo': return 0.40;
+      case 'cena': return 0.30;
+      default: return 0.33;
+    }
+  }
+
+
+  void _showValidationWarning(List<String> warnings) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: warnings.map((w) => Text(w)).toList(),
+        ),
+        backgroundColor: Colors.orange.shade700,
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Entendido',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
 
   Future<void> _registerMeal(
       String mealTitle, List<MealOption> selections) async {
@@ -204,16 +313,7 @@ class _ProfessionalMiPlanDiarioScreenState
       });
     }
   }
-
-  void _updateSelection(
-      String mealTitle, String categoryTitle, MealOption option) {
-    if (_completedMeals.contains(mealTitle)) return;
-
-    setState(() {
-      _dailySelections[mealTitle]![categoryTitle] = option;
-      _calculateTotals();
-    });
-  }
+   
 
   Future<void> _saveSelections() async {
     final prefs = await SharedPreferences.getInstance();
@@ -269,7 +369,7 @@ class _ProfessionalMiPlanDiarioScreenState
 
       final List<String> additionalRecommendations = [
         'Proteínas: se pesan crudas. Si están cocidas, resta 20 g al peso indicado.',
-        'Carbohidratos: se pesan cocidos o como indica tu plan, la avena se pesa cruda.',
+        'Carbohidratos: se pesan crudos',
         'Vegetales: son libres, úsalos con variedad para sumar fibra.',
         'Agua: Consume entre 30 a 40 ml por cada kg de peso corporal al día.',
         'Usa balanza digital y cucharas medidoras para mayor precisión.',
@@ -887,15 +987,27 @@ class _MealOptionTile extends StatelessWidget {
   final MealOption option;
   final bool isSelected;
   final VoidCallback onTap;
+    final String? userBudget; // NUEVO
+
 
   const _MealOptionTile({
     required this.option,
     required this.isSelected,
     required this.onTap,
+        this.userBudget,
+
   });
 
   @override
   Widget build(BuildContext context) {
+
+      bool budgetMismatch = false;
+    if (userBudget != null) {
+      bool isLowBudget = userBudget!.contains('bajo');
+      budgetMismatch = (isLowBudget && option.isHighBudget) || 
+                      (!isLowBudget && option.isLowBudget);
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
       child: InkWell(
@@ -923,6 +1035,19 @@ class _MealOptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
+
+                if (option.isHighBudget)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.star, size: 16, color: Colors.amber),
+                ),
+              
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1052,6 +1177,8 @@ class _MealCard extends StatelessWidget {
   final Function(String, MealOption) onOptionSelected;
   final bool isRegistering;
   final bool isCompleted;
+    final List<String>? validationWarnings; // NUEVO
+
   final VoidCallback onRegister;
 
   const _MealCard({
@@ -1063,6 +1190,8 @@ class _MealCard extends StatelessWidget {
     required this.onOptionSelected,
     required this.isRegistering,
     required this.isCompleted,
+        this.validationWarnings,
+
     required this.onRegister,
   });
 
@@ -1083,11 +1212,20 @@ class _MealCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
+
+         border: validationWarnings != null && validationWarnings!.isNotEmpty
+            ? Border.all(color: Colors.orange, width: 2)
+            : null,
         boxShadow: [
           BoxShadow(
-              color: borderColor, blurRadius: 8, offset: const Offset(0, 4))
+            color: borderColor,
+            blurRadius: 8,
+            offset: const Offset(0, 4)
+          )
         ],
       ),
+
+      
       child: Column(
         children: [
           Padding(
@@ -1107,20 +1245,48 @@ class _MealCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                     
+                     if (validationWarnings != null && validationWarnings!.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, 
+                        color: Colors.orange, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        title,
+                        'Sugerencias',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: FrutiaColors.primaryText,
+                          color: Colors.orange.shade700,
                         ),
                       ),
-                      if (_totalCalories > 0)
-                        Text(
-                          'Seleccionado: ~$_totalCalories kcal',
-                          style: GoogleFonts.lato(
-                              fontSize: 12, color: FrutiaColors.secondaryText),
-                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ...validationWarnings!.map((warning) => Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      warning,
+                      style: GoogleFonts.lato(
+                        fontSize: 13,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  )),
+                ],
+              ),
+            ),
+            
                     ],
                   ),
                 ),

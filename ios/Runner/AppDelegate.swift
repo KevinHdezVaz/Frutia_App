@@ -1,7 +1,7 @@
 import UIKit
 import Flutter
 import AVFoundation
-import GoogleSignIn // <-- AÑADIDO: Importa el SDK de Google Sign-In
+import GoogleSignIn  
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {

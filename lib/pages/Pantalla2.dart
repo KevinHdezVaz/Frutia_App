@@ -1,3 +1,4 @@
+import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -42,33 +43,42 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
 
       List<InspirationRecipe> foundRecipes = [];
       List<String> mealNames = [];
+          bool hasTrialMessages = false; // NUEVO
 
-      if (planData?.nutritionPlan.meals != null) {
-        for (var entry in planData!.nutritionPlan.meals.entries) {
-          final String mealName = entry.key;
-          final Meal meal = entry.value;
 
-          mealNames.add(mealName);
+       if (planData?.nutritionPlan.meals != null) {
+      for (var entry in planData!.nutritionPlan.meals.entries) {
+        final String mealName = entry.key;
+        final Meal meal = entry.value;
 
-          if (meal.suggestedRecipes.isNotEmpty) {
-            for (var recipe in meal.suggestedRecipes) {
-              recipe.mealType = mealName;
-            }
-            foundRecipes.addAll(meal.suggestedRecipes);
+        mealNames.add(mealName);
+
+        // NUEVO: Verificar si hay mensajes de trial
+        if (meal.trialMessage != null) {
+          hasTrialMessages = true;
+        }
+
+        if (meal.suggestedRecipes.isNotEmpty) {
+          for (var recipe in meal.suggestedRecipes) {
+            recipe.mealType = mealName;
           }
+          foundRecipes.addAll(meal.suggestedRecipes);
         }
       }
+    }
 
-      setState(() {
-        _allRecipes = foundRecipes;
-        _filteredRecipes = _allRecipes;
-        _mealFilters = [
-          'Todos',
-          ...mealNames.toSet().toList()
-        ]; // Evita duplicados
-        _isLoading = false;
-      });
-    } catch (e) {
+    setState(() {
+      _allRecipes = foundRecipes;
+      _filteredRecipes = _allRecipes;
+      _mealFilters = ['Todos', ...mealNames.toSet().toList()];
+      _isLoading = false;
+      
+      // NUEVO: Si es usuario de prueba, mostrar mensaje
+      if (hasTrialMessages && foundRecipes.isEmpty) {
+        _showTrialUpgradeDialog();
+      }
+    });
+  } catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = "Error al cargar recetas: ${e.toString()}";
@@ -116,6 +126,74 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
       body: _buildBody(),
     );
   }
+
+void _showTrialUpgradeDialog() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.restaurant_menu, color: FrutiaColors.accent),
+            SizedBox(width: 8),
+            Text(
+              'Necesitas ser PREMIUM',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView( // ✅ Solución aquí
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Las recetas personalizadas están disponibles con la suscripción completa.',
+                style: GoogleFonts.lato(fontSize: 15),
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: FrutiaColors.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Activa tu suscripción para acceder a recetas paso a paso creadas específicamente para tu perfil.',
+                  style: GoogleFonts.lato(
+                    fontSize: 14,
+                    color: FrutiaColors.accent,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Más tarde'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PremiumScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FrutiaColors.accent,
+            ),
+            child: Text('Actualizar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   Widget _buildBody() {
     if (_isLoading) {
@@ -198,6 +276,64 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
   }
 }
 
+
+
+// NUEVO MÉTODO
+Widget _buildEmptyState(BuildContext context) {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.restaurant_menu_outlined,
+            size: 64,
+            color: FrutiaColors.secondaryText,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'No hay recetas disponibles',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: FrutiaColors.primaryText,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Las recetas personalizadas están disponibles con la suscripción completa.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.lato(
+              fontSize: 14,
+              color: FrutiaColors.secondaryText,
+            ),
+          ),
+          SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+ Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PremiumScreen()),
+              );            },
+            icon: Icon(Icons.upgrade, size: 20),
+            label: Text('Actualizar Plan'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FrutiaColors.accent,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
 class _InspiracionTab extends StatelessWidget {
   final List<InspirationRecipe> recipes;
   final TextEditingController searchController;
@@ -266,20 +402,11 @@ class _InspiracionTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        // --- WIDGET DE TÍTULO CON BORDE DEGRADADO ---
         const _GradientTitle(title: 'Tus recetas de hoy'),
         const SizedBox(height: 16),
         Expanded(
           child: recipes.isEmpty
-              ? Center(
-                  child: Text(
-                    'No se encontraron recetas con ese filtro.',
-                    style: GoogleFonts.lato(
-                      color: FrutiaColors.secondaryText,
-                      fontSize: 16,
-                    ),
-                  ),
-                )
+              ? _buildEmptyState(context)
               : GridView.builder(
                   padding: const EdgeInsets.all(16.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -297,7 +424,61 @@ class _InspiracionTab extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.restaurant_menu_outlined,
+              size: 64,
+              color: FrutiaColors.secondaryText,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No hay recetas disponibles',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: FrutiaColors.primaryText,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Las recetas personalizadas están disponibles con la suscripción completa.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lato(
+                fontSize: 14,
+                color: FrutiaColors.secondaryText,
+              ),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                // TODO: Navegar a pantalla de suscripción
+                print('Navegar a suscripción');
+              },
+              icon: Icon(Icons.upgrade, size: 20),
+              label: Text('Actualizar Plan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FrutiaColors.accent,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
 
 // --- WIDGET NUEVO PARA EL PLACEHOLDER ---
 class _GeneratingImagePlaceholder extends StatelessWidget {

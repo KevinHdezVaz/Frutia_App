@@ -1,4 +1,5 @@
 import 'package:Frutia/pages/Pantalla2.dart';
+import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -11,32 +12,110 @@ class PlanCarousel extends StatelessWidget {
   const PlanCarousel({Key? key, required this.recipes}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    if (recipes.isEmpty) {
-      return const SizedBox(
-        height: 220,
-        child: Center(
-          child: Text(
-            "No hay recetas de inspiración en tu plan.",
-            style: TextStyle(fontSize: 16, color: FrutiaColors.secondaryText),
+Widget build(BuildContext context) {
+  if (recipes.isEmpty) {
+    return _buildTrialEmptyState(context);
+  }
+
+  return SizedBox(
+    height: 220,
+    child: PageView.builder(
+      controller: PageController(viewportFraction: 0.85),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) {
+        final recipe = recipes[index];
+        return _PlanCarouselCard(recipe: recipe, index: index);
+      },
+    ),
+  );
+}
+}
+
+Widget _buildTrialEmptyState(BuildContext context) {
+  return Container(
+    height: 250,
+    margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+    child: Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      shadowColor: Colors.black.withOpacity(0.2),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              FrutiaColors.accent.withOpacity(0.8),
+              FrutiaColors.accent2.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-      );
-    }
-
-    return SizedBox(
-      height: 220,
-      child: PageView.builder(
-        controller: PageController(viewportFraction: 0.85),
-        itemCount: recipes.length,
-        itemBuilder: (context, index) {
-          final recipe = recipes[index];
-          return _PlanCarouselCard(recipe: recipe, index: index);
-        },
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: SingleChildScrollView( // 👈 SOLUCIÓN
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.restaurant_menu_outlined,
+                  size: 48,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Recetas Personalizadas',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Activa tu suscripción para acceder a recetas para tu perfil',
+                  style: GoogleFonts.lato(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PremiumScreen()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: FrutiaColors.accent,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Text(
+                    'Actualizar Plan',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-    );
-  }
+    ),
+  );
 }
+
+
 
 class _PlanCarouselCard extends StatelessWidget {
   final InspirationRecipe recipe;

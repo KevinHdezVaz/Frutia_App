@@ -29,8 +29,7 @@ class QuestionnaireProvider extends ChangeNotifier {
   String allergyDetails = '';
   String? dietStyle;
   String? weeklyBudget;
-  String? mealCount;
-
+ 
   // --- Pantalla 4: Tus Preferencias ---
   String? communicationTone;
   String? preferredName;
@@ -66,8 +65,7 @@ class QuestionnaireProvider extends ChangeNotifier {
     allergyDetails = '';
     dietStyle = null;
     weeklyBudget = null;
-    mealCount = null;
-    communicationTone = null;
+     communicationTone = null;
     preferredName = null;
     dietDifficulties = {};
     dietMotivations = {};
@@ -94,8 +92,7 @@ class QuestionnaireProvider extends ChangeNotifier {
     debugPrint('No le gusta: $dislikedFoods');
     debugPrint('Alergias: $hasAllergies, Detalles: $allergyDetails');
     debugPrint('Estilo Dieta: $dietStyle, Presupuesto: $weeklyBudget');
-    debugPrint('Comidas al día: $mealCount');
-    debugPrint('---');
+     debugPrint('---');
     debugPrint('Tono: $communicationTone, Nombre preferido: $preferredName');
     debugPrint('Dificultades: $dietDifficulties');
     debugPrint('Motivaciones: $dietMotivations');

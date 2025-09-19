@@ -208,9 +208,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           provider.preferredName = profile['preferred_name'] ?? '';
           provider.sport = List<String>.from(profile['sport'] ?? []);
           //  provider.trainingFrequency = findUiKeyByCleanedDbValue(profile['training_frequency'], trainingFrequencyMap);
-          provider.mealCount =
-              findUiKeyByCleanedDbValue(profile['meal_count'], mealCountMap);
-          provider.breakfastTime = _parseTimeOfDay(profile['breakfast_time']);
+           provider.breakfastTime = _parseTimeOfDay(profile['breakfast_time']);
           provider.lunchTime = _parseTimeOfDay(profile['lunch_time']);
           provider.dinnerTime = _parseTimeOfDay(profile['dinner_time']);
 
@@ -306,8 +304,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         break;
 
       case 3:
-        if (provider.mealCount == null)
-          errorMessages.add('Selecciona cuántas veces al día quieres comer.');
+      
         if (provider.eatsOut == null)
           errorMessages
               .add('Selecciona con qué frecuencia comes fuera de casa.');
@@ -438,9 +435,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           //   'training_frequency': questionnaireProvider.trainingFrequency != null
           //      ? removeEmojis(questionnaireProvider.trainingFrequency!)
           //     : null,
-          'meal_count': questionnaireProvider.mealCount != null
-              ? removeEmojis(questionnaireProvider.mealCount!)
-              : null,
+          
           'breakfast_time':
               formatTimeOfDay(questionnaireProvider.breakfastTime),
           'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
@@ -461,7 +456,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
 
         bool isPlanReady = false;
         // 3. Definimos un tiempo máximo de espera (ej. 3 minutos) para no dejar al usuario esperando indefinidamente.
-        const maxWaitTime = Duration(minutes: 3);
+        const maxWaitTime = Duration(minutes: 10);
         final stopwatch = Stopwatch()..start();
 
         // 4. Bucle de sondeo (Polling): se ejecuta mientras el plan no esté listo y no se haya superado el tiempo de espera.
@@ -927,10 +922,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const QuestionnaireTitleARRIBA(title: 'Tu Estructura de Comidas 🍽️'),
-          const QuestionnaireTitle(
-              title: '¿Cómo sueles organizar tus comidas en el día?',
-              isSub: true),
-          ..._buildMealCountOptions(provider),
+          
           const SizedBox(height: 24),
           const QuestionnaireTitle(
               title: '¿A qué hora sueles comer? (opcional)', isSub: true),
@@ -966,26 +958,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
       ),
     );
   }
-
-  List<Widget> _buildMealCountOptions(QuestionnaireProvider provider) {
-    const options = {
-      '🥐 3 comidas principales (Desayuno, almuerzo y cena)',
-      '🥗 3 comidas + 1 o 2 snacks (Entre comidas o post entreno)',
-      '🤗 No tengo estructura fija',
-    };
-    return options
-        .map((opt) => Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: SelectionCard(
-                title: opt,
-                value: opt,
-                groupValue: provider.mealCount,
-                onTap: (val) => setState(
-                    () => provider.update(() => provider.mealCount = val)),
-              ),
-            ))
-        .toList();
-  }
+ 
 
   List<Widget> _buildEatOutOptions(QuestionnaireProvider provider) {
     const options = {
