@@ -15,8 +15,9 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:vibration/vibration.dart';
 import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:showcaseview/showcaseview.dart'; // Importa showcaseview
-import 'package:shared_preferences/shared_preferences.dart'; // Para gestionar si ya se mostró
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart'; // Importa video_player
 
 // WIDGET MEJORADO: Visualizador de ondas de sonido para el micrófono
 class SoundWaveVisualizer extends StatefulWidget {
@@ -142,13 +143,14 @@ class _RecordingScreenState extends State<RecordingScreen>
   late stt.SpeechToText _speech;
   late ElevenLabsService _elevenLabsService;
   late FlutterTts _flutterTts;
+  late VideoPlayerController _videoController; // Controlador para el video
   bool _isRecording = false;
   bool _isSpeaking = false;
   bool _isProcessing = false;
   bool _isAiAudioPlaying = false;
 
   String _partialTranscription = '';
-  String _finalUserTranscription = ''; // <-- NUEVA VARIABLE AQUÍ
+  String _finalUserTranscription = '';
 
   String _aiResponse = '';
   String _statusMessage = 'Toca el micrófono para grabar';
@@ -175,12 +177,27 @@ class _RecordingScreenState extends State<RecordingScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _speech = stt.SpeechToText();
-    _flutterTts = FlutterTts(); // Se inicializa FlutterTts
+    _flutterTts = FlutterTts();
 
     _elevenLabsService = ElevenLabsService(
       apiKey: "sk_5c7014c450eb767dbc8cd3ca2cdadadaceb4dbc52708cac9",
-      flutterTts: _flutterTts, // <-- Añade esta línea
+      flutterTts: _flutterTts,
     );
+
+    // Inicializar el controlador de video
+    _videoController = VideoPlayerController.asset(
+      'assets/images/frutaMedicaVideo2.mp4',
+    )..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _videoController.setLooping(true); // Repetir el video
+            _videoController.play(); // Iniciar la reproducción
+          });
+        }
+      }).catchError((error) {
+        debugPrint('Error al inicializar el video: $error');
+        _showErrorSnackBar('No se pudo cargar el video.');
+      });
 
     _thinkingAnimationController = AnimationController(
       vsync: this,
@@ -216,7 +233,6 @@ class _RecordingScreenState extends State<RecordingScreen>
         prefs.getBool('recordingScreenShowcaseShown') ?? false;
 
     if (!showcaseShown && mounted) {
-      // Un pequeño retraso para asegurar que los elementos estén completamente renderizados
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted && ShowCaseWidget.of(context).mounted) {
@@ -477,7 +493,7 @@ class _RecordingScreenState extends State<RecordingScreen>
 
     try {
       final response = await widget.chatService.sendVoiceMessage(
-        message: _finalUserTranscription, // Usa la transcripción final
+        message: _finalUserTranscription,
         sessionId: null,
       );
 
@@ -545,6 +561,9 @@ class _RecordingScreenState extends State<RecordingScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _stopAllActivity();
+      _videoController.pause(); // Pausar el video cuando la app está en pausa
+    } else if (state == AppLifecycleState.resumed) {
+      _videoController.play(); // Reanudar el video cuando la app se reanuda
     }
   }
 
@@ -638,12 +657,18 @@ class _RecordingScreenState extends State<RecordingScreen>
                                     radius: 125,
                                     backgroundColor: Colors.transparent,
                                     child: ClipOval(
-                                      child: Image.asset(
-                                        'assets/images/frutamedica.png',
-                                        width: 250,
-                                        height: 250,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      child: _videoController.value.isInitialized
+                                          ? AspectRatio(
+                                              aspectRatio: _videoController
+                                                  .value.aspectRatio,
+                                              child: VideoPlayer(_videoController),
+                                            )
+                                          : Container(
+                                              color: Colors.grey,
+                                              child: const Center(
+                                                child: CircularProgressIndicator(),
+                                              ),
+                                            ),
                                     ),
                                     key: const Key('idle'),
                                   ),
@@ -658,7 +683,6 @@ class _RecordingScreenState extends State<RecordingScreen>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Spacer(),
-                        // --- ShowCase para el Botón del Micrófono ---
                         Showcase(
                           key: _micButtonShowcaseKey,
                           title: 'Botón de Micrófono',
@@ -715,7 +739,6 @@ class _RecordingScreenState extends State<RecordingScreen>
                           ),
                         ),
                         const Spacer(),
-                        // Botón de Detener/Cerrar
                         CircleAvatar(
                           radius: 30,
                           backgroundColor: Colors.grey.shade300,
@@ -751,13 +774,13 @@ class _RecordingScreenState extends State<RecordingScreen>
     _elevenLabsService.dispose();
     _thinkingAnimationController.dispose();
     _rhythmAnimationController.dispose();
+    _videoController.dispose(); // Liberar el controlador de video
     if (_hasVibrator) Vibration.cancel();
     super.dispose();
   }
 }
 
 // Los widgets ParticulasFlotantes, Particle y _ParticlesPainter no necesitan cambios
-// y se pueden dejar como estaban en la versión anterior.
 class ParticulasFlotantes extends StatefulWidget {
   const ParticulasFlotantes({Key? key}) : super(key: key);
 
@@ -783,8 +806,8 @@ class _ParticulasFlotantesState extends State<ParticulasFlotantes>
       _particles.add(Particle(
         x: _random.nextDouble(),
         y: _random.nextDouble(),
-        size: _random.nextDouble() * 3 + 2, // Tamaños más grandes
-        speed: _random.nextDouble() * 0.3 + 0.1, // Velocidades más altas
+        size: _random.nextDouble() * 3 + 2,
+        speed: _random.nextDouble() * 0.3 + 0.1,
       ));
     }
   }

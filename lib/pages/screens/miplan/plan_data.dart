@@ -564,11 +564,13 @@ class Meal {
     final List<MealCategory> parsedComponents = [];
 
     // If it's the old structure, parse directly
-    if (json.containsKey('Proteínas') ||
-        json.containsKey('Carbohidratos') ||
-        json.containsKey('Grasas') ||
-        json.containsKey('Vegetales')) {
-      ['Proteínas', 'Carbohidratos', 'Grasas', 'Vegetales'].forEach((key) {
+  if (json.containsKey('Proteínas') ||
+    json.containsKey('Carbohidratos') ||
+    json.containsKey('Grasas') ||
+    json.containsKey('Vegetales') ||
+    json.containsKey('Frutas')) {  // ← AGREGAR FRUTAS
+
+  ['Proteínas', 'Carbohidratos', 'Grasas', 'Vegetales', 'Frutas'].forEach((key) {  // ← AGREGAR FRUTAS
         if (json.containsKey(key) && json[key] is Map<String, dynamic>) {
           parsedComponents.add(MealCategory.fromJson({
             'title': key,

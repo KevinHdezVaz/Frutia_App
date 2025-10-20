@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:video_player/video_player.dart';
 
 class DynamicTheme {
   final String imagePath;
@@ -435,9 +436,118 @@ class _TimelineStepWidget extends StatefulWidget {
   @override
   State<_TimelineStepWidget> createState() => _TimelineStepWidgetState();
 }
+ 
+
 
 class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   bool _isExpanded = false;
+  
+  // Controlador de video
+  VideoPlayerController? _videoController;
+  
+  // Mapa de videos para cada tipo de fruta
+// En _TimelineStepWidgetState, actualiza el mapa de videos:
+final Map<int, String> _videoAssets = {
+  1: 'assets/images/frutaProgreso1_video.mp4',  // Para racha 0-1 días
+  2: 'assets/images/frutaProgreso2_video.mp4',  // Para racha 2-6 días
+  // No agregues videos para 3 y 4 - usarán imágenes
+};
+
+int? _getVideoType() {
+  final bool isSad = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3);
+  
+  print('🎯 Calculando video type - Racha: ${widget.currentStreak}, isSad: $isSad');
+  
+  if (isSad) {
+    print('📛 No video - está triste');
+    return null;
+  }
+  
+  if (widget.currentStreak >= 30) {
+    print('🖼️ No video - fruta 4 (imagen)');
+    return null;
+  } else if (widget.currentStreak >= 7) {
+    print('🖼️ No video - fruta 3 (imagen)');
+    return null; 
+  } else if (widget.currentStreak >= 2) {
+    print('🎥 VIDEO - fruta 2');
+    return 2;
+  } else {
+    print('🎥 VIDEO - fruta 1');
+    return 1;
+  }
+}
+
+
+void _initVideoController() {
+  final videoType = _getVideoType();
+  if (videoType == null || !_videoAssets.containsKey(videoType)) {
+    print('No se usará video - tipo: $videoType, disponible: ${_videoAssets.containsKey(videoType)}');
+    return;
+  }
+  
+  final videoPath = _videoAssets[videoType]!;
+  print('🔄 Intentando cargar video: $videoPath');
+  
+  _videoController = VideoPlayerController.asset(videoPath)
+    ..initialize().then((_) {
+      print('✅ Video cargado exitosamente: $videoPath');
+      _videoController?.setLooping(true);
+      _videoController?.setVolume(0.0);
+      _videoController?.play();
+      if (mounted) setState(() {});
+    })
+    .onError((error, stackTrace) {
+      print('❌ Error al cargar el video $videoPath: $error');
+      if (mounted) {
+        setState(() {
+          _videoController = null;
+        });
+      }
+    });
+}
+  // Helper method para el widget antiguo
+  int? _getVideoTypeForWidget(_TimelineStepWidget oldWidget) {
+    final bool isSad = (oldWidget.daysSinceLastStreak == 2 || oldWidget.daysSinceLastStreak == 3);
+    if (isSad) return null;
+    
+    if (oldWidget.currentStreak >= 30) return 3;
+    if (oldWidget.currentStreak >= 7) return 2;
+    if (oldWidget.currentStreak >= 2) return 4;
+    return 1;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isCurrent && _getVideoType() != null) {
+      _initVideoController();
+    }
+  }
+  
+  @override
+  void didUpdateWidget(covariant _TimelineStepWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final int? currentVideoType = _getVideoType();
+    final int? oldVideoType = _getVideoTypeForWidget(oldWidget);
+    
+    // Si el tipo de video cambió o el widget ahora es current
+    if (widget.isCurrent && currentVideoType != null) {
+      if (_videoController == null || currentVideoType != oldVideoType) {
+        _videoController?.dispose();
+        _initVideoController();
+      }
+    } else if (!widget.isCurrent || currentVideoType == null) {
+      _videoController?.dispose();
+      _videoController = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -469,57 +579,130 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
     ).animate().fadeIn(delay: (100 * (widget.stepNumber % 10)).ms);
   }
 
-  Widget _buildNode() {
-    // CAMBIO: Lógica de imagen actualizada para mostrar la versión "triste".
-    String imagePath;
-    bool isSad =
-        (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3);
+Widget _buildNode() {
+  final int? videoType = _getVideoType();
+  final bool useVideo = videoType != null;
+  String imagePath;
 
-    if (widget.currentStreak >= 30) {
-      imagePath = isSad
-          ? 'assets/images/frutaProgresoSad3.png'
-          : 'assets/images/frutaProgreso3.png';
-    } else if (widget.currentStreak >= 7) {
-      imagePath = isSad
-          ? 'assets/images/frutaProgresoSad2.png'
-          : 'assets/images/frutaProgreso2.png';
-    } else if (widget.currentStreak >= 2) {
-      imagePath = isSad
-          ? 'assets/images/frutaProgresoSad4.png'
-          : 'assets/images/frutaProgreso4.png';
-    } else {
-      imagePath = isSad
-          ? 'assets/images/frutaProgresoSad1.png'
-          : 'assets/images/frutaProgreso1.png';
-    }
+  // Determinar la imagen según progresión lógica
+  if (widget.currentStreak >= 30) {
+    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+        ? 'assets/images/frutaProgresoSad4.png'  // Fruta 4 triste
+        : 'assets/images/frutaProgreso4.png';    // Fruta 4 normal
+  } else if (widget.currentStreak >= 7) {
+    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+        ? 'assets/images/frutaProgresoSad3.png'  // Fruta 3 triste
+        : 'assets/images/frutaProgreso3.png';    // Fruta 3 normal
+  } else if (widget.currentStreak >= 2) {
+    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+        ? 'assets/images/frutaProgresoSad2.png'  // Fruta 2 triste
+        : 'assets/images/frutaProgreso2.png';    // Fruta 2 normal
+  } else {
+    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+        ? 'assets/images/frutaProgresoSad1.png'  // Fruta 1 triste
+        : 'assets/images/frutaProgreso1.png';    // Fruta 1 normal
+  }
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-                color:
-                    widget.isMilestone ? Colors.yellow.shade600 : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.5), width: 1))),
-        if (widget.isCurrent)
-          Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.accentColor.withOpacity(0.3)),
-            child: Image.asset(imagePath, width: 150, height: 150)
-                .animate()
-                .scale(
-                    delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
-          ),
-      ],
+  Widget nodeContent;
+  
+  // Definir el contenido del nodo (Video o Imagen)
+  if (useVideo && _videoController != null && _videoController!.value.isInitialized) {
+    // Muestra el VideoPlayer para fruta 1 y 2
+    nodeContent = Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: VideoPlayer(_videoController!)
+        ),
+      ),
+    );
+  } else if (useVideo && _videoController != null && !_videoController!.value.isInitialized) {
+    // Muestra un cargador circular si es video pero no está listo
+    nodeContent = Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: const Center(
+        child: SizedBox(
+          width: 25,
+          height: 25,
+          child: CircularProgressIndicator(color: Colors.white)
+        ),
+      ),
+    );
+  } else {
+    // Muestra una imagen normal (para fruta 3, 4 o como fallback)
+    nodeContent = Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: Image.asset(imagePath, 
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 
+  return Stack(
+    alignment: Alignment.center,
+    children: [
+      // Fondo del nodo base (siempre visible)
+      Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: widget.isMilestone ? Colors.yellow.shade600 : Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withOpacity(0.5), 
+            width: 1
+          )
+        ),
+      ),
+      
+      // Contenido principal (video/imagen) - solo visible si es el nodo actual
+      if (widget.isCurrent)
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.accentColor.withOpacity(0.3),
+          ),
+          child: nodeContent
+              .animate()
+              .scale(
+                delay: 300.ms, 
+                duration: 600.ms, 
+                curve: Curves.elasticOut
+              ),
+        ),
+    ],
+  );
+}
   Widget _buildStepCard(bool isPast, bool isFuture) {
     final DateFormat formatter = DateFormat('EEEE d', 'es_ES');
     final date = DateTime.now()
@@ -601,6 +784,7 @@ class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
     );
   }
 }
+
 
 class _AnimatedParallaxBackground extends StatefulWidget {
   final String imagePath;
