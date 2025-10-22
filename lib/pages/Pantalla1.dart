@@ -348,7 +348,9 @@ class _ProfessionalMiPlanDiarioScreenState
     });
   }
 
-  Future<void> _generateAndDownloadPDF() async {
+ 
+
+ Future<void> _generateAndDownloadPDF() async {
     if (_mealPlanData == null || _userProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -396,17 +398,14 @@ class _ProfessionalMiPlanDiarioScreenState
             pw.SizedBox(height: 20),
             _buildMacrosInfo(plan.targetMacros),
             pw.SizedBox(height: 20),
-
             // Mensaje personalizado si existe
             if (plan.recommendation.isNotEmpty) ...[
               _buildPersonalizedMessage(plan.recommendation),
               pw.SizedBox(height: 20),
             ],
-
             // Instrucción importante
             _buildImportantInstruction(),
             pw.SizedBox(height: 15),
-
             // Todas las comidas
             ...plan.meals.entries.map((mealEntry) =>
                 _buildMealPdfSection(mealEntry.key, mealEntry.value)),
@@ -414,7 +413,7 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
       );
 
-      // PÁGINA 2: Recomendaciones y tabla de equivalencias
+      // ✅ PÁGINA 2: RECOMENDACIONES UNIFICADAS (SIN TABLA)
       pdf.addPage(
         pw.MultiPage(
           theme: theme,
@@ -423,12 +422,9 @@ class _ProfessionalMiPlanDiarioScreenState
           header: (context) =>
               _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
           build: (pw.Context context) => [
-            _buildRecommendationsSection(
-                'Recomendaciones Generales', _getAllGeneralRecommendations()),
-            _buildRecommendationsSection(
-                'Recuerda', _getAllRememberRecommendations()),
+            _buildUnifiedRecommendationsSection(), // ✅ NUEVO
             pw.SizedBox(height: 20),
-            _buildEquivalencesSection(), // NUEVA SECCIÓN
+            _buildImportantTipsBox(), // ✅ NUEVO
           ],
         ),
       );
@@ -440,6 +436,7 @@ class _ProfessionalMiPlanDiarioScreenState
       await file.writeAsBytes(await pdf.save());
 
       if (mounted) Navigator.of(context).pop();
+
       OpenFile.open(file.path);
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
@@ -489,11 +486,11 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
 // Método mejorado para cada comida con resumen de macros
-  pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
+pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
     // Calcular macros promedio de la comida
     int totalProtein = 0, totalCarbs = 0, totalFats = 0, totalCalories = 0;
     int optionCount = 0;
-
+    
     for (var category in meal.components) {
       if (category.options.isNotEmpty) {
         var firstOption = category.options.first;
@@ -508,154 +505,88 @@ class _ProfessionalMiPlanDiarioScreenState
     final List<List<String>> tableData = [
       <String>['Componente', 'Opción de Alimento', 'Porción Sugerida'],
     ];
-
+    
     for (var category in meal.components) {
       for (var option in category.options) {
         tableData.add([category.title, option.name, option.portion]);
       }
     }
 
+    // ✅ ENVOLVER TODO EN pw.Column con keepTogether
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Header(level: 2, text: mealTitle),
-
-        // NUEVO: Resumen de macros de la comida
-        pw.Container(
-          padding: const pw.EdgeInsets.all(8),
-          margin: const pw.EdgeInsets.only(bottom: 10),
-          decoration: pw.BoxDecoration(
-            color: PdfColors.grey100,
-            borderRadius: pw.BorderRadius.circular(5),
-          ),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-            children: [
-              pw.Text('Calorías: ${totalCalories} kcal',
-                  style: pw.TextStyle(
-                      fontSize: 11, fontWeight: pw.FontWeight.bold)),
-              pw.Text('P: ${totalProtein}g', style: pw.TextStyle(fontSize: 11)),
-              pw.Text('C: ${totalCarbs}g', style: pw.TextStyle(fontSize: 11)),
-              pw.Text('G: ${totalFats}g', style: pw.TextStyle(fontSize: 11)),
-            ],
-          ),
+        // ✅ NUEVO: keepTogether mantiene el contenido junto
+        pw.Wrap(
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Título de la comida
+                pw.Header(level: 2, text: mealTitle),
+                
+                // Resumen de macros
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  margin: const pw.EdgeInsets.only(bottom: 10),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                    borderRadius: pw.BorderRadius.circular(5),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                    children: [
+                      pw.Text('Calorías: ${totalCalories} kcal',
+                          style: pw.TextStyle(
+                              fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('P: ${totalProtein}g', style: pw.TextStyle(fontSize: 11)),
+                      pw.Text('C: ${totalCarbs}g', style: pw.TextStyle(fontSize: 11)),
+                      pw.Text('G: ${totalFats}g', style: pw.TextStyle(fontSize: 11)),
+                    ],
+                  ),
+                ),
+                
+                // Tabla de opciones
+                pw.Table.fromTextArray(
+                  border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  cellAlignment: pw.Alignment.centerLeft,
+                  cellPadding: const pw.EdgeInsets.all(5),
+                  headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  data: tableData,
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(2),
+                    1: const pw.FlexColumnWidth(3),
+                    2: const pw.FlexColumnWidth(2),
+                  },
+                ),
+                
+                // Recetas sugeridas si existen
+                if (meal.suggestedRecipes.isNotEmpty) ...[
+                  pw.SizedBox(height: 10),
+                  pw.Text('Recetas Sugeridas:',
+                      style: pw.TextStyle(
+                          fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  pw.SizedBox(height: 5),
+                  ...meal.suggestedRecipes.take(2).map((recipe) => pw.Padding(
+                        padding: const pw.EdgeInsets.only(left: 10, bottom: 3),
+                        child: pw.Text(
+                            '• ${recipe.title} (${recipe.readyInMinutes} min)',
+                            style: pw.TextStyle(
+                                fontSize: 12, color: PdfColors.grey700)),
+                      )),
+                ],
+              ],
+            ),
+          ],
         ),
-
-        // Tabla de opciones
-        pw.Table.fromTextArray(
-          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-          headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          cellAlignment: pw.Alignment.centerLeft,
-          cellPadding: const pw.EdgeInsets.all(5),
-          headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          data: tableData,
-          columnWidths: {
-            0: const pw.FlexColumnWidth(2),
-            1: const pw.FlexColumnWidth(3),
-            2: const pw.FlexColumnWidth(2),
-          },
-        ),
-
-        // Recetas sugeridas si existen
-        if (meal.suggestedRecipes.isNotEmpty) ...[
-          pw.SizedBox(height: 10),
-          pw.Text('Recetas Sugeridas:',
-              style:
-                  pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-          pw.SizedBox(height: 5),
-          ...meal.suggestedRecipes.take(2).map((recipe) => pw.Padding(
-                padding: const pw.EdgeInsets.only(left: 10, bottom: 3),
-                child: pw.Text(
-                    '• ${recipe.title} (${recipe.readyInMinutes} min)',
-                    style:
-                        pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-              )),
-        ],
+        
+        // Espaciado entre secciones
         pw.SizedBox(height: 20),
       ],
     );
-  }
-
-// NUEVA SECCIÓN: Tabla de equivalencias
-  pw.Widget _buildEquivalencesSection() {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Header(level: 1, text: 'Tabla de Equivalencias y Tips de Medición'),
-        pw.Text('Conversiones de peso Crudo vs Cocido:',
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-        pw.SizedBox(height: 10),
-        pw.Table.fromTextArray(
-          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-          headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          cellAlignment: pw.Alignment.centerLeft,
-          cellPadding: const pw.EdgeInsets.all(5),
-          headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          data: [
-            ['Alimento', 'Peso Crudo', 'Peso Cocido', 'Factor'],
-            ['Arroz/Pasta', '100g', '250-280g', 'x 2.5-2.8'],
-            ['Pollo/Pavo', '100g', '75g', 'x 0.75'],
-            ['Carne roja', '100g', '70g', 'x 0.70'],
-            ['Pescado', '100g', '80g', 'x 0.80'],
-            ['Lentejas/Frijoles', '100g', '230-250g', 'x 2.3-2.5'],
-            ['Quinua', '100g', '185g', 'x 1.85'],
-            ['Papa/Camote', '100g', '100g', 'x 1.0'],
-          ],
-        ),
-        pw.SizedBox(height: 15),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(8),
-          decoration: pw.BoxDecoration(
-            color: PdfColors.blue50,
-            border: pw.Border.all(color: PdfColors.blue200),
-            borderRadius: pw.BorderRadius.circular(5),
-          ),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('💡 Tips Importantes:',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 5),
-              pw.Text('• SIEMPRE pesa las proteínas en CRUDO'),
-              pw.Text(
-                  '• Los carbohidratos como arroz y pasta se pesan en SECO'),
-              pw.Text(
-                  '• Las verduras pueden pesarse cocidas o crudas (similar peso)'),
-              pw.Text('• Usa balanza digital para mayor precisión'),
-              pw.Text('• 1 cucharada sopera = 15ml de aceite'),
-              pw.Text('• 1 taza = 250ml aproximadamente'),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-// Obtener todas las recomendaciones generales
-  List<String> _getAllGeneralRecommendations() {
-    final plan = _mealPlanData!.nutritionPlan;
-    return [
-      ...plan.generalRecommendations,
-      'Proteínas: se pesan crudas. Si están cocidas, resta 20 g al peso indicado.',
-      'Carbohidratos: se pesan crudos',
-      'Vegetales: son libres, úsalos con variedad para sumar fibra.',
-      'Agua: Consume entre 30 a 40 ml por cada kg de peso corporal al día.',
-      'Usa balanza digital y cucharas medidoras para mayor precisión.',
-      'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad.',
-    ];
-  }
-
-// Obtener todas las recomendaciones de recordatorios
-  List<String> _getAllRememberRecommendations() {
-    final plan = _mealPlanData!.nutritionPlan;
-    return [
-      ...plan.rememberRecommendations,
-      'Establece horarios fijos de comida y respétalos todos los días.',
-      'Varía tus recetas e innova en la cocina para evitar la monotonía.',
-      'Prepara salsas caseras a base de vegetales.',
-      'Si tendrás un día complicado, adelanta tus comidas o llévalas contigo.',
-    ];
-  }
+  } 
+ 
 
   pw.Widget _buildPdfHeader(String userName, Uint8List imageBytes) {
     return pw.Container(
@@ -705,6 +636,186 @@ class _ProfessionalMiPlanDiarioScreenState
         ]);
   }
 
+
+// ✅ AGREGAR ESTE MÉTODO COMPLETO
+pw.Widget _buildUnifiedRecommendationsSection() {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Título principal con línea
+        pw.Container(
+          padding: const pw.EdgeInsets.only(bottom: 8),
+          decoration: pw.BoxDecoration(
+            border: pw.Border(
+              bottom: pw.BorderSide(color: PdfColors.grey400, width: 2),
+            ),
+          ),
+          child: pw.Text(
+            'Recomendaciones Generales y Tips',
+            style: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 18,
+              color: PdfColors.blue900,
+            ),
+          ),
+        ),
+        pw.SizedBox(height: 15),
+
+        // 📏 SECCIÓN 1: Pesaje de Alimentos
+        pw.Text(
+          '* Pesaje de Alimentos:',
+          style: pw.TextStyle(
+            fontWeight: pw.FontWeight.bold,
+            fontSize: 14,
+            color: PdfColors.blue800,
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Bullet(
+          text: 'Proteínas: SIEMPRE se pesan en CRUDO',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: 'Carbohidratos: Se pesan COCIDOS (excepto avena, crema de arroz, cereales = peso seco)',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: 'Vegetales: Son libres, úsalos con variedad para sumar fibra',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.SizedBox(height: 12),
+
+        // 💧 SECCIÓN 2: Hidratación y Medición
+        pw.Text(
+          '💧 Hidratación y Medición:',
+          style: pw.TextStyle(
+            fontWeight: pw.FontWeight.bold,
+            fontSize: 14,
+            color: PdfColors.blue800,
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Bullet(
+          text: 'Agua: Consume 30-40 ml por cada kg de peso corporal al día',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: 'Usa balanza digital y cucharas medidoras para mayor precisión',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: '1 cucharada sopera = 15ml de aceite',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: '1 taza = 250ml aproximadamente',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.SizedBox(height: 12),
+
+        // 📅 SECCIÓN 3: Organización
+        pw.Text(
+          '📅 Organización:',
+          style: pw.TextStyle(
+            fontWeight: pw.FontWeight.bold,
+            fontSize: 14,
+            color: PdfColors.blue800,
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Bullet(
+          text: 'Establece horarios fijos de comida y respétalos todos los días',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: 'Varía tus recetas e innova en la cocina para evitar la monotonía',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: 'Prepara salsas caseras a base de vegetales',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.Bullet(
+          text: 'Si tendrás un día complicado, adelanta tus comidas o llévalas contigo',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+        pw.SizedBox(height: 12),
+
+        // 🍳 SECCIÓN 4: Cocina
+        pw.Text(
+          '🍳 Cocina:',
+          style: pw.TextStyle(
+            fontWeight: pw.FontWeight.bold,
+            fontSize: 14,
+            color: PdfColors.blue800,
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Bullet(
+          text: 'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad',
+          style: pw.TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  // ✅ AGREGAR ESTE MÉTODO COMPLETO
+pw.Widget _buildImportantTipsBox() {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(14),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.blue50,
+        border: pw.Border.all(color: PdfColors.blue300, width: 1.5),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(6),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.blue200,
+                  shape: pw.BoxShape.circle,
+                ),
+                child: pw.Text(
+                  '💡',
+                  style: pw.TextStyle(fontSize: 14),
+                ),
+              ),
+              pw.SizedBox(width: 10),
+              pw.Text(
+                'Recuerda:',
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 14,
+                  color: PdfColors.blue900,
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          pw.Text(
+            '• Las porciones en tu plan ya están calculadas en el peso correcto (cocido o crudo según corresponda)',
+            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
+          ),
+          pw.SizedBox(height: 5),
+          pw.Text(
+            '• Si tienes dudas sobre cómo preparar un alimento, consulta con tu nutricionista',
+            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
+          ),
+          pw.SizedBox(height: 5),
+          pw.Text(
+            '• Este plan es personalizado para TI, no lo compartas sin ajustar para otras personas',
+            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -732,404 +843,416 @@ class _ProfessionalMiPlanDiarioScreenState
     );
   }
 
+  List<RecommendationItem> _generateDynamicRecommendations(
+      int proteinExcess, int carbsExcess, int fatsExcess) {
+    List<RecommendationItem> recommendations = [];
 
- 
-List<RecommendationItem> _generateDynamicRecommendations(int proteinExcess, int carbsExcess, int fatsExcess) {
-  List<RecommendationItem> recommendations = [];
-  
-  _dailySelections.forEach((mealName, selections) {
-    selections.forEach((categoryName, option) {
-      
-      // Obtener color e icono de la comida
-      Color mealColor = _getMealColor(mealName);
-      IconData mealIcon = _getMealIcon(mealName);
-      
-      // Consejos específicos para exceso de proteínas
-      if (proteinExcess > 10 && option.protein > 30) {
-        if (option.name.toLowerCase().contains('salmón')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Cambia "${option.name}" por pollo (menos grasas)',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.egg_alt_outlined,
-          ));
-        } else if (option.name.toLowerCase().contains('lomo')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Cambia "${option.name}" por pechuga de pollo',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.egg_alt_outlined,
-          ));
-        } else if (option.protein > 50) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Reduce porción de "${option.name}" o cámbiala',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.egg_alt_outlined,
-          ));
+    _dailySelections.forEach((mealName, selections) {
+      selections.forEach((categoryName, option) {
+        // Obtener color e icono de la comida
+        Color mealColor = _getMealColor(mealName);
+        IconData mealIcon = _getMealIcon(mealName);
+
+        // Consejos específicos para exceso de proteínas
+        if (proteinExcess > 10 && option.protein > 30) {
+          if (option.name.toLowerCase().contains('salmón')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Cambia "${option.name}" por pollo (menos grasas)',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.egg_alt_outlined,
+            ));
+          } else if (option.name.toLowerCase().contains('lomo')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Cambia "${option.name}" por pechuga de pollo',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.egg_alt_outlined,
+            ));
+          } else if (option.protein > 50) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Reduce porción de "${option.name}" o cámbiala',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.egg_alt_outlined,
+            ));
+          }
         }
-      }
-      
-      // Consejos específicos para exceso de grasas
-      if (fatsExcess > 10 && option.fats > 15) {
-        if (option.name.toLowerCase().contains('salmón')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: "${option.name}" tiene muchas grasas, prueba atún',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.water_drop_outlined,
-          ));
-        } else if (option.name.toLowerCase().contains('aceite')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Reduce "${option.name}" a 1 cucharada',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.water_drop_outlined,
-          ));
-        } else if (option.name.toLowerCase().contains('almendras')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Reduce porción de "${option.name}" a la mitad',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.water_drop_outlined,
-          ));
-        } else if (option.name.toLowerCase().contains('aguacate')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Usa 1/4 de aguacate en lugar de la porción actual',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.water_drop_outlined,
-          ));
+
+        // Consejos específicos para exceso de grasas
+        if (fatsExcess > 10 && option.fats > 15) {
+          if (option.name.toLowerCase().contains('salmón')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: "${option.name}" tiene muchas grasas, prueba atún',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.water_drop_outlined,
+            ));
+          } else if (option.name.toLowerCase().contains('aceite')) {
+            recommendations.add(RecommendationItem(
+              text: 'En $mealName: Reduce "${option.name}" a 1 cucharada',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.water_drop_outlined,
+            ));
+          } else if (option.name.toLowerCase().contains('almendras')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Reduce porción de "${option.name}" a la mitad',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.water_drop_outlined,
+            ));
+          } else if (option.name.toLowerCase().contains('aguacate')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Usa 1/4 de aguacate en lugar de la porción actual',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.water_drop_outlined,
+            ));
+          }
         }
-      }
-      
-      // Consejos específicos para exceso de carbohidratos
-      if (carbsExcess > 15 && option.carbs > 10) {
-        if (option.name.toLowerCase().contains('quinua') || 
-            option.name.toLowerCase().contains('arroz') ||
-            option.name.toLowerCase().contains('avena')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Reduce "${option.name}" o omite carbohidratos en esta comida',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.grain_outlined,
-          ));
-        } else if (option.name.toLowerCase().contains('mango') || 
-                   option.name.toLowerCase().contains('frutos')) {
-          recommendations.add(RecommendationItem(
-            text: 'En $mealName: Reduce porción de "${option.name}" por el exceso de carbohidratos',
-            color: mealColor,
-            mealIcon: mealIcon,
-            macroIcon: Icons.grain_outlined,
-          ));
+
+        // Consejos específicos para exceso de carbohidratos
+        if (carbsExcess > 15 && option.carbs > 10) {
+          if (option.name.toLowerCase().contains('quinua') ||
+              option.name.toLowerCase().contains('arroz') ||
+              option.name.toLowerCase().contains('avena')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Reduce "${option.name}" o omite carbohidratos en esta comida',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.grain_outlined,
+            ));
+          } else if (option.name.toLowerCase().contains('mango') ||
+              option.name.toLowerCase().contains('frutos')) {
+            recommendations.add(RecommendationItem(
+              text:
+                  'En $mealName: Reduce porción de "${option.name}" por el exceso de carbohidratos',
+              color: mealColor,
+              mealIcon: mealIcon,
+              macroIcon: Icons.grain_outlined,
+            ));
+          }
         }
-      }
+      });
     });
-  });
-  
-  return recommendations;
-}
+
+    return recommendations;
+  }
 
 // Método para obtener color según la comida
-Color _getMealColor(String mealName) {
-  switch (mealName.toLowerCase()) {
-    case 'desayuno':
-      return Colors.orange;
-    case 'almuerzo':
-      return Colors.green;
-    case 'cena':
-      return Colors.purple;
-    case 'snack de frutas':
-      return Colors.pink;
-    default:
-      return Colors.blue;
+  Color _getMealColor(String mealName) {
+    switch (mealName.toLowerCase()) {
+      case 'desayuno':
+        return Colors.orange;
+      case 'almuerzo':
+        return Colors.green;
+      case 'cena':
+        return Colors.purple;
+      case 'snack de frutas':
+        return Colors.pink;
+      default:
+        return Colors.blue;
+    }
   }
-}
 
 // Método para obtener icono según la comida
-IconData _getMealIcon(String mealName) {
-  switch (mealName.toLowerCase()) {
-    case 'desayuno':
-      return Icons.free_breakfast_outlined;
-    case 'almuerzo':
-      return Icons.restaurant_outlined;
-    case 'cena':
-      return Icons.dinner_dining_outlined;
-    case 'snack de frutas':
-      return Icons.apple_outlined;
-    default:
-      return Icons.lunch_dining_outlined;
+  IconData _getMealIcon(String mealName) {
+    switch (mealName.toLowerCase()) {
+      case 'desayuno':
+        return Icons.free_breakfast_outlined;
+      case 'almuerzo':
+        return Icons.restaurant_outlined;
+      case 'cena':
+        return Icons.dinner_dining_outlined;
+      case 'snack de frutas':
+        return Icons.apple_outlined;
+      default:
+        return Icons.lunch_dining_outlined;
+    }
   }
-}
-
 
 // Método para determinar el color según el tipo de recomendación
-Color _getRecommendationColor(String recommendation) {
-  if (recommendation.toLowerCase().contains('proteína') || 
-      recommendation.toLowerCase().contains('pollo') ||
-      recommendation.toLowerCase().contains('salmón')) {
-    return Colors.blue;
-  } else if (recommendation.toLowerCase().contains('grasa') || 
-             recommendation.toLowerCase().contains('aceite') ||
-             recommendation.toLowerCase().contains('aguacate')) {
-    return Colors.purple;
-  } else if (recommendation.toLowerCase().contains('carbohidrato') || 
-             recommendation.toLowerCase().contains('quinua') ||
-             recommendation.toLowerCase().contains('arroz')) {
-    return Colors.green;
+  Color _getRecommendationColor(String recommendation) {
+    if (recommendation.toLowerCase().contains('proteína') ||
+        recommendation.toLowerCase().contains('pollo') ||
+        recommendation.toLowerCase().contains('salmón')) {
+      return Colors.blue;
+    } else if (recommendation.toLowerCase().contains('grasa') ||
+        recommendation.toLowerCase().contains('aceite') ||
+        recommendation.toLowerCase().contains('aguacate')) {
+      return Colors.purple;
+    } else if (recommendation.toLowerCase().contains('carbohidrato') ||
+        recommendation.toLowerCase().contains('quinua') ||
+        recommendation.toLowerCase().contains('arroz')) {
+      return Colors.green;
+    }
+    return Colors.orange;
   }
-  return Colors.orange;
-}
 
 // Método para determinar el icono según el tipo de recomendación
-IconData _getRecommendationIcon(String recommendation) {
-  if (recommendation.toLowerCase().contains('proteína') || 
-      recommendation.toLowerCase().contains('pollo') ||
-      recommendation.toLowerCase().contains('salmón')) {
-    return Icons.egg_alt_outlined;
-  } else if (recommendation.toLowerCase().contains('grasa') || 
-             recommendation.toLowerCase().contains('aceite') ||
-             recommendation.toLowerCase().contains('aguacate')) {
-    return Icons.water_drop_outlined;
-  } else if (recommendation.toLowerCase().contains('carbohidrato') || 
-             recommendation.toLowerCase().contains('quinua') ||
-             recommendation.toLowerCase().contains('arroz')) {
-    return Icons.grain_outlined;
+  IconData _getRecommendationIcon(String recommendation) {
+    if (recommendation.toLowerCase().contains('proteína') ||
+        recommendation.toLowerCase().contains('pollo') ||
+        recommendation.toLowerCase().contains('salmón')) {
+      return Icons.egg_alt_outlined;
+    } else if (recommendation.toLowerCase().contains('grasa') ||
+        recommendation.toLowerCase().contains('aceite') ||
+        recommendation.toLowerCase().contains('aguacate')) {
+      return Icons.water_drop_outlined;
+    } else if (recommendation.toLowerCase().contains('carbohidrato') ||
+        recommendation.toLowerCase().contains('quinua') ||
+        recommendation.toLowerCase().contains('arroz')) {
+      return Icons.grain_outlined;
+    }
+    return Icons.info_outlined;
   }
-  return Icons.info_outlined;
-}
 
-void _contactFrutiaSupport() {
-  // Implementar apertura de chat o WhatsApp
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Contacta a Frutia en WhatsApp: +1234567890')),
-  );
-}
-
-
-
-
-  // En ProfessionalMiPlanDiarioScreen - Agregar método helper
-Widget _buildMacroExcessWarning() {
-  final plan = _mealPlanData!.nutritionPlan;
-  final proteinExcess = _totalProtein - plan.targetMacros.protein;
-  final carbsExcess = _totalCarbs - plan.targetMacros.carbs;
-  final fatsExcess = _totalFats - plan.targetMacros.fats;
-
-  if (proteinExcess > 10 || carbsExcess > 15 || fatsExcess > 10) {
-    return GestureDetector( // CAMBIAR Container por GestureDetector
-      onTap: () => _showExcessAdviceDialog(context, proteinExcess, carbsExcess, fatsExcess),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.orange),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.warning_amber, color: Colors.orange),
-            SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Exceso de macronutrientes detectado - Toca para consejos',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-                  if (proteinExcess > 10) Text('Proteína: +${proteinExcess}g'),
-                  if (carbsExcess > 15) Text('Carbohidratos: +${carbsExcess}g'),
-                  if (fatsExcess > 10) Text('Grasas: +${fatsExcess}g'),
-                ],
-              ),
-            ),
-            Icon(Icons.help_outline, color: Colors.orange), // Icono para indicar que es clickeable
-          ],
-        ),
-      ),
+  void _contactFrutiaSupport() {
+    // Implementar apertura de chat o WhatsApp
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Contacta a Frutia en WhatsApp: +1234567890')),
     );
   }
-  return SizedBox.shrink();
-}
 
+  // En ProfessionalMiPlanDiarioScreen - Agregar método helper
+  Widget _buildMacroExcessWarning() {
+    final plan = _mealPlanData!.nutritionPlan;
+    final proteinExcess = _totalProtein - plan.targetMacros.protein;
+    final carbsExcess = _totalCarbs - plan.targetMacros.carbs;
+    final fatsExcess = _totalFats - plan.targetMacros.fats;
 
-void _showExcessAdviceDialog(BuildContext context, int proteinExcess, int carbsExcess, int fatsExcess) {
-  List<RecommendationItem> recommendations = _generateDynamicRecommendations(proteinExcess, carbsExcess, fatsExcess);
-  
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.lightbulb_outline, color: Colors.orange, size: 24),
+    if (proteinExcess > 10 || carbsExcess > 15 || fatsExcess > 10) {
+      return GestureDetector(
+        // CAMBIAR Container por GestureDetector
+        onTap: () => _showExcessAdviceDialog(
+            context, proteinExcess, carbsExcess, fatsExcess),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange),
           ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Consejos Personalizados',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                color: FrutiaColors.primaryText,
-                fontSize: 18,
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.orange),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Exceso de macronutrientes detectado - Toca para consejos',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                    if (proteinExcess > 10)
+                      Text('Proteína: +${proteinExcess}g'),
+                    if (carbsExcess > 15)
+                      Text('Carbohidratos: +${carbsExcess}g'),
+                    if (fatsExcess > 10) Text('Grasas: +${fatsExcess}g'),
+                  ],
+                ),
               ),
+              Icon(Icons.help_outline,
+                  color: Colors.orange), // Icono para indicar que es clickeable
+            ],
+          ),
+        ),
+      );
+    }
+    return SizedBox.shrink();
+  }
+
+  void _showExcessAdviceDialog(BuildContext context, int proteinExcess,
+      int carbsExcess, int fatsExcess) {
+    List<RecommendationItem> recommendations =
+        _generateDynamicRecommendations(proteinExcess, carbsExcess, fatsExcess);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  Icon(Icons.lightbulb_outline, color: Colors.orange, size: 24),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Consejos Personalizados',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.primaryText,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          height: MediaQuery.of(context).size.height * 0.5, // Altura máxima
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.blue.withOpacity(0.1),
+                      Colors.blue.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology_outlined,
+                        color: Colors.blue, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Basado en tus selecciones actuales:',
+                        style: GoogleFonts.lato(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16),
+
+              // Lista scrolleable de recomendaciones
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      ...recommendations.map((recItem) => Container(
+                            margin: EdgeInsets.only(bottom: 12),
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: recItem.color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: recItem.color.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: recItem.color.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(recItem.mealIcon,
+                                          color: recItem.color, size: 14),
+                                      SizedBox(width: 4),
+                                      Icon(recItem.macroIcon,
+                                          color: recItem.color, size: 14),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    recItem.text,
+                                    style: GoogleFonts.lato(
+                                      fontSize: 14,
+                                      color: recItem.color,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // Tip final
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      FrutiaColors.accent.withOpacity(0.1),
+                      FrutiaColors.accent2.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: FrutiaColors.accent.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.touch_app_outlined,
+                        color: FrutiaColors.accent, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tip: Puedes deseleccionar opciones tocándolas nuevamente.',
+                        style: GoogleFonts.lato(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 13,
+                          color: FrutiaColors.accent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black,
+            ),
+            child: Text(
+              'Entendido',
+              style: GoogleFonts.lato(fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
-      content: Container(
-        width: double.maxFinite,
-        height: MediaQuery.of(context).size.height * 0.5, // Altura máxima
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.blue.withOpacity(0.1),
-                    Colors.blue.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.psychology_outlined, color: Colors.blue, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Basado en tus selecciones actuales:',
-                      style: GoogleFonts.lato(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            
-            // Lista scrolleable de recomendaciones
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    ...recommendations.map((recItem) => Container(
-                      margin: EdgeInsets.only(bottom: 12),
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: recItem.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: recItem.color.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: recItem.color.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(recItem.mealIcon, color: recItem.color, size: 14),
-                                SizedBox(width: 4),
-                                Icon(recItem.macroIcon, color: recItem.color, size: 14),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              recItem.text,
-                              style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: recItem.color,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
-                  ],
-                ),
-              ),
-            ),
-            
-            SizedBox(height: 16),
-            
-            // Tip final
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    FrutiaColors.accent.withOpacity(0.1),
-                    FrutiaColors.accent2.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: FrutiaColors.accent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.touch_app_outlined, color: FrutiaColors.accent, size: 18),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Tip: Puedes deseleccionar opciones tocándolas nuevamente.',
-                      style: GoogleFonts.lato(
-                        fontStyle: FontStyle.italic,
-                        fontSize: 13,
-                        color: FrutiaColors.accent,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.black,
-          ),
-          child: Text(
-            'Entendido',
-            style: GoogleFonts.lato(fontWeight: FontWeight.w600),
-          ),
-        ),
-        
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildUserInfoHeader() {
     final plan = _mealPlanData!.nutritionPlan;
@@ -1269,7 +1392,7 @@ void _showExcessAdviceDialog(BuildContext context, int proteinExcess, int carbsE
                     _updateSelection(mealTitle, category, option),
                 isRegistering: _registeringMeals.contains(mealTitle),
                 isCompleted: _completedMeals.contains(mealTitle),
-                  onDeselectionRequested: _removeSelection, // AGREGAR
+                onDeselectionRequested: _removeSelection, // AGREGAR
 
                 onRegister: () {
                   final selectionsForMeal =
