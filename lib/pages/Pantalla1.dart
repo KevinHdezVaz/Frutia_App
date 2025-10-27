@@ -687,7 +687,7 @@ pw.Widget _buildUnifiedRecommendationsSection() {
 
         // 💧 SECCIÓN 2: Hidratación y Medición
         pw.Text(
-          '💧 Hidratación y Medición:',
+          '* Hidratación y Medición:',
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -715,7 +715,7 @@ pw.Widget _buildUnifiedRecommendationsSection() {
 
         // 📅 SECCIÓN 3: Organización
         pw.Text(
-          '📅 Organización:',
+          '* Organización:',
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -743,7 +743,7 @@ pw.Widget _buildUnifiedRecommendationsSection() {
 
         // 🍳 SECCIÓN 4: Cocina
         pw.Text(
-          '🍳 Cocina:',
+          '* Cocina:',
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -780,7 +780,7 @@ pw.Widget _buildImportantTipsBox() {
                   shape: pw.BoxShape.circle,
                 ),
                 child: pw.Text(
-                  '💡',
+                  '*',
                   style: pw.TextStyle(fontSize: 14),
                 ),
               ),
@@ -802,7 +802,7 @@ pw.Widget _buildImportantTipsBox() {
           ),
           pw.SizedBox(height: 5),
           pw.Text(
-            '• Si tienes dudas sobre cómo preparar un alimento, consulta con tu nutricionista',
+            '• Si tienes dudas sobre cómo preparar un alimento, consulta con el chat de FRUTIA (tu nuevo nutricionista)',
             style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
           pw.SizedBox(height: 5),
