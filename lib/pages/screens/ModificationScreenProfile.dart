@@ -293,7 +293,7 @@ Future<void> _pickAndAnalyzeImage() async {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Para un mejor resultado: foto de cuerpo completo, con ropa ajustada y buena iluminación.',
+                    'Para un mejor resultado: Foto de cuerpo completo, en ropa interior o traje de baño, luz natural o buena iluminación',
                     style: GoogleFonts.lato(
                         fontSize: 15,
                         color: FrutiaColors.secondaryText,

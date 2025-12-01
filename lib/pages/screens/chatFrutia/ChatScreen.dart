@@ -24,6 +24,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -33,7 +34,6 @@ import 'package:flutter/painting.dart'
 
 import 'dart:math';
 import 'dart:async';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart'; // Para Clipboard
 
@@ -966,7 +966,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Future<void> _saveChat() async {
     if (_messages.isEmpty) {
-      _showErrorSnackBar('noMessagesToSave'.tr());
+      _showErrorSnackBar('noMessagesToSave');
       return;
     }
 
@@ -1046,7 +1046,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       );
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnackBar('errorSavingChat'.tr(args: [e.toString()]));
+      _showErrorSnackBar('errorSavingChat');
     }
   }
 
@@ -1378,20 +1378,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   String _getEmotionalStateText(String? state) {
     switch (state) {
       case 'sensitive':
-        return 'sensitiveState'.tr();
+        return 'sensitiveState';
       case 'crisis':
-        return 'crisisState'.tr();
+        return 'crisisState';
       default:
-        return 'neutralState'.tr();
+        return 'neutralState';
     }
   }
 
   String _getConversationLevelText(String? level) {
     switch (level) {
       case 'advanced':
-        return 'advancedLevel'.tr();
+        return 'advancedLevel';
       default:
-        return 'basicLevel'.tr();
+        return 'basicLevel';
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/model/ChatSession.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatScreen.dart';
 import 'package:Frutia/pages/screens/chatFrutia/VoiceChatScreen.dart';
@@ -52,11 +53,16 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('Error al cargar las conversaciones: $e');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        _showError('${l10n.errorLoadingConversations}: $e');
+      }
     }
   }
 
   void _showError(String message) {
+    final l10n = AppLocalizations.of(context)!;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: TextStyle(color: Colors.white)),
@@ -81,6 +87,8 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
   }
 
   Future<void> _deleteSession(int id) async {
+    final l10n = AppLocalizations.of(context)!;
+
     try {
       await _chatService.deleteSession(id);
       setState(() {
@@ -88,7 +96,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Conversación eliminada'),
+          content: Text(l10n.conversationDeleted),
           backgroundColor: Colors.green,
         ),
       );
@@ -119,6 +127,8 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: tiffanyColor,
       appBar: AppBar(
@@ -133,7 +143,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
           ),
         ),
         title: Text(
-          'Tus chats con Frutia',
+          l10n.yourChatsWithFrutia,
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -187,7 +197,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
                           8.0), // Añadí padding interno al Card
                       child: TextField(
                         decoration: InputDecoration(
-                          hintText: 'Buscar conversaciones...',
+                          hintText: l10n.searchConversations,
                           hintStyle: GoogleFonts.poppins(
                               color: darkTextColor.withOpacity(0.5)),
                           prefixIcon:
@@ -298,6 +308,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
   }
 
   void _showDeleteDialog(int sessionId) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -319,7 +330,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
               ),
               SizedBox(height: 16),
               Text(
-                'Eliminar Conversación',
+                l10n.deleteConversation,
                 style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -329,7 +340,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
               ),
               SizedBox(height: 12),
               Text(
-                '¿Estás seguro de que quieres eliminar esta conversación?',
+                l10n.sureDeleteConversation,
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   color: darkTextColor.withOpacity(0.7),
@@ -350,7 +361,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
                           EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
                     child: Text(
-                      'Cancelar',
+                      l10n.cancel,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         color: darkTextColor,
@@ -371,7 +382,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
                           EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
                     child: Text(
-                      'Eliminar',
+                      l10n.delete,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
@@ -416,117 +427,124 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen>
   }
 
   Widget _buildNewChatButtons() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      // Adaptamos el diseño según el ancho disponible
-      final bool isWide = constraints.maxWidth > 600; // Tablet o pantallas anchas
-      final double buttonPadding = isWide ? 24.0 : 16.0;
-      final double iconSize = isWide ? 24.0 : 20.0;
-      final double fontSize = isWide ? 18.0 : 16.0;
+    final l10n = AppLocalizations.of(context)!;
 
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildChatButton(
-              context,
-              icon: Icons.message,
-              label: 'Chat Normal',
-              backgroundColor: FrutiaColors.accent,
-              textColor: Colors.white,
-              iconColor: Colors.white,
-              onPressed: () => _startNewConversation(inputMode: 'keyboard'),
-              padding: buttonPadding,
-              iconSize: iconSize,
-              fontSize: fontSize,
-            ),
-            SizedBox(height: 30),
-            _buildChatButton(
-              context,
-              icon: Icons.mic,
-              label: 'Chat de Voz',
-              backgroundColor: Colors.white,
-              textColor: FrutiaColors.accent,
-              iconColor: Colors.black,
-              borderColor: FrutiaColors.accent,
-              onPressed: _navigateToVoiceChat,
-              padding: buttonPadding,
-              iconSize: iconSize,
-              fontSize: fontSize,
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Adaptamos el diseño según el ancho disponible
+        final bool isWide =
+            constraints.maxWidth > 600; // Tablet o pantallas anchas
+        final double buttonPadding = isWide ? 24.0 : 16.0;
+        final double iconSize = isWide ? 24.0 : 20.0;
+        final double fontSize = isWide ? 18.0 : 16.0;
 
-Widget _buildChatButton(
-  BuildContext context, {
-  required IconData icon,
-  required String label,
-  required Color backgroundColor,
-  required Color textColor,
-  required Color iconColor,
-  Color? borderColor,
-  required VoidCallback onPressed,
-  required double padding,
-  required double iconSize,
-  required double fontSize,
-}) {
-  return ElevatedButton(
-    onPressed: onPressed,
-    style: ElevatedButton.styleFrom(
-      backgroundColor: backgroundColor,
-      foregroundColor: textColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: borderColor != null 
-          ? BorderSide(color: borderColor, width: 1)
-          : BorderSide.none,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: padding, 
-        vertical: 12,
-      ),
-      elevation: 2,
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: iconSize, color: iconColor),
-        SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600, 
-            fontSize: fontSize,
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildChatButton(
+                context,
+                icon: Icons.message,
+                label: l10n.normalChat,
+                backgroundColor: FrutiaColors.accent,
+                textColor: Colors.white,
+                iconColor: Colors.white,
+                onPressed: () => _startNewConversation(inputMode: 'keyboard'),
+                padding: buttonPadding,
+                iconSize: iconSize,
+                fontSize: fontSize,
+              ),
+              SizedBox(height: 30),
+              _buildChatButton(
+                context,
+                icon: Icons.mic,
+                label: l10n.voiceChat,
+                backgroundColor: Colors.white,
+                textColor: FrutiaColors.accent,
+                iconColor: Colors.black,
+                borderColor: FrutiaColors.accent,
+                onPressed: _navigateToVoiceChat,
+                padding: buttonPadding,
+                iconSize: iconSize,
+                fontSize: fontSize,
+              ),
+            ],
           ),
-        ),
-      ],
-    ),
-  );
-}
+        );
+      },
+    );
+  }
 
-void _navigateToVoiceChat() async {
-  try {
-    await Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const VoiceChatScreen(language: "es-ES"),
+  Widget _buildChatButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color iconColor,
+    Color? borderColor,
+    required VoidCallback onPressed,
+    required double padding,
+    required double iconSize,
+    required double fontSize,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: textColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: borderColor != null
+              ? BorderSide(color: borderColor, width: 1)
+              : BorderSide.none,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: padding,
+          vertical: 12,
+        ),
+        elevation: 2,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: iconSize, color: iconColor),
+          SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: fontSize,
+            ),
+          ),
+        ],
       ),
     );
-  } catch (e) {
-    debugPrint("Error al navegar a VoiceChatScreen: $e");
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al iniciar el chat de voz: ${e.toString()}')),
+  }
+
+  void _navigateToVoiceChat() async {
+    try {
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const VoiceChatScreen(language: "es-ES"),
+        ),
       );
+    } catch (e) {
+      debugPrint("Error al navegar a VoiceChatScreen: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Error al iniciar el chat de voz: ${e.toString()}')),
+        );
+      }
     }
   }
-}
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(10.0),
@@ -546,7 +564,7 @@ void _navigateToVoiceChat() async {
             ),
             const SizedBox(height: 24),
             Text(
-              '¡No hay conversaciones aún!',
+              l10n.noConversationsYet,
               style: GoogleFonts.poppins(
                 color: darkTextColor,
                 fontSize: 24,
@@ -556,7 +574,7 @@ void _navigateToVoiceChat() async {
             ),
             const SizedBox(height: 12),
             Text(
-              'Empieza una nueva conversación con Frutia, ya sea por texto o voz.',
+              l10n.startNewConversation,
               style: GoogleFonts.poppins(
                 color: darkTextColor.withOpacity(0.7),
                 fontSize: 16,
@@ -572,6 +590,7 @@ void _navigateToVoiceChat() async {
   }
 
   String _formatDate(DateTime date) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -580,9 +599,9 @@ void _navigateToVoiceChat() async {
     final formattedTime = _formatTime(date);
 
     if (dateOnly == today) {
-      return 'Hoy a las $formattedTime';
+      return l10n.todayAt(formattedTime);
     } else if (dateOnly == yesterday) {
-      return 'Ayer a las $formattedTime';
+      return l10n.yesterdayAt(formattedTime);
     } else {
       return '${date.day}/${date.month}/${date.year} $formattedTime';
     }

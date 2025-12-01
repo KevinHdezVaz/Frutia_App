@@ -3,6 +3,7 @@ import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/providers/ShoppingProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,8 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
-// Llaves globales que pueden ser útiles en toda la app
+import 'l10n/app_localizations.dart';
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -25,13 +27,18 @@ final BonoService _bonoService = BonoService(baseUrl: baseUrl);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ⭐ BLOQUEAR ORIENTACIÓN A VERTICAL
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   SharedPreferences prefs = await SharedPreferences.getInstance();
   int isviewed = prefs.getInt('onBoard') ?? 1;
 
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Configuración de OneSignal
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
   OneSignal.Debug.setAlertLevel(OSLogLevel.none);
   OneSignal.initialize("5fad8140-b31f-4893-b00f-5f896e38b7d6");
@@ -61,7 +68,6 @@ Future<void> main() async {
   );
 }
 
-// MyApp puede volver a ser un StatelessWidget, ya que no necesita manejar el estado de los deep links.
 class MyApp extends StatelessWidget {
   final int isviewed;
 
@@ -76,21 +82,20 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           scaffoldMessengerKey: scaffoldMessengerKey,
           localizationsDelegates: const [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [
-            Locale('es', 'ES'),
-            Locale('en', 'US'),
+            Locale('en'),
+            Locale('es'),
           ],
-          locale: const Locale('es', 'ES'),
           themeMode: themeProvider.currentTheme,
           theme: lightTheme,
           darkTheme: darkTheme,
           home: SplashScreen(isviewed: isviewed),
           builder: (context, child) {
-            // El ShowCaseWidget se puede mantener aquí si se usa en múltiples partes de la app.
             return ShowCaseWidget(
               builder: (ctx) => child!,
             );

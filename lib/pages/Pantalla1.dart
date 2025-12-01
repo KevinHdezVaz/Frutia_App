@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/historyScreen.dart';
 import 'package:Frutia/pages/screens/miplan/DescargarPDFDialog.dart';
@@ -47,6 +48,8 @@ class _ProfessionalMiPlanDiarioScreenState
   final Set<String> _registeringMeals = {};
   final Set<String> _completedMeals = {};
 
+  String? _selectedSnack; // 'Snack AM' o 'Snack PM' o null
+
   @override
   void initState() {
     super.initState();
@@ -91,14 +94,46 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
-// MODIFICAR: Actualizar método de selección con validación
   void _updateSelection(
       String mealTitle, String categoryTitle, MealOption option) {
     if (_completedMeals.contains(mealTitle)) return;
 
-    // Validar antes de actualizar
     final warnings = _validateOption(mealTitle, categoryTitle, option);
+    final criticalWarnings = warnings.where((w) => w.contains('🔴')).toList();
 
+    if (criticalWarnings.isNotEmpty) {
+      _showValidationWarning(
+        warnings,
+        option, // ⭐ AGREGAR ESTA LÍNEA
+        onProceed: () {
+          _performSelection(mealTitle, categoryTitle, option, warnings);
+        },
+        onCancel: () {
+          debugPrint('Selección cancelada por el usuario');
+        },
+      );
+    } else {
+      _performSelection(mealTitle, categoryTitle, option, warnings);
+
+      if (warnings.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: warnings.map((w) => Text(w)).toList(),
+            ),
+            backgroundColor: Colors.blue.shade700,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+// Método auxiliar para realizar la selección
+  void _performSelection(String mealTitle, String categoryTitle,
+      MealOption option, List<String> warnings) {
     setState(() {
       _dailySelections[mealTitle]![categoryTitle] = option;
       _validationWarnings[mealTitle] = warnings;
@@ -110,39 +145,78 @@ class _ProfessionalMiPlanDiarioScreenState
 
       _calculateTotals();
     });
-
-    // Mostrar warnings si existen
-    if (warnings.isNotEmpty) {
-      _showValidationWarning(warnings);
-    }
   }
 
-  // NUEVO: Método de validación
   List<String> _validateOption(
       String mealTitle, String categoryTitle, MealOption option) {
     List<String> warnings = [];
 
-    // 1. Validar presupuesto
+    if (_mealPlanData == null) return warnings;
+
+    final plan = _mealPlanData!.nutritionPlan;
+
+    // 1. CALCULAR MACROS PROYECTADOS
+    int projectedCalories = _totalCalories + option.calories;
+    int projectedProtein = _totalProtein + option.protein;
+    int projectedCarbs = _totalCarbs + option.carbs;
+    int projectedFats = _totalFats + option.fats;
+
+    final currentSelection = _dailySelections[mealTitle]?[categoryTitle];
+    if (currentSelection != null) {
+      projectedCalories =
+          projectedCalories - currentSelection.calories + option.calories;
+      projectedProtein =
+          projectedProtein - currentSelection.protein + option.protein;
+      projectedCarbs = projectedCarbs - currentSelection.carbs + option.carbs;
+      projectedFats = projectedFats - currentSelection.fats + option.fats;
+    }
+
+    // 2. CALCULAR EXCESOS
+    final targetCalories = plan.targetMacros.calories;
+    final targetProtein = plan.targetMacros.protein;
+    final targetCarbs = plan.targetMacros.carbs;
+    final targetFats = plan.targetMacros.fats;
+
+    int caloriesExcess = projectedCalories - targetCalories;
+    int proteinExcess = projectedProtein - targetProtein;
+    int carbsExcess = projectedCarbs - targetCarbs;
+    int fatsExcess = projectedFats - targetFats;
+
+    // 3. VALIDAR Y AGREGAR WARNINGS CON CÁLCULO DE AJUSTE
+    if (caloriesExcess > 0) {
+      warnings.add(
+          '🔴CALORIAS|${caloriesExcess}|${option.name}|${option.calories}|${caloriesExcess}|0|0|0');
+    }
+
+    if (proteinExcess > 10) {
+      warnings.add(
+          '🔴PROTEINA|${proteinExcess}|${option.name}|0|${proteinExcess}|0|0');
+    }
+
+    if (carbsExcess > 15) {
+      warnings.add(
+          '🔴CARBOHIDRATOS|${carbsExcess}|${option.name}|0|0|${carbsExcess}|0');
+    }
+
+    if (fatsExcess > 10) {
+      warnings.add('🔴GRASAS|${fatsExcess}|${option.name}|0|0|0|${fatsExcess}');
+    }
+
+    // 4. Validar presupuesto
     if (_userBudget != null) {
       bool isLowBudget = _userBudget!.contains('bajo');
-
       if (isLowBudget && option.isHighBudget) {
         warnings.add(
-            '⚠️ "${option.name}" es de presupuesto alto, pero tu plan es económico');
-      } else if (!isLowBudget && option.isLowBudget) {
-        warnings
-            .add('💡 Tienes presupuesto alto, podrías elegir opciones premium');
+            '💰 "${option.name}" es de presupuesto alto, pero tu plan es económico');
       }
     }
 
-    // 2. Validar repetición de huevos
+    // 5. Validar repetición de huevos
     if (option.isEgg) {
-      // Verificar si ya hay huevos en otras comidas
       int eggCount = 0;
       _hasEggSelection.forEach((meal, hasEgg) {
         if (meal != mealTitle && hasEgg) eggCount++;
       });
-
       if (eggCount > 0) {
         warnings.add(
             '🥚 Ya seleccionaste huevos en otra comida. Máximo 1 vez al día');
@@ -150,6 +224,65 @@ class _ProfessionalMiPlanDiarioScreenState
     }
 
     return warnings;
+  }
+
+  // Calcular porción ajustada para no exceder macros
+  Map<String, dynamic> _calculateAdjustedPortion(MealOption option,
+      int caloriesExcess, int proteinExcess, int carbsExcess, int fatsExcess) {
+    double reductionFactor = 1.0;
+
+    // Calcular el factor de reducción basado en el macro que más se excede
+    if (caloriesExcess > 0) {
+      double caloriesFactor =
+          (option.calories - caloriesExcess) / option.calories;
+      if (caloriesFactor > 0 && caloriesFactor < reductionFactor) {
+        reductionFactor = caloriesFactor;
+      }
+    }
+
+    if (proteinExcess > 10) {
+      double proteinFactor = (option.protein - proteinExcess) / option.protein;
+      if (proteinFactor > 0 && proteinFactor < reductionFactor) {
+        reductionFactor = proteinFactor;
+      }
+    }
+
+    if (carbsExcess > 15) {
+      double carbsFactor = (option.carbs - carbsExcess) / option.carbs;
+      if (carbsFactor > 0 && carbsFactor < reductionFactor) {
+        reductionFactor = carbsFactor;
+      }
+    }
+
+    if (fatsExcess > 10) {
+      double fatsFactor = (option.fats - fatsExcess) / option.fats;
+      if (fatsFactor > 0 && fatsFactor < reductionFactor) {
+        reductionFactor = fatsFactor;
+      }
+    }
+
+    // Extraer el peso numérico de la porción original
+    final portionMatch = RegExp(r'(\d+)g').firstMatch(option.portion);
+    if (portionMatch == null) {
+      return {
+        'canAdjust': false,
+        'message': 'No se puede calcular ajuste automático para esta porción'
+      };
+    }
+
+    final originalWeight = int.parse(portionMatch.group(1)!);
+    final adjustedWeight = (originalWeight * reductionFactor).round();
+
+    return {
+      'canAdjust': true,
+      'originalWeight': originalWeight,
+      'adjustedWeight': adjustedWeight,
+      'reductionPercent': ((1 - reductionFactor) * 100).round(),
+      'adjustedCalories': (option.calories * reductionFactor).round(),
+      'adjustedProtein': (option.protein * reductionFactor).round(),
+      'adjustedCarbs': (option.carbs * reductionFactor).round(),
+      'adjustedFats': (option.fats * reductionFactor).round(),
+    };
   }
 
   // NUEVO: Obtener porcentaje de macros por comida
@@ -166,27 +299,510 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
-  void _showValidationWarning(List<String> warnings) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: warnings.map((w) => Text(w)).toList(),
+  void _showValidationWarning(List<String> warnings, MealOption option,
+      {VoidCallback? onProceed, VoidCallback? onCancel}) {
+    // Separar advertencias críticas
+    final criticalWarnings = warnings.where((w) => w.startsWith('🔴')).toList();
+    final suggestions = warnings.where((w) => !w.startsWith('🔴')).toList();
+
+    // Calcular excesos totales
+    int totalCaloriesExcess = 0;
+    int totalProteinExcess = 0;
+    int totalCarbsExcess = 0;
+    int totalFatsExcess = 0;
+
+    for (var warning in criticalWarnings) {
+      final parts = warning.split('|');
+      if (parts.length >= 8) {
+        totalCaloriesExcess += int.tryParse(parts[4]) ?? 0;
+        totalProteinExcess += int.tryParse(parts[5]) ?? 0;
+        totalCarbsExcess += int.tryParse(parts[6]) ?? 0;
+        totalFatsExcess += int.tryParse(parts[7]) ?? 0;
+      }
+    }
+
+    // ⭐ NUEVO: Calcular porción ajustada
+    final adjustment = _calculateAdjustedPortion(option, totalCaloriesExcess,
+        totalProteinExcess, totalCarbsExcess, totalFatsExcess);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.error_outline, color: Colors.red, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '¡Atención!',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: FrutiaColors.primaryText,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: Colors.orange.shade700,
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'Entendido',
-          textColor: Colors.white,
-          onPressed: () {},
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ⚠️ ADVERTENCIAS CRÍTICAS
+              if (criticalWarnings.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.priority_high,
+                              color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Excederás tus macros:',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...criticalWarnings.map((w) {
+                        final parts = w.split('|');
+                        final macro = parts[0].replaceAll('🔴', '');
+                        final excess = parts[1];
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('• ', style: TextStyle(color: Colors.red)),
+                              Expanded(
+                                child: Text(
+                                  'Si seleccionas "${option.name}", excederás $macro: +${excess}',
+                                  style: GoogleFonts.lato(
+                                    fontSize: 13,
+                                    color: Colors.red.shade700,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ✅ SOLUCIÓN: PORCIÓN AJUSTADA O MENSAJE DEL CHAT
+              if (adjustment['canAdjust'] == true) ...[
+                _buildAdjustmentSuggestion(adjustment, option),
+              ] else ...[
+                _buildChatSuggestion(option),
+              ],
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onCancel?.call();
+            },
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.lato(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onProceed?.call();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Seleccionar de todas formas',
+              style: GoogleFonts.lato(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+// ⭐ HELPER: Mostrar macro restante con color dinámico
+  Widget _buildMiniMacroWithRemaining(
+      String label, int remaining, Color color) {
+    final isNegative = remaining < 0;
+    return Column(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.lato(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Row(
+          children: [
+            Icon(
+              isNegative ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 12,
+              color: isNegative ? Colors.red : Colors.green,
+            ),
+            Text(
+              '${remaining.abs()}g',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isNegative ? Colors.red : color,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+// ✅ WIDGET: Sugerencia de Ajuste (cuando SÍ se puede calcular)
+  Widget _buildAdjustmentSuggestion(
+      Map<String, dynamic> adjustment, MealOption option) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.withOpacity(0.1),
+            Colors.green.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withOpacity(0.4), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    Icon(Icons.scale_outlined, color: Colors.green, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '💡 Sugerencia de Ajuste',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.green.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Porción Original',
+                          style: GoogleFonts.lato(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${adjustment['originalWeight']}g',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade700,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(Icons.arrow_forward, color: Colors.green, size: 24),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Porción Ajustada',
+                          style: GoogleFonts.lato(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${adjustment['adjustedWeight']}g',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Reduce ${adjustment['reductionPercent']}% la porción (aproximadamente ${adjustment['originalWeight'] - adjustment['adjustedWeight']}g menos)',
+                    style: GoogleFonts.lato(
+                      fontSize: 12,
+                      color: Colors.green.shade800,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildMiniMacro(
+                        'Cal', adjustment['adjustedCalories'], Colors.orange),
+                    _buildMiniMacro(
+                        'P', adjustment['adjustedProtein'], Colors.blue),
+                    _buildMiniMacro(
+                        'C', adjustment['adjustedCarbs'], Colors.green),
+                    _buildMiniMacro(
+                        'G', adjustment['adjustedFats'], Colors.purple),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ WIDGET: Mensaje del Chat (cuando NO se puede calcular) - CON CONTEXTO
+  Widget _buildChatSuggestion(MealOption option) {
+    // ⭐ Generar mensaje personalizado basado en el día
+    final contextMessage = _generateContextualAdvice(option);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            FrutiaColors.accent.withOpacity(0.1),
+            FrutiaColors.accent2.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border:
+            Border.all(color: FrutiaColors.accent.withOpacity(0.3), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: FrutiaColors.accent.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.chat_bubble_outline,
+                    color: FrutiaColors.accent, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '💡 Consejo Personalizado',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    color: FrutiaColors.accent,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: FrutiaColors.accent.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ⭐ NUEVO: Mensaje contextual
+                Text(
+                  contextMessage,
+                  style: GoogleFonts.lato(
+                    fontSize: 13,
+                    color: Colors.grey.shade800,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline,
+                        color: FrutiaColors.accent, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Pregunta a Frutia Chat:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: FrutiaColors.accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: FrutiaColors.accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '"Ya comí [X], ¿puedo comer ${option.name} sin excederme?"',
+                    style: GoogleFonts.lato(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: FrutiaColors.accent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// ⭐ NUEVO MÉTODO: Genera consejo contextual basado en el día
+  String _generateContextualAdvice(MealOption option) {
+    if (_completedMeals.isEmpty) {
+      return 'Seleccionar "${option.name}" excedería tus macros diarios. Como aún no has comido nada, considera redistribuir tus porciones en las próximas comidas.';
+    }
+
+    final plan = _mealPlanData!.nutritionPlan;
+
+    // Calcular consumido
+    int consumedCalories = 0;
+    _completedMeals.forEach((mealTitle) {
+      final selections = _dailySelections[mealTitle] ?? {};
+      selections.values.forEach((opt) {
+        consumedCalories += opt.calories;
+      });
+    });
+
+    final remainingCalories = plan.targetMacros.calories - consumedCalories;
+    final mealsLeft =
+        3 - _completedMeals.length; // Suponiendo 3 comidas principales
+
+    if (remainingCalories < option.calories) {
+      return 'Ya consumiste ${consumedCalories} kcal hoy. "${option.name}" (${option.calories} kcal) excede tus ${remainingCalories} kcal restantes. Deberías reducir otras comidas o elegir una opción más ligera.';
+    }
+
+    if (mealsLeft == 0) {
+      return 'Has completado todas tus comidas del día y "${option.name}" te haría exceder tu objetivo. Considera dejarlo para mañana o reduce la porción significativamente.';
+    }
+
+    return 'Llevas ${consumedCalories} kcal consumidas. Si comes "${option.name}" completo (${option.calories} kcal), te quedarán ${remainingCalories - option.calories} kcal para ${mealsLeft} comida(s) más. Ajusta tus porciones en consecuencia.';
+  }
+
+// Widget helper para mostrar macros pequeños
+  Widget _buildMiniMacro(String label, int value, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.lato(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          '$value',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 
   Future<void> _registerMeal(
       String mealTitle, List<MealOption> selections) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _registeringMeals.add(mealTitle);
     });
@@ -203,14 +819,14 @@ class _ProfessionalMiPlanDiarioScreenState
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$mealTitle registrado con éxito.'),
+          content: Text(l10n.mealRegisteredSuccess(mealTitle)),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al registrar: ${e.toString()}'),
+          content: Text(l10n.errorRegistering(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -348,9 +964,7 @@ class _ProfessionalMiPlanDiarioScreenState
     });
   }
 
- 
-
- Future<void> _generateAndDownloadPDF() async {
+  Future<void> _generateAndDownloadPDF() async {
     if (_mealPlanData == null || _userProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -385,7 +999,25 @@ class _ProfessionalMiPlanDiarioScreenState
       final pw.ThemeData theme =
           pw.ThemeData.withFont(base: font, bold: boldFont);
 
-      // PÁGINA 1: Plan de comidas
+      // ✅ PÁGINA 1: INSTRUCCIONES DE USO (NUEVA)
+      pdf.addPage(
+        pw.MultiPage(
+          theme: theme,
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          header: (context) =>
+              _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
+          build: (pw.Context context) => [
+            _buildWelcomeSection(profile['name'] ?? 'Usuario'),
+            pw.SizedBox(height: 20),
+            _buildHowToUseSection(),
+            pw.SizedBox(height: 20),
+            _buildFrutiaChatSection(),
+          ],
+        ),
+      );
+
+      // PÁGINA 2: Plan de comidas
       pdf.addPage(
         pw.MultiPage(
           theme: theme,
@@ -413,7 +1045,7 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
       );
 
-      // ✅ PÁGINA 2: RECOMENDACIONES UNIFICADAS (SIN TABLA)
+      // PÁGINA 3: RECOMENDACIONES
       pdf.addPage(
         pw.MultiPage(
           theme: theme,
@@ -422,9 +1054,9 @@ class _ProfessionalMiPlanDiarioScreenState
           header: (context) =>
               _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
           build: (pw.Context context) => [
-            _buildUnifiedRecommendationsSection(), // ✅ NUEVO
+            _buildUnifiedRecommendationsSection(),
             pw.SizedBox(height: 20),
-            _buildImportantTipsBox(), // ✅ NUEVO
+            _buildImportantTipsBox(),
           ],
         ),
       );
@@ -444,6 +1076,518 @@ class _ProfessionalMiPlanDiarioScreenState
         SnackBar(content: Text('Error al generar PDF: ${e.toString()}')),
       );
     }
+  }
+
+// ✅ AGREGAR ESTE MÉTODO COMPLETO
+  pw.Widget _buildHowToUseSection() {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Título principal
+        pw.Container(
+          padding: const pw.EdgeInsets.all(15),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.red50,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.red300, width: 2),
+          ),
+          child: pw.Row(
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.red200,
+                  shape: pw.BoxShape.circle,
+                ),
+                child: pw.Text(
+                  '!', // ← CAMBIAR: Usar signo de exclamación
+                  style: pw.TextStyle(
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.red900,
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 12),
+              pw.Expanded(
+                child: pw.Text(
+                  '¿CÓMO SEGUIR TU PLAN CORRECTAMENTE?',
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.red900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 20),
+
+        // INSTRUCCIÓN 1
+        pw.Container(
+          padding: const pw.EdgeInsets.all(15),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.orange50,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.orange300, width: 1.5),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(8),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.orange200,
+                      shape: pw.BoxShape.circle,
+                    ),
+                    child: pw.Text(
+                      '1',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.orange900,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(width: 10),
+                  pw.Expanded(
+                    child: pw.Text(
+                      'SELECCIONA SOLO UNA OPCIÓN POR GRUPO',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.orange900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                'En cada comida encontrarás 3 grupos:',
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 15),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _buildBulletPoint('Proteínas: Elige UNA opción'),
+                    _buildBulletPoint('Carbohidratos: Elige UNA opción'),
+                    _buildBulletPoint('Grasas: Elige UNA opción'),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.red100,
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(
+                      child: pw.Text(
+                        'IMPORTANTE: NO selecciones todas las opciones. Solo UNA de cada grupo por comida.',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.red900,
+                          height: 1.4,
+                        ),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 15),
+
+        // INSTRUCCIÓN 2
+        pw.Container(
+          padding: const pw.EdgeInsets.all(15),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.blue50,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.blue300, width: 1.5),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(8),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.blue200,
+                      shape: pw.BoxShape.circle,
+                    ),
+                    child: pw.Text(
+                      '2',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blue900,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(width: 10),
+                  pw.Expanded(
+                    child: pw.Text(
+                      'USA LA APP PARA CONTROLAR TUS MACROS',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blue900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                'La aplicación FRUTIA te ayudará a:',
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  color: PdfColors.grey800,
+                  height: 1.5,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 15),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _buildBulletPoint('Seleccionar tus alimentos cada día'),
+                    _buildBulletPoint(
+                        'Ver en tiempo real tus macronutrientes acumulados'),
+                    _buildBulletPoint(
+                        'Advertirte ANTES de exceder tus límites'),
+                    _buildBulletPoint(
+                        'Ajustar tu plan según tus preferencias diarias'),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.blue100,
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(
+                      child: pw.Text(
+                        'TIP: No todos los alimentos tienen el mismo aporte calórico. Por eso es crucial que uses la app para ir seleccionando lo que consumes.',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.blue900,
+                          height: 1.4,
+                          fontStyle: pw.FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 15),
+
+        // INSTRUCCIÓN 3
+        pw.Container(
+          padding: const pw.EdgeInsets.all(15),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.green50,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: PdfColors.green300, width: 1.5),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(8),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.green200,
+                      shape: pw.BoxShape.circle,
+                    ),
+                    child: pw.Text(
+                      '3',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(width: 10),
+                  pw.Expanded(
+                    child: pw.Text(
+                      'APRENDE A MANIPULAR TU DIETA',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                'Tu plan es FLEXIBLE. Puedes:',
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  color: PdfColors.grey800,
+                  height: 1.5,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 15),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _buildBulletPoint(
+                        'Comer más en el desayuno y menos en la cena'),
+                    _buildBulletPoint('Distribuir tus macros como prefieras'),
+                    _buildBulletPoint(
+                        'Variar tus alimentos cada día para no aburrirte'),
+                    _buildBulletPoint(
+                        'Ajustar porciones según tu hambre (sin exceder macros)'),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.green100,
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(
+                      child: pw.Text(
+                        'OBJETIVO: Que aprendas a medir tu plan y evitar excesos. La variedad de alimentos te ayudará a no saturarte.',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.green900,
+                          height: 1.4,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+// ✅ AGREGAR ESTE MÉTODO COMPLETO
+  pw.Widget _buildFrutiaChatSection() {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(20),
+      decoration: pw.BoxDecoration(
+        gradient: pw.LinearGradient(
+          colors: [PdfColors.purple50, PdfColors.purple100],
+        ),
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColors.purple300, width: 2),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.purple200,
+                  shape: pw.BoxShape.circle,
+                ),
+                child: pw.Text(
+                  'AI', // ← CAMBIAR: Usar texto "AI"
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.purple900,
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 15),
+              pw.Expanded(
+                child: pw.Text(
+                  'FRUTIA CHAT: Tu Nutricionista IA',
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.purple900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 15),
+          pw.Text(
+            '¿Tienes dudas sobre tu plan? FRUTIA Chat es tu inteligencia artificial que simula ser tu nutricionista personal.',
+            style: pw.TextStyle(
+              fontSize: 13,
+              color: PdfColors.grey800,
+              height: 1.5,
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          pw.Text(
+            'Pregúntale sobre:',
+            style: pw.TextStyle(
+              fontSize: 13,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey800,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(left: 15),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildBulletPoint('Dudas sobre tu plan alimenticio'),
+                _buildBulletPoint('Sustituciones de alimentos'),
+                _buildBulletPoint('Recetas con los ingredientes de tu plan'),
+                _buildBulletPoint('Consejos para tu progreso físico'),
+                _buildBulletPoint('Cómo preparar cada alimento'),
+                _buildBulletPoint('Cualquier duda nutricional'),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.purple200,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Row(
+              children: [
+                pw.Text(
+                  '24/7', // ← CAMBIAR: Usar texto
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.purple900,
+                  ),
+                ),
+                pw.SizedBox(width: 10),
+                pw.Expanded(
+                  child: pw.Text(
+                    'Disponible 24/7 dentro de la aplicación FRUTIA',
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.purple900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+// ✅ AGREGAR ESTE MÉTODO HELPER
+  pw.Widget _buildBulletPoint(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            '• ',
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey800,
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              text,
+              style: pw.TextStyle(
+                fontSize: 12,
+                color: PdfColors.grey800,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ AGREGAR ESTE MÉTODO COMPLETO
+  pw.Widget _buildWelcomeSection(String userName) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(20),
+      decoration: pw.BoxDecoration(
+        gradient: pw.LinearGradient(
+          colors: [PdfColors.blue50, PdfColors.blue100],
+        ),
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColors.blue300, width: 2),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  '¡Bienvenido a tu Plan Personalizado, $userName!',
+                  style: pw.TextStyle(
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blue900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 15),
+          pw.Text(
+            'Este plan ha sido diseñado específicamente para ti, tomando en cuenta tu objetivo, estilo de vida y preferencias alimentarias.',
+            style: pw.TextStyle(
+              fontSize: 13,
+              color: PdfColors.grey800,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
 // Método para el mensaje personalizado
@@ -468,29 +1612,90 @@ class _ProfessionalMiPlanDiarioScreenState
     );
   }
 
-// Método para la instrucción importante
+// ✅ REEMPLAZAR tu método _buildImportantInstruction() actual con este:
   pw.Widget _buildImportantInstruction() {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
+      padding: const pw.EdgeInsets.all(15),
       decoration: pw.BoxDecoration(
-        color: PdfColors.yellow50,
-        border: pw.Border.all(color: PdfColors.amber300, width: 1),
-        borderRadius: pw.BorderRadius.circular(5),
+        color: PdfColors.red50,
+        border: pw.Border.all(color: PdfColors.red300, width: 2),
+        borderRadius: pw.BorderRadius.circular(8),
       ),
-      child: pw.Text(
-        'Instrucción Importante: De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.',
-        style: pw.TextStyle(color: PdfColors.grey800, fontSize: 17),
-        textAlign: pw.TextAlign.center,
+      child: pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.center,
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.red200,
+                  shape: pw.BoxShape.circle,
+                ),
+                child: pw.Text(
+                  '!', // ← CAMBIAR: Usar signo de exclamación
+                  style: pw.TextStyle(
+                    fontSize: 20,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.red900,
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 12),
+              pw.Expanded(
+                child: pw.Text(
+                  '¡REGLA DE ORO!',
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.red900,
+                  ),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 12),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: PdfColors.red200),
+            ),
+            child: pw.Text(
+              'De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.',
+              style: pw.TextStyle(
+                color: PdfColors.red900,
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                height: 1.5,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Text(
+            'Si seleccionas más de una opción por grupo, excederás tus calorías y NO alcanzarás tu objetivo.',
+            style: pw.TextStyle(
+              fontSize: 11,
+              color: PdfColors.red700,
+              fontStyle: pw.FontStyle.italic,
+              height: 1.3,
+            ),
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
 // Método mejorado para cada comida con resumen de macros
-pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
+  pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
     // Calcular macros promedio de la comida
     int totalProtein = 0, totalCarbs = 0, totalFats = 0, totalCalories = 0;
     int optionCount = 0;
-    
+
     for (var category in meal.components) {
       if (category.options.isNotEmpty) {
         var firstOption = category.options.first;
@@ -505,7 +1710,7 @@ pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
     final List<List<String>> tableData = [
       <String>['Componente', 'Opción de Alimento', 'Porción Sugerida'],
     ];
-    
+
     for (var category in meal.components) {
       for (var option in category.options) {
         tableData.add([category.title, option.name, option.portion]);
@@ -524,7 +1729,7 @@ pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
               children: [
                 // Título de la comida
                 pw.Header(level: 2, text: mealTitle),
-                
+
                 // Resumen de macros
                 pw.Container(
                   padding: const pw.EdgeInsets.all(8),
@@ -539,20 +1744,25 @@ pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
                       pw.Text('Calorías: ${totalCalories} kcal',
                           style: pw.TextStyle(
                               fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('P: ${totalProtein}g', style: pw.TextStyle(fontSize: 11)),
-                      pw.Text('C: ${totalCarbs}g', style: pw.TextStyle(fontSize: 11)),
-                      pw.Text('G: ${totalFats}g', style: pw.TextStyle(fontSize: 11)),
+                      pw.Text('P: ${totalProtein}g',
+                          style: pw.TextStyle(fontSize: 11)),
+                      pw.Text('C: ${totalCarbs}g',
+                          style: pw.TextStyle(fontSize: 11)),
+                      pw.Text('G: ${totalFats}g',
+                          style: pw.TextStyle(fontSize: 11)),
                     ],
                   ),
                 ),
-                
+
                 // Tabla de opciones
                 pw.Table.fromTextArray(
-                  border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                  border:
+                      pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                   headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                   cellAlignment: pw.Alignment.centerLeft,
                   cellPadding: const pw.EdgeInsets.all(5),
-                  headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  headerDecoration:
+                      const pw.BoxDecoration(color: PdfColors.grey200),
                   data: tableData,
                   columnWidths: {
                     0: const pw.FlexColumnWidth(2),
@@ -560,7 +1770,7 @@ pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
                     2: const pw.FlexColumnWidth(2),
                   },
                 ),
-                
+
                 // Recetas sugeridas si existen
                 if (meal.suggestedRecipes.isNotEmpty) ...[
                   pw.SizedBox(height: 10),
@@ -580,13 +1790,12 @@ pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
             ),
           ],
         ),
-        
+
         // Espaciado entre secciones
         pw.SizedBox(height: 20),
       ],
     );
-  } 
- 
+  }
 
   pw.Widget _buildPdfHeader(String userName, Uint8List imageBytes) {
     return pw.Container(
@@ -636,9 +1845,8 @@ pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
         ]);
   }
 
-
 // ✅ AGREGAR ESTE MÉTODO COMPLETO
-pw.Widget _buildUnifiedRecommendationsSection() {
+  pw.Widget _buildUnifiedRecommendationsSection() {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -676,7 +1884,8 @@ pw.Widget _buildUnifiedRecommendationsSection() {
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: 'Carbohidratos: Se pesan COCIDOS (excepto avena, crema de arroz, cereales = peso seco)',
+          text:
+              'Carbohidratos: Se pesan COCIDOS (excepto avena, crema de arroz, cereales = peso seco)',
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
@@ -724,11 +1933,13 @@ pw.Widget _buildUnifiedRecommendationsSection() {
         ),
         pw.SizedBox(height: 6),
         pw.Bullet(
-          text: 'Establece horarios fijos de comida y respétalos todos los días',
+          text:
+              'Establece horarios fijos de comida y respétalos todos los días',
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: 'Varía tus recetas e innova en la cocina para evitar la monotonía',
+          text:
+              'Varía tus recetas e innova en la cocina para evitar la monotonía',
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
@@ -736,7 +1947,8 @@ pw.Widget _buildUnifiedRecommendationsSection() {
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: 'Si tendrás un día complicado, adelanta tus comidas o llévalas contigo',
+          text:
+              'Si tendrás un día complicado, adelanta tus comidas o llévalas contigo',
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.SizedBox(height: 12),
@@ -752,7 +1964,8 @@ pw.Widget _buildUnifiedRecommendationsSection() {
         ),
         pw.SizedBox(height: 6),
         pw.Bullet(
-          text: 'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad',
+          text:
+              'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad',
           style: pw.TextStyle(fontSize: 12),
         ),
       ],
@@ -760,7 +1973,7 @@ pw.Widget _buildUnifiedRecommendationsSection() {
   }
 
   // ✅ AGREGAR ESTE MÉTODO COMPLETO
-pw.Widget _buildImportantTipsBox() {
+  pw.Widget _buildImportantTipsBox() {
     return pw.Container(
       padding: const pw.EdgeInsets.all(14),
       decoration: pw.BoxDecoration(
@@ -798,26 +2011,30 @@ pw.Widget _buildImportantTipsBox() {
           pw.SizedBox(height: 10),
           pw.Text(
             '• Las porciones en tu plan ya están calculadas en el peso correcto (cocido o crudo según corresponda)',
-            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
+            style: pw.TextStyle(
+                fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
           pw.SizedBox(height: 5),
           pw.Text(
             '• Si tienes dudas sobre cómo preparar un alimento, consulta con el chat de FRUTIA (tu nuevo nutricionista)',
-            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
+            style: pw.TextStyle(
+                fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
           pw.SizedBox(height: 5),
           pw.Text(
             '• Este plan es personalizado para TI, no lo compartas sin ajustar para otras personas',
-            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800, height: 1.3),
+            style: pw.TextStyle(
+                fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
         ],
       ),
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
@@ -831,7 +2048,7 @@ pw.Widget _buildImportantTipsBox() {
           ),
         ),
         title: Text(
-          'Mi Plan de Hoy',
+          l10n.myPlanForToday,
           style: GoogleFonts.poppins(
               fontWeight: FontWeight.w700, fontSize: 24, color: Colors.white),
         ),
@@ -979,7 +2196,6 @@ pw.Widget _buildImportantTipsBox() {
     }
   }
 
-// Método para determinar el color según el tipo de recomendación
   Color _getRecommendationColor(String recommendation) {
     if (recommendation.toLowerCase().contains('proteína') ||
         recommendation.toLowerCase().contains('pollo') ||
@@ -997,7 +2213,6 @@ pw.Widget _buildImportantTipsBox() {
     return Colors.orange;
   }
 
-// Método para determinar el icono según el tipo de recomendación
   IconData _getRecommendationIcon(String recommendation) {
     if (recommendation.toLowerCase().contains('proteína') ||
         recommendation.toLowerCase().contains('pollo') ||
@@ -1016,7 +2231,6 @@ pw.Widget _buildImportantTipsBox() {
   }
 
   void _contactFrutiaSupport() {
-    // Implementar apertura de chat o WhatsApp
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Contacta a Frutia en WhatsApp: +1234567890')),
     );
@@ -1323,6 +2537,7 @@ pw.Widget _buildImportantTipsBox() {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
       return const Center(
           child: CircularProgressIndicator(color: FrutiaColors.accent));
@@ -1332,7 +2547,7 @@ pw.Widget _buildImportantTipsBox() {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(_errorMessage!,
+          child: Text(l10n.errorLoadingData(_errorMessage!),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red, fontSize: 16)),
         ),
@@ -1340,8 +2555,7 @@ pw.Widget _buildImportantTipsBox() {
     }
 
     if (_mealPlanData == null) {
-      return const Center(
-          child: Text("No se encontró un plan de alimentación."));
+      return Center(child: Text(l10n.noMealPlan));
     }
 
     final plan = _mealPlanData!.nutritionPlan;
@@ -1417,8 +2631,10 @@ pw.Widget _buildImportantTipsBox() {
         return Icons.blender_outlined;
       case 'desayuno':
         return Icons.free_breakfast_outlined;
-      case 'snack de frutas': // ← AGREGAR ESTA LÍNEA
-        return Icons.apple_outlined; // o Icons.eco_outlined para frutas
+      case 'snack am':
+        return Icons.wb_sunny_outlined; // Sol de mañana
+      case 'snack pm':
+        return Icons.wb_twilight_outlined; // Atardecer
       default:
         return Icons.lunch_dining_outlined;
     }
@@ -1452,10 +2668,11 @@ class _MetricsDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: double.infinity,
       child: Container(
-        padding: const EdgeInsets.all(30),
+        padding: EdgeInsets.all(30),
         decoration: BoxDecoration(
           color: FrutiaColors.secondaryBackground,
           borderRadius: BorderRadius.circular(12),
@@ -1463,40 +2680,40 @@ class _MetricsDashboard extends StatelessWidget {
             BoxShadow(
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 8,
-                offset: const Offset(0, 4)),
+                offset: Offset(0, 4)),
           ],
         ),
         child: Column(
           children: [
             Text(
-              "Resumen de tu Día",
+              l10n.yourDaySummary,
               style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: FrutiaColors.primaryText),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Wrap(
               alignment: WrapAlignment.spaceAround,
               spacing: 30.0,
               runSpacing: 20.0,
               children: [
                 _MacroStatCard(
-                  label: 'Proteínas',
+                  label: l10n.protein,
                   value: protein,
                   target: targetProtein,
                   color: Colors.blue,
                   icon: Icons.egg_alt_outlined,
                 ),
                 _MacroStatCard(
-                  label: 'Carbs',
+                  label: l10n.carbs,
                   value: carbs,
                   target: targetCarbs,
                   color: Colors.orange,
                   icon: Icons.local_fire_department_outlined,
                 ),
                 _MacroStatCard(
-                  label: 'Grasas',
+                  label: l10n.fats,
                   value: fats,
                   target: targetFats,
                   color: Colors.purple,
@@ -1514,7 +2731,7 @@ class _MetricsDashboard extends StatelessWidget {
               },
               icon: const Icon(Icons.history, color: FrutiaColors.accent),
               label: Text(
-                'Ver Historial',
+                l10n.viewHistory,
                 style: GoogleFonts.poppins(
                     color: FrutiaColors.accent, fontWeight: FontWeight.bold),
               ),
@@ -1541,7 +2758,7 @@ class _MetricsDashboard extends StatelessWidget {
               icon: Icon(isPremium ? Icons.download : Icons.lock,
                   color: Colors.white),
               label: Text(
-                'Descargar PDF',
+                l10n.downloadPDF,
                 style: GoogleFonts.poppins(
                     color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -1807,6 +3024,8 @@ class _StatPill extends StatelessWidget {
 class _FreeSaladInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ← AGREGAR ESTA LÍNEA
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Container(
@@ -1828,7 +3047,7 @@ class _FreeSaladInfo extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Acompañar con Ensalada LIBRE',
+                l10n.accompanySaladFree,
                 style: GoogleFonts.lato(
                     fontWeight: FontWeight.w600, color: FrutiaColors.accent),
               ),
@@ -1872,10 +3091,12 @@ class _MealCard extends StatelessWidget {
 
   int get _totalCalories =>
       selections.values.fold(0, (sum, item) => sum + item.calories);
-  bool get _isSelectionComplete => selections.length == categories.length;
-
+  bool get _isSelectionComplete =>
+      selections.isNotEmpty; // ✅ Solo requiere AL MENOS una selección
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ← AGREGAR ESTA LÍNEA
+
     final cardColor = isCompleted
         ? Colors.green.withOpacity(0.05)
         : FrutiaColors.secondaryBackground;
@@ -1994,7 +3215,12 @@ class _MealCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Selecciona UNA opción de cada grupo para completar tu $title',
+                        selections.isEmpty
+                            ? l10n.selectAtLeastOneOption(title)
+                            : selections.length < categories.length
+                                ? l10n.canAddMoreOptions(
+                                    selections.length, categories.length)
+                                : l10n.completeMealConfirm(title),
                         style: GoogleFonts.lato(
                             fontSize: 13,
                             color: Colors.blue.shade700,
@@ -2026,7 +3252,7 @@ class _MealCard extends StatelessWidget {
                             color: FrutiaColors.accent, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          "Ideas de Recetas para $title",
+                          l10n.recipeIdeasFor(title), // ← CAMBIAR ESTA LÍNEA
                           style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -2036,7 +3262,7 @@ class _MealCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Usa los ingredientes de arriba para crear estas deliciosas recetas",
+                      l10n.useIngredientsAbove, // ← CAMBIAR ESTA LÍNEA
                       style: GoogleFonts.lato(
                           fontSize: 12,
                           color: FrutiaColors.secondaryText,
@@ -2074,14 +3300,14 @@ class _MealCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$title Completado ✨',
+                        l10n.mealCompleted(title), // ← CAMBIAR ESTA LÍNEA
                         style: GoogleFonts.poppins(
                             color: Colors.green,
                             fontWeight: FontWeight.bold,
                             fontSize: 16),
                       ),
                       Text(
-                        'Regresa mañana para un nuevo día',
+                        l10n.comeBackTomorrow, // ← CAMBIAR ESTA LÍNEA
                         style: GoogleFonts.lato(
                             color: Colors.green.shade600, fontSize: 12),
                       ),
@@ -2115,8 +3341,10 @@ class _MealCard extends StatelessWidget {
                         color: Colors.white, size: 22),
                 label: Text(
                   isRegistering
-                      ? 'Registrando $title...'
-                      : '¡Confirmar $title! ($_totalCalories kcal)',
+                      ? l10n.registeringMeal(title)
+                      : selections.length == categories.length
+                          ? l10n.confirmMeal(title, _totalCalories)
+                          : l10n.confirmPartialMeal(title, _totalCalories),
                   style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

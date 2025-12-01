@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,10 +9,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Política de Privacidad',
+          l10n.privacyPolicyTitle,
           style: GoogleFonts.lato(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -32,7 +35,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Política de Privacidad',
+                l10n.privacyTitle,
                 style: GoogleFonts.lato(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -41,7 +44,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                'En Frutia, tu privacidad es una prioridad. Esta Política de Privacidad explica cómo recopilamos, usamos, protegemos y compartimos tu información cuando utilizas nuestra aplicación. Al usar Frutia, aceptas las prácticas descritas a continuación.',
+                l10n.privacyIntro,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -49,7 +52,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '1. Información que Recopilamos\nRecopilamos información que nos proporcionas directamente, como tu nombre, correo electrónico, preferencias alimenticias, metas de salud y datos sobre tu rutina. También podemos recopilar datos generados por tu uso de la aplicación, como interacciones con el sistema y preferencias de configuración.',
+                l10n.privacySection1,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -57,7 +60,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '2. Uso de la Información\nUtilizamos tu información para personalizar tus planes de nutrición, mejorar la funcionalidad de la aplicación y ofrecerte una experiencia adaptada a tus necesidades. También podemos usar datos anonimizados para análisis y mejoras del servicio.',
+                l10n.privacySection2,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -65,7 +68,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 800.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '3. Compartir Información\nNo vendemos ni compartimos tu información personal con terceros, salvo en casos requeridos por la ley o para proteger los derechos de Frutia. Podemos compartir datos anonimizados con socios para fines de investigación o mejora del servicio.',
+                l10n.privacySection3,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -73,7 +76,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1000.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '4. Seguridad de los Datos\nImplementamos medidas de seguridad técnicas y organizativas para proteger tu información. Sin embargo, ningún sistema es completamente infalible, por lo que te recomendamos tomar precauciones adicionales, como usar contraseñas seguras.',
+                l10n.privacySection4,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -81,7 +84,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1200.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '5. Tus Derechos\nPuedes acceder, corregir o eliminar tu información personal en cualquier momento desde la configuración de la aplicación. Si tienes dudas o necesitas asistencia, contáctanos en soporte@frutia.com.',
+                l10n.privacySection5,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -89,7 +92,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1400.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '6. Cambios en esta Política\nNos reservamos el derecho de actualizar esta política. Te notificaremos sobre cambios significativos a través de la aplicación o por correo electrónico. El uso continuado de Frutia implica la aceptación de la política actualizada.',
+                l10n.privacySection6,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -108,7 +111,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Volver',
+                    l10n.goBack,
                     style: GoogleFonts.lato(
                       fontSize: 16,
                       color: Colors.white,

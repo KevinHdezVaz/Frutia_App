@@ -1,4 +1,6 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:vibration/vibration.dart';
 import 'package:video_player/video_player.dart';
 
@@ -44,6 +46,8 @@ class _OnboardingScreenOneState extends State<OnboardingScreenOne> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -86,11 +90,11 @@ class _OnboardingScreenOneState extends State<OnboardingScreenOne> {
 
                 const SizedBox(height: 40),
 
-                // Título
-                const Padding(
+// Título
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
-                    "Nutrición 100% personalizada",
+                    l10n.personalizedNutrition,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -103,7 +107,7 @@ class _OnboardingScreenOneState extends State<OnboardingScreenOne> {
 
                 const SizedBox(height: 30),
 
-                // Lista de puntos con línea degradada de fondo
+// Lista de puntos con línea degradada de fondo
                 Stack(
                   children: [
                     // Texto de los puntos
@@ -111,16 +115,13 @@ class _OnboardingScreenOneState extends State<OnboardingScreenOne> {
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Column(
                         children: [
-                          _buildBulletPoint(
-                              "Planes adaptados a tus objetivos y gustos"),
+                          _buildBulletPoint(l10n.plansAdaptedToYou),
                           const SizedBox(height: 12),
-                          _buildBulletPoint(
-                              "Coach de IA con seguimiento personal"),
+                          _buildBulletPoint(l10n.aiCoachPersonalTracking),
                           const SizedBox(height: 12),
-                          _buildBulletPoint(
-                              "Adaptable a tu estilo y presupuesto"),
+                          _buildBulletPoint(l10n.adaptableToYourStyle),
                           const SizedBox(height: 12),
-                          _buildBulletPoint("Rápido y hecho solo para ti"),
+                          _buildBulletPoint(l10n.fastAndMadeForYou),
                         ],
                       ),
                     ),

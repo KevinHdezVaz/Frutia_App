@@ -36,7 +36,7 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
   final PageController _pageController = PageController();
 
   double _progress = 0;
-  final int _numPages = 7;
+  final int _numPages = 8;
 
   Map<String, String?> _validationErrors = {};
 
@@ -184,6 +184,14 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         }
 
         provider.update(() {
+          provider.favoriteProteins =
+              Set<String>.from(profile['favorite_proteins'] ?? []);
+          provider.favoriteCarbs =
+              Set<String>.from(profile['favorite_carbs'] ?? []);
+          provider.favoriteFats =
+              Set<String>.from(profile['favorite_fats'] ?? []);
+          provider.favoriteFruits =
+              Set<String>.from(profile['favorite_fruits'] ?? []);
           provider.name = profile['name'] ?? '';
           provider.mainGoal =
               findUiKeyByCleanedDbValue(profile['goal'], goalMap);
@@ -208,7 +216,9 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           provider.preferredName = profile['preferred_name'] ?? '';
           provider.sport = List<String>.from(profile['sport'] ?? []);
           //  provider.trainingFrequency = findUiKeyByCleanedDbValue(profile['training_frequency'], trainingFrequencyMap);
-           provider.breakfastTime = _parseTimeOfDay(profile['breakfast_time']);
+          provider.preferredSnackTime = profile['preferred_snack_time'];
+
+          provider.breakfastTime = _parseTimeOfDay(profile['breakfast_time']);
           provider.lunchTime = _parseTimeOfDay(profile['lunch_time']);
           provider.dinnerTime = _parseTimeOfDay(profile['dinner_time']);
 
@@ -296,15 +306,15 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
       case 2:
         if (provider.sport.isEmpty)
           errorMessages.add('Selecciona al menos un deporte.');
-        //  if (provider.trainingFrequency == null)
-        //   errorMessages.add('Selecciona tu frecuencia de entrenamiento.');
-        // if (provider.dailyActivityLevel == null)
-        // errorMessages.add('Selecciona tu nivel de actividad diaria.');
+
         isValid = errorMessages.isEmpty;
         break;
 
       case 3:
-      
+        if (provider.preferredSnackTime == null) {
+          errorMessages.add('Selecciona cuándo prefieres tu snack.');
+          isValid = false;
+        }
         if (provider.eatsOut == null)
           errorMessages
               .add('Selecciona con qué frecuencia comes fuera de casa.');
@@ -323,12 +333,20 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           errorMessages.add('Selecciona tu presupuesto semanal.');
         isValid = errorMessages.isEmpty && _validationErrors.isEmpty;
         break;
+
       case 5:
+        if (provider.favoriteFruits.isEmpty)
+          errorMessages.add('Selecciona al menos un fruta favorita.');
+
+        isValid = errorMessages.isEmpty;
+        break;
+
+      case 6:
         if (provider.communicationTone == null)
           errorMessages.add('Selecciona un estilo de comunicación.');
         isValid = errorMessages.isEmpty;
         break;
-      case 6:
+      case 7:
         if (provider.dietDifficulties.isEmpty)
           errorMessages.add('Selecciona al menos una dificultad en la dieta.');
         if (provider.dietDifficulties.contains('Otra ✍️')) {
@@ -397,6 +415,26 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           // 'activity_level': questionnaireProvider.dailyActivityLevel != null
           //    ? removeEmojis(questionnaireProvider.dailyActivityLevel!)
           //   : null,
+          'favorite_proteins': questionnaireProvider.favoriteProteins.isNotEmpty
+              ? questionnaireProvider.favoriteProteins
+                  .map((item) => removeEmojis(item))
+                  .toList()
+              : null,
+          'favorite_carbs': questionnaireProvider.favoriteCarbs.isNotEmpty
+              ? questionnaireProvider.favoriteCarbs
+                  .map((item) => removeEmojis(item))
+                  .toList()
+              : null,
+          'favorite_fats': questionnaireProvider.favoriteFats.isNotEmpty
+              ? questionnaireProvider.favoriteFats
+                  .map((item) => removeEmojis(item))
+                  .toList()
+              : null,
+          'favorite_fruits': questionnaireProvider.favoriteFruits.isNotEmpty
+              ? questionnaireProvider.favoriteFruits
+                  .map((item) => removeEmojis(item))
+                  .toList()
+              : null,
 
           'weekly_activity': questionnaireProvider.weeklyActivity != null
               ? removeEmojis(questionnaireProvider.weeklyActivity!)
@@ -435,7 +473,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           //   'training_frequency': questionnaireProvider.trainingFrequency != null
           //      ? removeEmojis(questionnaireProvider.trainingFrequency!)
           //     : null,
-          
+          'preferred_snack_time': questionnaireProvider.preferredSnackTime,
+
           'breakfast_time':
               formatTimeOfDay(questionnaireProvider.breakfastTime),
           'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
@@ -547,6 +586,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     return '$hour:$minute';
   }
 
+  // CAMBIO 1: Mover la pantalla de presupuesto ANTES de la pantalla de alimentos favoritos
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -575,7 +616,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
                   const PersonalInfoScreen(),
                   const RoutineScreen(),
                   const AlimentacionScreen(),
-                  const GustosScreen(),
+                  const GustosScreen(), // ← AQUÍ está el presupuesto
+                  const PreferredFoodsScreen(), // ← DESPUÉS los alimentos favoritos (usa el presupuesto)
                   const PreferencesScreen(),
                   const PersonalizacionScreen(),
                 ],
@@ -597,6 +639,357 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         ),
       ),
     );
+  }
+}
+
+class PreferredFoodsScreen extends StatefulWidget {
+  const PreferredFoodsScreen({super.key});
+
+  @override
+  State<PreferredFoodsScreen> createState() => _PreferredFoodsScreenState();
+}
+
+class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<QuestionnaireProvider>();
+
+    return QuestionnaireScreen(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const QuestionnaireTitleARRIBA(
+              title: 'Alimentos que más te gustan 🍴'),
+
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Selecciona tus favoritos para que aparezcan más en tu plan',
+                    style: GoogleFonts.lato(
+                      fontSize: 13,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // PROTEÍNAS
+          _buildCategorySection(
+            title: 'Proteínas',
+            subtitle: 'Elige al menos 3',
+            emoji: '🥩',
+            selectedItems: provider.favoriteProteins,
+            items: _getProteinOptions(provider.weeklyBudget),
+            onToggle: (item) => setState(() {
+              if (provider.favoriteProteins.contains(item)) {
+                provider.update(() => provider.favoriteProteins.remove(item));
+              } else {
+                provider.update(() => provider.favoriteProteins.add(item));
+              }
+            }),
+            selectAll: () => setState(() {
+              provider.update(() => provider.favoriteProteins
+                  .addAll(_getProteinOptions(provider.weeklyBudget)));
+            }),
+          ),
+
+          const SizedBox(height: 24),
+
+          // CARBOHIDRATOS
+          _buildCategorySection(
+            title: 'Carbohidratos',
+            subtitle: 'Elige al menos 3',
+            emoji: '🍚',
+            selectedItems: provider.favoriteCarbs,
+            items: _getCarbOptions(provider.weeklyBudget),
+            onToggle: (item) => setState(() {
+              if (provider.favoriteCarbs.contains(item)) {
+                provider.update(() => provider.favoriteCarbs.remove(item));
+              } else {
+                provider.update(() => provider.favoriteCarbs.add(item));
+              }
+            }),
+            selectAll: () => setState(() {
+              provider.update(() => provider.favoriteCarbs
+                  .addAll(_getCarbOptions(provider.weeklyBudget)));
+            }),
+          ),
+
+          const SizedBox(height: 24),
+
+          // GRASAS
+          _buildCategorySection(
+            title: 'Grasas',
+            subtitle: 'Elige al menos 2',
+            emoji: '🥑',
+            selectedItems: provider.favoriteFats,
+            items: _getFatOptions(provider.weeklyBudget),
+            onToggle: (item) => setState(() {
+              if (provider.favoriteFats.contains(item)) {
+                provider.update(() => provider.favoriteFats.remove(item));
+              } else {
+                provider.update(() => provider.favoriteFats.add(item));
+              }
+            }),
+            selectAll: () => setState(() {
+              provider.update(() => provider.favoriteFats
+                  .addAll(_getFatOptions(provider.weeklyBudget)));
+            }),
+          ),
+
+          const SizedBox(height: 24),
+
+          const SizedBox(height: 24),
+
+// FRUTAS (PARA SNACKS)
+          _buildCategorySection(
+            title: 'Frutas (para Snacks)',
+            subtitle: 'Opcional',
+            emoji: '🍓',
+            selectedItems: provider.favoriteFruits, // ⭐ NUEVO CAMPO
+            items: const [
+              'Fresas',
+              'Arándanos',
+              'Moras',
+              'Plátano',
+              'Manzana',
+              'Mango',
+              'Sandía',
+              'Pera',
+            ],
+            onToggle: (item) => setState(() {
+              if (provider.favoriteFruits.contains(item)) {
+                provider.update(() => provider.favoriteFruits.remove(item));
+              } else {
+                provider.update(() => provider.favoriteFruits.add(item));
+              }
+            }),
+            selectAll: () => setState(() {
+              provider.update(() => provider.favoriteFruits.addAll(const [
+                    'Fresas',
+                    'Arándanos',
+                    'Moras',
+                    'Plátano',
+                    'Manzana',
+                    'Mango',
+                    'Sandía',
+                    'Pera',
+                  ]));
+            }),
+          ),
+
+          const SizedBox(height: 24),
+
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategorySection({
+    required String title,
+    required String subtitle,
+    required String emoji,
+    required Set<String> selectedItems,
+    required List<String> items,
+    required Function(String) onToggle,
+    required VoidCallback selectAll,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.lato(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: FrutiaColors.primaryText,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.lato(
+                        fontSize: 13,
+                        color: FrutiaColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: selectAll,
+              child: Text(
+                'Seleccionar todo',
+                style: GoogleFonts.lato(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: FrutiaColors.accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: items.map((item) {
+            final isSelected = selectedItems.contains(item);
+            return GestureDetector(
+              onTap: () => onToggle(item),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? FrutiaColors.accent.withOpacity(0.1)
+                      : FrutiaColors.secondaryBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color:
+                        isSelected ? FrutiaColors.accent : Colors.grey.shade300,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      size: 18,
+                      color: isSelected
+                          ? FrutiaColors.accent
+                          : Colors.grey.shade400,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      item,
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected
+                            ? FrutiaColors.accent
+                            : FrutiaColors.primaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  List<String> _getProteinOptions(String? budget) {
+    final isLowBudget = budget?.toLowerCase().contains('bajo') ?? false;
+
+    if (isLowBudget) {
+      return const [
+        'Huevo Entero',
+        'Pollo Pechuga O Muslo',
+        'Atún En Lata',
+        'Carne Magra De Res',
+        'Pescado Blanco',
+      ];
+    } else {
+      return const [
+        'Claras + Huevo Entero',
+        'Pechuga De Pollo',
+        'Filete Pavita',
+        'Salmón Fresco',
+        'Pescado Blanco',
+        'Carne De Res Magra / Lomo Fino',
+        'Yogurt Griego',
+        'Proteína Whey',
+        'Caseína',
+      ];
+    }
+  }
+
+  List<String> _getCarbOptions(String? budget) {
+    final isLowBudget = budget?.toLowerCase().contains('bajo') ?? false;
+
+    if (isLowBudget) {
+      return const [
+        'Arroz Blanco',
+        'Papa',
+        'Avena Tradicional',
+        'Tortillas De Maíz',
+        'Fideos/Pasta Básica',
+        'Frijoles',
+        'Camote',
+        'Galleta De Arroz',
+        'Crema De Arroz',
+      ];
+    } else {
+      return const [
+        'Quinua',
+        'Arroz Blanco',
+        'Avena Orgánica',
+        'Pan Integral Artesanal',
+        'Camote',
+        'Papa',
+        'Tortilla De Maíz',
+        'Galleta De Arroz',
+        'Crema De Arroz',
+      ];
+    }
+  }
+
+  List<String> _getFatOptions(String? budget) {
+    final isLowBudget = budget?.toLowerCase().contains('bajo') ?? false;
+
+    if (isLowBudget) {
+      return const [
+        'Aceite de oliva', // ⭐ CAMBIADO de 'Aceite Vegetal'
+        'Maní / Mantequilla De Maní',
+        'Aguacate Pequeño',
+        'Semillas De Ajonjolí',
+        'Aceitunas',
+      ];
+    } else {
+      return const [
+        'Aceite De Oliva Extra Virgen',
+        'Aceite De Palta/Aguacate',
+        'Almendras',
+        'Nueces',
+        'Aguacate Hass / Palta Hass',
+        'Chía/Linaza Orgánicas',
+        'Frutos Secos Premium',
+        'Miel',
+        'Chocolate 70%',
+      ];
+    }
   }
 }
 
@@ -922,7 +1315,22 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const QuestionnaireTitleARRIBA(title: 'Tu Estructura de Comidas 🍽️'),
-          
+          const SizedBox(height: 16),
+          const QuestionnaireTitle(
+            title: '¿Cuándo prefieres tu snack? 🍎',
+            isSub: true,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tu plan incluirá SOLO UN snack. Elige cuándo lo prefieres:',
+            style: GoogleFonts.lato(
+              fontSize: 14,
+              color: FrutiaColors.secondaryText,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ..._buildSnackTimeOptions(provider),
           const SizedBox(height: 24),
           const QuestionnaireTitle(
               title: '¿A qué hora sueles comer? (opcional)', isSub: true),
@@ -958,7 +1366,91 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
       ),
     );
   }
- 
+
+  List<Widget> _buildSnackTimeOptions(QuestionnaireProvider provider) {
+    final options = [
+      {
+        'value': 'Snack AM',
+        'title': 'Media mañana (Snack AM)',
+        'subtitle': 'Entre desayuno y almuerzo',
+      },
+      {
+        'value': 'Snack PM',
+        'title': 'Media tarde (Snack PM)',
+        'subtitle': 'Entre almuerzo y cena',
+      },
+    ];
+
+    return options.map((option) {
+      final isSelected = provider.preferredSnackTime == option['value'];
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: InkWell(
+          onTap: () => setState(() => provider.update(
+              () => provider.preferredSnackTime = option['value'] as String)),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? FrutiaColors.accent.withOpacity(0.1)
+                  : FrutiaColors.secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? FrutiaColors.accent : Colors.grey.shade300,
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? FrutiaColors.accent : Colors.grey.shade200,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isSelected
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: isSelected ? Colors.white : Colors.grey.shade600,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        option['title'] as String,
+                        style: GoogleFonts.lato(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? FrutiaColors.accent
+                              : FrutiaColors.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        option['subtitle'] as String,
+                        style: GoogleFonts.lato(
+                          fontSize: 13,
+                          color: FrutiaColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
 
   List<Widget> _buildEatOutOptions(QuestionnaireProvider provider) {
     const options = {

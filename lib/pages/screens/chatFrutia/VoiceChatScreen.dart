@@ -13,7 +13,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:easy_localization/easy_localization.dart';
 
 class VoiceChatScreen extends StatefulWidget {
   final String language;
@@ -154,7 +153,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
     if (_conversationState.messages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No hay mensajes para guardar'.tr()),
+          content: Text('No hay mensajes para guardar'),
           backgroundColor: Colors.red,
         ),
       );
@@ -165,15 +164,15 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Guardar conversación'.tr(),
-            style: TextStyle(color: Colors.black)),
+        title:
+            Text('Guardar conversación', style: TextStyle(color: Colors.black)),
         content: TextField(
           controller: titleController,
           autofocus: true,
           style: TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            labelText: 'Título'.tr(),
-            hintText: 'Ejemplo: Conversación 1'.tr(),
+            labelText: 'Título',
+            hintText: 'Ejemplo: Conversación 1',
             hintStyle: TextStyle(color: Colors.grey),
             filled: true,
             fillColor: Color(0xFFF6F6F6),
@@ -190,7 +189,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar'.tr(), style: TextStyle(color: Colors.black)),
+            child: Text('Cancelar', style: TextStyle(color: Colors.black)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4BB6A8)),
@@ -199,7 +198,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
                 Navigator.pop(context, titleController.text.trim());
               }
             },
-            child: Text('Guardar'.tr(), style: TextStyle(color: Colors.white)),
+            child: Text('Guardar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -230,7 +229,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Chat guardado exitosamente'.tr()),
+          content: Text('Chat guardado exitosamente'),
           backgroundColor: Colors.green,
         ),
       );
@@ -238,7 +237,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al guardar el chat: $e'.tr()),
+          content: Text('Error al guardar el chat: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -453,7 +452,7 @@ class _VoiceChatScreenState extends State<VoiceChatScreen> {
                 child: TextButton.icon(
                   icon: Icon(Icons.save, color: Colors.black, size: 22),
                   label: Text(
-                    'Guardar'.tr(),
+                    'Guardar',
                     style: TextStyle(color: Colors.black, fontSize: 14),
                   ),
                   onPressed: _saveChat,

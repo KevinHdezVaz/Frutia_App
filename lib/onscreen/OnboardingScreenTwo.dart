@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
@@ -48,6 +49,7 @@ class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     bool isDarkMode(BuildContext context) {
       return Theme.of(context).brightness == Brightness.dark;
     }
@@ -118,8 +120,8 @@ class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "¿QUÉ PLAN OFRECEMOS?",
+                        Text(
+                          l10n.whatPlanWeOffer,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -130,7 +132,7 @@ class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
                         ),
                         const SizedBox(height: 30),
                         Text(
-                          "Plan Frutia:",
+                          l10n.frutiaPlan,
                           style: TextStyle(
                             fontSize: getResponsiveText(24),
                             fontWeight: FontWeight.w600,
@@ -142,11 +144,10 @@ class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            FeatureItem("Nutricionista virtual personalizado"),
-                            FeatureItem(
-                                "Seguimiento de alimentos, hábitos y peso"),
-                            FeatureItem("Recetas según tu presupuesto"),
-                            FeatureItem("Historial de conversaciones guardado"),
+                            FeatureItem(l10n.personalizedVirtualNutritionist),
+                            FeatureItem(l10n.trackingFoodHabitsWeight),
+                            FeatureItem(l10n.recipesAccordingBudget),
+                            FeatureItem(l10n.savedConversationHistory),
                           ],
                         ),
                       ],
@@ -235,7 +236,7 @@ class _OnboardingScreenTwoState extends State<OnboardingScreenTwo> {
                       );
                     },
                     child: Text(
-                      "OMITIR",
+                      l10n.skip,
                       style: TextStyle(
                         color: fondo,
                         fontSize: 20.0,

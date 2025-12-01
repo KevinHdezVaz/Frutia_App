@@ -14,7 +14,6 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:vibration/vibration.dart';
 import 'package:lottie/lottie.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart'; // Importa video_player
@@ -657,16 +656,19 @@ class _RecordingScreenState extends State<RecordingScreen>
                                     radius: 125,
                                     backgroundColor: Colors.transparent,
                                     child: ClipOval(
-                                      child: _videoController.value.isInitialized
+                                      child: _videoController
+                                              .value.isInitialized
                                           ? AspectRatio(
                                               aspectRatio: _videoController
                                                   .value.aspectRatio,
-                                              child: VideoPlayer(_videoController),
+                                              child:
+                                                  VideoPlayer(_videoController),
                                             )
                                           : Container(
                                               color: Colors.grey,
                                               child: const Center(
-                                                child: CircularProgressIndicator(),
+                                                child:
+                                                    CircularProgressIndicator(),
                                               ),
                                             ),
                                     ),

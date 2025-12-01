@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -17,41 +18,36 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Initialize the video controller with the video asset
-    _controller = VideoPlayerController.asset('assets/images/fondoAppFrutiaVideo.mp4')
-      ..initialize().then((_) {
-        setState(() {}); // Update UI when video is initialized
-        _controller.setLooping(true); // Loop the video
-        _controller.play(); // Auto-play the video
-      });
+    _controller =
+        VideoPlayerController.asset('assets/images/fondoAppFrutiaVideo.mp4')
+          ..initialize().then((_) {
+            setState(() {});
+            _controller.setLooping(true);
+            _controller.play();
+          });
   }
 
   @override
   void dispose() {
-    _controller.dispose(); // Dispose of the controller to free resources
+    _controller.dispose();
     super.dispose();
   }
 
-  // Función de utilidad MODIFICADA: Usa .custom() para forzar el ClipRect horizontal.
-  Widget _buildAnimatedText(String text, {required Duration delay, required Duration duration}) {
+  Widget _buildAnimatedText(String text,
+      {required Duration delay, required Duration duration}) {
     return Text(
       text,
       style: GoogleFonts.lato(
         fontSize: 16,
         color: FrutiaColors.secondaryText,
       ),
-    )
-        .animate(delay: delay)
-        // Efecto de "Pintado" usando custom para implementar ClipRect
-        .custom(
-          duration: duration, // Duración del pintado
+    ).animate(delay: delay).custom(
+          duration: duration,
           builder: (context, value, child) {
-            // 'value' va de 0.0 (inicio) a 1.0 (fin)
             return ClipRect(
-              // Recorta el texto de izquierda a derecha
               child: Align(
                 alignment: Alignment.centerLeft,
-                widthFactor: value, // Controla el ancho visible del texto
+                widthFactor: value,
                 child: child,
               ),
             );
@@ -61,7 +57,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Definimos la animación base para el video (Floating/Pulsating Glow)
+    final l10n = AppLocalizations.of(context)!;
+
     final videoAnimation = (Widget child) => child
         .animate(
           onPlay: (controller) => controller.repeat(reverse: true),
@@ -91,15 +88,13 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
         title: Text(
-          'Nosotros',
+          l10n.aboutUs,
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 24,
           ),
-        )
-            .animate()
-            .slideY(
+        ).animate().slideY(
               begin: -1,
               end: 0,
               duration: 700.ms,
@@ -128,7 +123,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _controller.value.isInitialized
                           ? SizedBox(
                               height: 180,
-                              width: 180, // Adjust size to match previous image
+                              width: 180,
                               child: AspectRatio(
                                 aspectRatio: _controller.value.aspectRatio,
                                 child: VideoPlayer(_controller),
@@ -137,7 +132,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           : Container(
                               height: 180,
                               width: 180,
-                              color: Colors.grey, // Placeholder while video loads
+                              color: Colors.grey,
                               child: Center(child: CircularProgressIndicator()),
                             ),
                     ),
@@ -158,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Nuestra Historia',
+                            l10n.ourStory,
                             style: GoogleFonts.poppins(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -174,40 +169,33 @@ class _ProfilePageState extends State<ProfilePage> {
                               )
                               .slideX(begin: -0.5, end: 0, duration: 800.ms),
                           const Divider(height: 25, thickness: 2),
-                          // Párrafos con efecto de "pintado" y velocidad progresivamente mayor
-                          // 1. Velocidad Lenta (2000 ms)
                           _buildAnimatedText(
-                            'Creamos esta app con una idea clara: la nutrición no debería sentirse como una carga, ni depender de planes genéricos que no se adaptan a tu vida. Por eso combinamos ciencia, tecnología e inteligencia artificial para ofrecerte un acompañamiento real, sin fórmulas mágicas, sin promesas vacías, y sin complicarte el día a día.',
+                            l10n.ourStoryParagraph1,
                             delay: 400.ms,
                             duration: 2000.ms,
                           ),
                           const SizedBox(height: 16),
-                          // 2. Velocidad Media (1500 ms)
                           _buildAnimatedText(
-                            'Cada cuerpo es distinto, y creemos que tu alimentación debe respetarlo. Por eso, nuestro sistema se adapta a tus metas, tus gustos, tu rutina y hasta tu presupuesto. No importa si entrenas en el gimnasio, juegas fútbol los domingos o simplemente quieres comer mejor sin gastar de más: tu plan es tuyo y evoluciona contigo.',
+                            l10n.ourStoryParagraph2,
                             delay: 600.ms,
                             duration: 1500.ms,
                           ),
                           const SizedBox(height: 16),
-                          // 3. Velocidad Rápida (1000 ms)
                           _buildAnimatedText(
-                            'Nos mueve la idea de que la tecnología puede humanizarse. Por eso nuestra IA, Frutia, no es solo un robot que te lanza datos. Puedes decidir cómo quieres que te trate: motivadora, relajada o directa. Como si tuvieras un nutricionista virtual que sí te entiende.',
+                            l10n.ourStoryParagraph3,
                             delay: 800.ms,
                             duration: 1000.ms,
                           ),
                           const SizedBox(height: 16),
-                          // 4. Velocidad Muy Rápida (700 ms)
                           _buildAnimatedText(
-                            'Somos un equipo de nutricionistas, desarrolladores, diseñadores y soñadores, comprometidos con una nutrición accesible, realista y personalizada. Y lo más importante: hecha para durar.',
+                            l10n.ourStoryParagraph4,
                             delay: 1000.ms,
                             duration: 700.ms,
                           ),
                         ],
                       ),
                     ),
-                  )
-                      .animate()
-                      .slideY(
+                  ).animate().slideY(
                         begin: 0.2,
                         end: 0,
                         duration: 800.ms,

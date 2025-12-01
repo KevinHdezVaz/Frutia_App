@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/auth/auth_check.dart';
@@ -23,7 +24,6 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
   @override
   void initState() {
     super.initState();
-    // Initialize the video controller
     _videoController = VideoPlayerController.asset(
       'assets/images/videoSaludo.mp4',
     )..initialize().then((_) {
@@ -31,9 +31,9 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
           setState(() {
             _isInitialized = true;
           });
-          _videoController.setLooping(true); // Set video to loop
-          _videoController.setVolume(0.0); // Mute the video
-          _videoController.play(); // Start playing automatically
+          _videoController.setLooping(true);
+          _videoController.setVolume(0.0);
+          _videoController.play();
         }
       }).catchError((error) {
         print('Error initializing video: $error');
@@ -48,6 +48,8 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     bool isDarkMode(BuildContext context) {
       return Theme.of(context).brightness == Brightness.dark;
     }
@@ -98,7 +100,6 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
           ),
           child: Stack(
             children: [
-              // Video en la parte superior, reemplazando la imagen
               Positioned(
                 top: size.height * 0.10,
                 left: 0,
@@ -108,8 +109,7 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                     child: Container(
                       height: 300,
                       width: 350,
-                      color:
-                          Colors.black, // Fondo negro mientras carga el video
+                      color: Colors.black,
                       child: _isInitialized
                           ? VideoPlayer(_videoController)
                           : const Center(
@@ -121,17 +121,15 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                   ),
                 ),
               ),
-
-              // Contenido principal centrado (título y lista)
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 300),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
-                        "Recuerda",
+                        l10n.remember,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -150,16 +148,11 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              FeatureItem(
-                                  "❌ Los planes genéricos no funcionan. Cada cuerpo es distinto."),
-                              FeatureItem(
-                                  "🚫 No existen soluciones mágicas ni “tés milagrosos”."),
-                              FeatureItem(
-                                  "💸 Tu presupuesto importa, y debería ser parte del plan."),
-                              FeatureItem(
-                                  "🍽️ Tu comida debe gustarte, no estresarte."),
-                              FeatureItem(
-                                  "🤝 Estamos acá para darte un plan real, inteligente y hecho para ti."),
+                              FeatureItem(l10n.genericPlansDontWork),
+                              FeatureItem(l10n.noMagicSolutions),
+                              FeatureItem(l10n.budgetMatters),
+                              FeatureItem(l10n.foodShouldPlease),
+                              FeatureItem(l10n.weAreHereForYou),
                             ],
                           ),
                         ],
@@ -168,8 +161,6 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                   ],
                 ),
               ),
-
-              // Indicadores de página
               Positioned(
                 bottom: 30,
                 left: 0,
@@ -187,8 +178,6 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                   ],
                 ),
               ),
-
-              // Botón de siguiente
               Positioned(
                 bottom: 30,
                 right: 30,
@@ -207,8 +196,6 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                   ),
                 ),
               ),
-
-              // Botón "Omitir"
               Padding(
                 padding:
                     EdgeInsets.only(top: appPadding * 2, right: appPadding),
@@ -225,7 +212,7 @@ class _OnboardingScreenThreeState extends State<OnboardingScreenThree> {
                       );
                     },
                     child: Text(
-                      "OMITIR",
+                      l10n.skip,
                       style: TextStyle(
                         color: fondo,
                         fontSize: 20.0,

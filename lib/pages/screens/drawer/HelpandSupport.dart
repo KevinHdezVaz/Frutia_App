@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,10 +10,12 @@ class HelpAndSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Ayuda y Soporte',
+          l10n.helpAndSupportTitle,
           style: GoogleFonts.lato(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -33,7 +36,7 @@ class HelpAndSupportScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ayuda y Soporte',
+                l10n.helpTitle,
                 style: GoogleFonts.lato(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -42,7 +45,7 @@ class HelpAndSupportScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                'En Frutia, estamos aquí para ayudarte. Si tienes alguna duda, problema o simplemente quieres saber más sobre cómo sacarle el máximo provecho a la aplicación, ¡estamos a tu disposición!',
+                l10n.helpIntro,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -50,7 +53,7 @@ class HelpAndSupportScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '1. Preguntas Frecuentes (FAQs)\nConsulta las preguntas más comunes sobre el uso de Frutia. Aquí encontrarás información sobre cómo personalizar tu plan, ajustar tus preferencias o gestionar tu cuenta.',
+                l10n.helpSection1,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -64,7 +67,7 @@ class HelpAndSupportScreen extends StatelessWidget {
                   // Or use: launchUrl(Uri.parse('https://www.frutia.com/faqs'));
                 },
                 child: Text(
-                  'Ver Preguntas Frecuentes',
+                  l10n.viewFAQs,
                   style: GoogleFonts.lato(
                     fontSize: 14,
                     color: Colors.blue,
@@ -74,7 +77,7 @@ class HelpAndSupportScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 800.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '2. Contáctanos\nSi necesitas ayuda personalizada, nuestro equipo de soporte está listo para ayudarte. Escríbenos y te responderemos lo antes posible.',
+                l10n.helpSection2,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -87,7 +90,7 @@ class HelpAndSupportScreen extends StatelessWidget {
                   // Example: launchUrl(Uri.parse('mailto:soporte@frutia.com'));
                 },
                 child: Text(
-                  'Correo: soporte@frutia.com',
+                  l10n.contactEmail,
                   style: GoogleFonts.lato(
                     fontSize: 14,
                     color: Colors.blue,
@@ -97,7 +100,7 @@ class HelpAndSupportScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1200.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '3. Comunidad Frutia\nÚnete a nuestra comunidad en redes sociales para compartir experiencias, recetas y consejos con otros usuarios. Síguenos en nuestras plataformas oficiales.',
+                l10n.helpSection3,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -106,7 +109,7 @@ class HelpAndSupportScreen extends StatelessWidget {
               const SizedBox(height: 8),
               const SizedBox(height: 16),
               Text(
-                '4. Actualizaciones y Feedback\n¿Tienes alguna sugerencia para mejorar Frutia? Nos encantaría escucharte. Envía tus comentarios a través del formulario en la aplicación o por correo.',
+                l10n.helpSection4,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -125,7 +128,7 @@ class HelpAndSupportScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Volver',
+                    l10n.goBack,
                     style: GoogleFonts.lato(
                       fontSize: 16,
                       color: Colors.white,

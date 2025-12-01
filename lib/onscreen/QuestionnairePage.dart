@@ -26,22 +26,21 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   final ProfileService _profileService = ProfileService();
   bool _isLoading = false;
 
-  double _height = 170.0;
-  double _weight = 120.0;
+  double _height = 170.0; // Siempre almacenar en cm
+  double _weight = 70.0; // Siempre almacenar en kg
   double _age = 25.0;
   Country? _selectedCountry;
 
   @override
   void initState() {
     super.initState();
-    // Inicializar los valores en el formulario al cargar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_formKey.currentState != null) {
         _formKey.currentState!.patchValue({
           'height': _height,
           'weight': _weight,
           'age': _age,
-          'sex': 'Masculino', // Valor inicial
+          'sex': 'Masculino',
           'pais': _selectedCountry?.name ?? '',
         });
       }
@@ -71,14 +70,12 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 backgroundColor: Colors.green),
           );
 
-          // Call onSuccess to refresh HomePage
           widget.onSuccess();
 
-          // Navigate to AuthCheckMain, replacing the current stack
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const AuthCheckMain()),
-            (route) => false, // Remove all previous routes
+            (route) => false,
           );
         }
       } catch (e) {
@@ -95,7 +92,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         }
       }
     } else {
-      // Mostrar mensaje si no pasa las validaciones
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos.'),
@@ -196,6 +192,12 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   }
 
   Widget _buildHeightSlider() {
+    // Calcular valores para ambas unidades
+    final double meters = _height / 100.0;
+    final double totalInches = _height / 2.54;
+    final int feet = totalInches ~/ 12;
+    final int inches = (totalInches % 12).round();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -213,18 +215,65 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
             },
           ]),
           builder: (FormFieldState<double> field) {
-            // Calculate height in meters for display
-            final double heightInMeters = _height / 100.0;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Estatura: ${heightInMeters.toStringAsFixed(2)} mts', // Display in meters
-                  style: GoogleFonts.lato(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Estatura:',
+                      style: GoogleFonts.lato(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: FrutiaColors.primaryText,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: FrutiaColors.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: FrutiaColors.accent.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${meters.toStringAsFixed(2)} m',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: FrutiaColors.accent,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '|',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '$feet\'$inches"',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: FrutiaColors.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     IconButton(
@@ -233,7 +282,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       onPressed: () {
                         setState(() {
                           _height = (_height - 1).clamp(120.0, 220.0);
-                          field.didChange(_height); // Actualiza el valor
+                          field.didChange(_height);
                         });
                       },
                     ),
@@ -250,7 +299,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         onChanged: (dynamic value) {
                           setState(() {
                             _height = value;
-                            field.didChange(_height); // Actualiza el valor
+                            field.didChange(_height);
                           });
                         },
                       ),
@@ -260,7 +309,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       onPressed: () {
                         setState(() {
                           _height = (_height + 1).clamp(120.0, 220.0);
-                          field.didChange(_height); // Actualiza el valor
+                          field.didChange(_height);
                         });
                       },
                     ),
@@ -284,6 +333,9 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   }
 
   Widget _buildWeightSlider() {
+    // Calcular libras
+    final double lbs = _weight * 2.20462;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -303,13 +355,62 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Peso: ${_weight.toStringAsFixed(1)} kg',
-                  style: GoogleFonts.lato(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Peso:',
+                      style: GoogleFonts.lato(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: FrutiaColors.primaryText,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: FrutiaColors.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: FrutiaColors.accent.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${_weight.toStringAsFixed(1)} kg',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: FrutiaColors.accent,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '|',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${lbs.toStringAsFixed(1)} lbs',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: FrutiaColors.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     IconButton(
@@ -318,7 +419,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       onPressed: () {
                         setState(() {
                           _weight = (_weight - 0.5).clamp(30.0, 180.0);
-                          field.didChange(_weight); // Actualiza el valor
+                          field.didChange(_weight);
                         });
                       },
                     ),
@@ -336,7 +437,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         onChanged: (dynamic value) {
                           setState(() {
                             _weight = value;
-                            field.didChange(_weight); // Actualiza el valor
+                            field.didChange(_weight);
                           });
                         },
                       ),
@@ -346,7 +447,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       onPressed: () {
                         setState(() {
                           _weight = (_weight + 0.5).clamp(30.0, 180.0);
-                          field.didChange(_weight); // Actualiza el valor
+                          field.didChange(_weight);
                         });
                       },
                     ),
@@ -404,14 +505,14 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       onPressed: () {
                         setState(() {
                           _age = (_age - 1).clamp(16.0, 90.0);
-                          field.didChange(_age); // Actualiza el valor
+                          field.didChange(_age);
                         });
                       },
                     ),
                     Expanded(
                       child: SfSlider(
-                        min: 15.0,
-                        max: 45.0,
+                        min: 16.0,
+                        max: 90.0,
                         value: _age,
                         interval: 20,
                         showTicks: true,
@@ -422,7 +523,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                         onChanged: (dynamic value) {
                           setState(() {
                             _age = value;
-                            field.didChange(_age); // Actualiza el valor
+                            field.didChange(_age);
                           });
                         },
                       ),
@@ -432,7 +533,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       onPressed: () {
                         setState(() {
                           _age = (_age + 1).clamp(16.0, 90.0);
-                          field.didChange(_age); // Actualiza el valor
+                          field.didChange(_age);
                         });
                       },
                     ),

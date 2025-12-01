@@ -1,7 +1,8 @@
-import 'dart:convert'; // Import para decodificar JSON
+import 'dart:convert';
 
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/onscreen/QuestionnairePage.dart';
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
 import 'package:Frutia/pages/screens/drawer/HelpandSupport.dart';
@@ -19,8 +20,7 @@ import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:http/http.dart'
-    as http; // Asumiendo que usas http, para el tipo de excepción
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,7 +70,7 @@ class _HomePageState extends State<HomePage> {
       debugPrint('Error fetching user name: $e');
       if (mounted) {
         setState(() {
-          _userName = 'Usuario'; // Valor por defecto en caso de error
+          _userName = null;
         });
       }
     }
@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
 
     showDialog(
       context: context,
-      barrierDismissible: false, // El usuario no puede cerrar el diálogo
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return const TrialExpiredDialog();
       },
@@ -118,6 +118,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _completeDayFromHome() async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final l10n = AppLocalizations.of(context)!;
     if (!mounted) return;
 
     setState(() => _isStreakButtonLoading = true);
@@ -133,21 +134,20 @@ class _HomePageState extends State<HomePage> {
       await _fetchAndCheckProfile();
 
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text('¡Día completado! Tu racha continúa.'),
+        SnackBar(
+          content: Text(l10n.dayCompleted),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       if (mounted) {
-        // El error 403 del middleware se captura aquí.
         if (e is http.Response && e.statusCode == 403) {
           _showTrialExpiredDialog();
           return;
         }
         scaffoldMessenger.showSnackBar(
           SnackBar(
-              content: Text('Error al completar el día: ${e.toString()}'),
+              content: Text(l10n.errorCompletingDay(e.toString())),
               backgroundColor: Colors.red),
         );
       }
@@ -158,31 +158,24 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // --- INICIA NUEVA FUNCIÓN ---
-  /// Revisa los datos del usuario para ver si su prueba ha expirado.
   bool _isTrialExpired(Map<String, dynamic>? user) {
     if (user == null) return false;
 
-    // Solo nos importa si el estado es 'trial'
     if (user['subscription_status'] != 'trial') return false;
 
     final trialEndsAtString = user['trial_ends_at'];
     if (trialEndsAtString == null) {
-      // Si es nulo pero el estado es 'trial', consideramos que expiró.
       return true;
     }
 
     try {
       final endDate = DateTime.parse(trialEndsAtString);
-      // La prueba expira si la fecha actual es posterior a la fecha de finalización.
       return DateTime.now().isAfter(endDate);
     } catch (e) {
-      // Si el formato de fecha es inválido, no podemos hacer nada.
       debugPrint("Error al parsear fecha de prueba: $e");
       return false;
     }
   }
-  // --- TERMINA NUEVA FUNCIÓN ---
 
   Future<void> _fetchAndCheckProfile() async {
     if (!mounted) return;
@@ -204,19 +197,14 @@ class _HomePageState extends State<HomePage> {
         _userData = fullUserData;
       });
 
-      // --- INICIA CAMBIO LÓGICO ---
-      // 1. Revisamos si la prueba ha expirado ANTES de hacer cualquier otra cosa.
       if (_isTrialExpired(user)) {
         _showTrialExpiredDialog();
-        // Ponemos la UI en un estado válido pero sin intentar cargar el plan,
-        // ya que sabemos que fallará.
         setState(() {
-          _pageState = PageState.hasPlan; // Para que muestre el dashboard
-          _mealPlanData = null; // Pero sin datos de plan
+          _pageState = PageState.hasPlan;
+          _mealPlanData = null;
         });
-        return; // Detenemos la ejecución aquí.
+        return;
       }
-      // --- TERMINA CAMBIO LÓGICO ---
 
       _checkIfStreakCanBeCompleted(profile);
 
@@ -231,7 +219,6 @@ class _HomePageState extends State<HomePage> {
           profile['plan_setup_complete'] != 1) {
         setState(() => _pageState = PageState.needsPlan);
       } else {
-        // Si la prueba no ha expirado, intentamos cargar el plan.
         final plan = await _planService.getCurrentPlan();
         if (mounted) {
           setState(() {
@@ -242,8 +229,6 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (mounted) {
-        // El catch ahora solo maneja errores inesperados.
-        // El caso de 'trial_expired' se maneja proactivamente arriba.
         setState(() {
           _pageState = PageState.error;
           _userData = null;
@@ -254,6 +239,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bool isPremium =
         _userData?['user']?['subscription_status'] == 'active';
     final bool isInTrial =
@@ -269,7 +255,7 @@ class _HomePageState extends State<HomePage> {
                     colors: [FrutiaColors.accent, FrutiaColors.accent2],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight))),
-        title: Text('Perfil',
+        title: Text(l10n.profile,
             style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -288,6 +274,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Drawer(
       child: Container(
         decoration: BoxDecoration(
@@ -315,7 +302,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _userName ?? 'Usuario',
+                    _userName ?? l10n.user,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 20,
@@ -323,7 +310,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   Text(
-                    'Mi cuenta',
+                    l10n.myAccount,
                     style: GoogleFonts.lato(
                       color: Colors.white70,
                       fontSize: 14,
@@ -335,7 +322,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading:
                   Icon(Icons.trending_up_rounded, color: FrutiaColors.accent),
-              title: Text('Progreso',
+              title: Text(l10n.progress,
                   style: GoogleFonts.lato(
                       fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
@@ -353,7 +340,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading:
                   Icon(Icons.description_rounded, color: FrutiaColors.accent),
-              title: Text('Términos y condiciones',
+              title: Text(l10n.termsAndConditions,
                   style: GoogleFonts.lato(
                       fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
@@ -371,7 +358,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading:
                   Icon(Icons.privacy_tip_rounded, color: FrutiaColors.accent),
-              title: Text('Política de privacidad',
+              title: Text(l10n.privacyPolicy,
                   style: GoogleFonts.lato(
                       fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
@@ -389,7 +376,7 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading:
                   Icon(Icons.help_outline_rounded, color: FrutiaColors.accent),
-              title: Text('Ayuda y soporte',
+              title: Text(l10n.helpAndSupport,
                   style: GoogleFonts.lato(
                       fontSize: 16, fontWeight: FontWeight.w600)),
               onTap: () {
@@ -447,6 +434,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildErrorUI({Key? key}) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       key: key,
       child: Padding(
@@ -457,13 +445,12 @@ class _HomePageState extends State<HomePage> {
             Icon(Icons.error_outline,
                 size: 80, color: Colors.red.withOpacity(0.7)),
             const SizedBox(height: 24),
-            Text('¡Algo salió mal!',
+            Text(l10n.somethingWentWrong,
                 style:
                     GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            Text(
-                'No pudimos cargar tu perfil. Por favor, intenta de nuevo o contacta a soporte si el problema persiste.',
+            Text(l10n.couldNotLoadProfile,
                 style: GoogleFonts.lato(
                     fontSize: 16, color: FrutiaColors.secondaryText),
                 textAlign: TextAlign.center),
@@ -475,7 +462,7 @@ class _HomePageState extends State<HomePage> {
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-              child: const Text('Reintentar'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -522,7 +509,7 @@ class _DashboardViewState extends State<_DashboardView> {
   final GlobalKey _weekCalendarKey =
       GlobalKey(debugLabel: 'homepageWeekCalendarShowcase');
   final GlobalKey _streakStatKey =
-      GlobalKey(debugLabel: 'homepageStreakStatShowcase'); 
+      GlobalKey(debugLabel: 'homepageStreakStatShowcase');
 
   @override
   void initState() {
@@ -555,7 +542,7 @@ class _DashboardViewState extends State<_DashboardView> {
       }
       keysToShow.add(_weekCalendarKey);
       keysToShow.add(_streakStatKey);
-      
+
       if (keysToShow.isNotEmpty &&
           mounted &&
           ShowCaseWidget.of(context).mounted) {
@@ -566,11 +553,12 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   String _getUpcomingMeal() {
+    final l10n = AppLocalizations.of(context)!;
     final hour = DateTime.now().hour;
-    if (hour < 10) return 'Desayuno';
-    if (hour < 14) return 'Almuerzo';
-    if (hour < 20) return 'Cena';
-    return 'Desayuno';
+    if (hour < 10) return l10n.breakfast;
+    if (hour < 14) return l10n.lunch;
+    if (hour < 20) return l10n.dinner;
+    return l10n.breakfast;
   }
 
   String _getTrialDaysRemaining() {
@@ -584,9 +572,13 @@ class _DashboardViewState extends State<_DashboardView> {
       final now = DateTime.now();
       final difference = endDate.difference(now);
 
-      if (difference.isNegative) return '0 días';
+      if (difference.isNegative) {
+        final l10n = AppLocalizations.of(context)!;
+        return '${0} ${l10n.streakDays(0).split(' ')[1]}';
+      }
 
-      return '${difference.inDays + 1} días';
+      final l10n = AppLocalizations.of(context)!;
+      return '${difference.inDays + 1} ${l10n.streakDays(1).split(' ')[1]}';
     } catch (e) {
       return 'N/A';
     }
@@ -594,24 +586,22 @@ class _DashboardViewState extends State<_DashboardView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final Map<String, dynamic> user = widget.userData['user'] ?? {};
     final Map<String, dynamic> profileData = widget.userData['profile'] ?? {};
     final bool hasPlan = widget.mealPlanData != null;
     final String currentWeight = profileData['weight']?.toString() ?? '--';
-    final String mainGoal = profileData['goal'] ?? 'No definido';
+    final String mainGoal = profileData['goal'] ?? l10n.notDefined;
     final int streakDays = (widget.daysSinceLastStreak >= 4)
         ? 0
         : (profileData['racha_actual'] ?? 0);
     final String trialDaysRemaining = _getTrialDaysRemaining();
 
-    // 2. Si hay un plan, recorremos las comidas para extraer las recetas
     final List<InspirationRecipe> suggestedRecipes = [];
     final String? affiliateCode = user['applied_affiliate_code'];
 
     if (hasPlan) {
       for (var meal in widget.mealPlanData!.nutritionPlan.meals.values) {
-        // Ahora leemos la lista 'suggestedRecipes' (plural)
-        // y añadimos todos sus elementos a nuestra lista principal
         if (meal.suggestedRecipes.isNotEmpty) {
           suggestedRecipes.addAll(meal.suggestedRecipes);
         }
@@ -632,9 +622,8 @@ class _DashboardViewState extends State<_DashboardView> {
           if (hasPlan && widget.canCompleteStreakToday)
             Showcase(
               key: _streakReminderKey,
-              title: 'Completa tu día',
-              description:
-                  'Toca aquí para marcar tu día como completado y mantener o iniciar tu racha. ¡Hazlo diario!',
+              title: l10n.completeYourDay,
+              description: l10n.streakReminderDescription,
               tooltipBackgroundColor: FrutiaColors.accent,
               targetShapeBorder: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12))),
@@ -657,9 +646,8 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 24),
           Showcase(
             key: _weekCalendarKey,
-            title: 'Tu progreso semanal',
-            description:
-                'Aquí puedes ver los días que has completado tu plan y el estado de tu racha diaria.',
+            title: l10n.yourWeek,
+            description: l10n.weekCalendarDescription,
             tooltipBackgroundColor: FrutiaColors.accent,
             targetShapeBorder: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(16))),
@@ -685,7 +673,7 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(hasPlan ? 'Tus recetas de hoy' : 'Crea tu plan',
+            child: Text(hasPlan ? l10n.yourRecipesToday : l10n.createYourPlan,
                 style: GoogleFonts.lato(
                     fontSize: 20, fontWeight: FontWeight.bold)),
           ),
@@ -693,8 +681,7 @@ class _DashboardViewState extends State<_DashboardView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: hasPlan
-                ? PlanCarousel(recipes: suggestedRecipes) // <-- ¡Solucionado!
-
+                ? PlanCarousel(recipes: suggestedRecipes)
                 : _buildCreatePlanCard(context),
           ),
           if (hasPlan) ...[
@@ -720,6 +707,7 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildProfileHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -735,14 +723,14 @@ class _DashboardViewState extends State<_DashboardView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '¡Hola de nuevo,',
+                  l10n.helloAgain,
                   style: GoogleFonts.lato(
                     fontSize: 16,
                     color: FrutiaColors.secondaryText,
                   ),
                 ),
                 Text(
-                  widget.userName ?? 'Usuario',
+                  widget.userName ?? l10n.user,
                   style: GoogleFonts.lato(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -759,9 +747,9 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildAffiliateCodeCard(String affiliateCode) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
-      margin: const EdgeInsets.symmetric(
-          horizontal: 40, vertical: 20), // Quitado margen horizontal
+      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: FrutiaColors.secondaryBackground,
@@ -777,7 +765,7 @@ class _DashboardViewState extends State<_DashboardView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Código de afiliado usado:",
+                l10n.affiliateCodeUsed,
                 style: GoogleFonts.lato(
                   color: FrutiaColors.secondaryText,
                   fontSize: 12,
@@ -800,10 +788,7 @@ class _DashboardViewState extends State<_DashboardView> {
 
   Widget _buildStatsRow(BuildContext context, int streakDays,
       String currentWeight, String mainGoal, String trialDaysRemaining) {
-    // ▼▼▼ INICIO DEL CAMBIO ▼▼▼
-    // Obtenemos el código de afiliado directamente desde los datos del widget
-    final String? affiliateCode =
-        widget.userData['user']?['applied_affiliate_code'];
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -814,8 +799,8 @@ class _DashboardViewState extends State<_DashboardView> {
               Expanded(
                 child: _StatCard(
                     icon: Icons.local_fire_department_rounded,
-                    value: '$streakDays días',
-                    label: 'Racha',
+                    value: l10n.streakDays(streakDays),
+                    label: l10n.streak,
                     color: Colors.orange),
               ),
               const SizedBox(width: 12),
@@ -830,7 +815,7 @@ class _DashboardViewState extends State<_DashboardView> {
                   child: _StatCard(
                     icon: Icons.timer_outlined,
                     value: trialDaysRemaining,
-                    label: 'Prueba restante',
+                    label: l10n.trialRemaining,
                     color: FrutiaColors.accent2,
                   ),
                 ),
@@ -843,6 +828,7 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildWeekCalendar(BuildContext context, Set<String> history) {
+    final l10n = AppLocalizations.of(context)!;
     final today = DateTime.now();
     final startOfWindow = today.subtract(const Duration(days: 3));
     final ScrollController scrollController = ScrollController();
@@ -864,7 +850,7 @@ class _DashboardViewState extends State<_DashboardView> {
       children: [
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text('Tu semana',
+            child: Text(l10n.yourWeek,
                 style: GoogleFonts.lato(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -957,23 +943,24 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildUpcomingMealCard() {
+    final l10n = AppLocalizations.of(context)!;
     final upcomingMeal = _getUpcomingMeal();
     String message;
     final hour = DateTime.now().hour;
     if (hour < 5)
-      message = "Hora de dormir";
+      message = l10n.timeToSleep;
     else if (hour < 10)
-      message = "Tu desayuno está por comenzar";
+      message = l10n.breakfastStarting;
     else if (hour < 12)
-      message = "Pronto será hora de almorzar";
+      message = l10n.lunchSoon;
     else if (hour < 14)
-      message = "¡Es hora de almorzar!";
+      message = l10n.lunchTime;
     else if (hour < 17)
-      message = "Tu cena se acerca";
+      message = l10n.dinnerApproaching;
     else if (hour < 20)
-      message = "¡Es hora de cenar!";
+      message = l10n.dinnerTime;
     else
-      message = "Tu próxima comida será el desayuno";
+      message = l10n.nextMealBreakfast;
     return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16.0),
             padding: const EdgeInsets.all(16.0),
@@ -1001,7 +988,7 @@ class _DashboardViewState extends State<_DashboardView> {
                             fontSize: 16,
                             color: FrutiaColors.primaryText)),
                     const SizedBox(height: 4),
-                    Text('Próxima comida: ${upcomingMeal.toLowerCase()}',
+                    Text(l10n.nextMeal(upcomingMeal.toLowerCase()),
                         style: GoogleFonts.lato(
                             color: FrutiaColors.secondaryText, fontSize: 14))
                   ]))
@@ -1011,20 +998,20 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 
   Widget _buildCreatePlanCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
                 color: FrutiaColors.accent,
                 borderRadius: BorderRadius.circular(12)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('¡No tienes un plan activo!',
+              Text(l10n.noActivePlan,
                   style: GoogleFonts.lato(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.white)),
               const SizedBox(height: 8),
-              Text(
-                  'Crea un plan personalizado para alcanzar tus metas de manera efectiva.',
+              Text(l10n.createPersonalizedPlan,
                   style: GoogleFonts.lato(fontSize: 14, color: Colors.white70)),
               const SizedBox(height: 16),
               Center(
@@ -1041,12 +1028,12 @@ class _DashboardViewState extends State<_DashboardView> {
                           foregroundColor: FrutiaColors.accent,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12))),
-                      child:
-                          Row(mainAxisSize: MainAxisSize.min, children: const [
-                        Text('Crea tu plan ahora',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 16)
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(l10n.createPlanNow,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward, size: 16)
                       ])))
             ]))
         .animate()
@@ -1072,6 +1059,8 @@ class _StreakReminderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (!canCompleteToday) {
       return const SizedBox.shrink();
     }
@@ -1082,25 +1071,24 @@ class _StreakReminderCard extends StatelessWidget {
     IconData icon;
 
     if (daysSinceLastStreak >= 4) {
-      title = '¡Oh, no! Perdiste tu racha';
-      subtitle = 'Llevabas $streakCount días. ¡Empieza una nueva hoy!';
+      title = l10n.lostStreak;
+      subtitle = l10n.hadDays(streakCount);
       gradientColors = [Colors.blueGrey.shade400, Colors.blueGrey.shade600];
       icon = Icons.replay_circle_filled_rounded;
     } else if (daysSinceLastStreak == 3) {
-      title = '¡Tu racha está en peligro!';
-      subtitle = 'Hoy es el último día para salvarla.';
+      title = l10n.streakInDanger;
+      subtitle = l10n.lastDayToSave;
       gradientColors = [Colors.red.shade400, Colors.red.shade700];
       icon = Icons.warning_amber_rounded;
     } else if (daysSinceLastStreak == 2) {
-      title = '¡No te olvides de tu racha!';
-      subtitle = 'Te está esperando. Llevas 2 dias sin racha';
+      title = l10n.dontForgetStreak;
+      subtitle = l10n.waitingForYou;
       gradientColors = [Colors.amber.shade600, Colors.orange.shade800];
       icon = Icons.notification_important_rounded;
     } else {
-      title = '¡Completa tu día!';
-      subtitle = streakCount > 0
-          ? 'Vas por $streakCount días. ¡Vamos!'
-          : '¡Es hora de empezar tu racha!';
+      title = l10n.completeYourDay;
+      subtitle =
+          streakCount > 0 ? l10n.youAreOn(streakCount) : l10n.startYourStreak;
       gradientColors = [Colors.orange.shade400, Colors.deepOrange.shade500];
       icon = Icons.local_fire_department_rounded;
     }
@@ -1167,6 +1155,8 @@ class _StreakReminderCard extends StatelessWidget {
 
 Widget _btnLogout(BuildContext context) {
   final AuthService authService = AuthService();
+  final l10n = AppLocalizations.of(context)!;
+
   return Center(
       child: Container(
           decoration: BoxDecoration(
@@ -1187,20 +1177,22 @@ Widget _btnLogout(BuildContext context) {
                     builder: (context) => AlertDialog(
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
-                            title: const Text('¿Cerrar sesión?',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            content: const Text(
-                                'Estás a punto de salir de tu cuenta.'),
+                            title: Text(l10n.logoutConfirm,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            content: Text(l10n.aboutToLogout),
                             actions: [
                               TextButton(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
-                                  child: const Text('Cancelar',
-                                      style: TextStyle(color: Colors.grey))),
+                                  child: Text(l10n.cancel,
+                                      style:
+                                          const TextStyle(color: Colors.grey))),
                               TextButton(
                                   onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Salir',
-                                      style: TextStyle(color: Colors.red)))
+                                  child: Text(l10n.exit,
+                                      style:
+                                          const TextStyle(color: Colors.red)))
                             ]));
                 if (confirm == true) {
                   if (!navigator.mounted) return;
@@ -1221,8 +1213,9 @@ Widget _btnLogout(BuildContext context) {
                 }
               },
               icon: const Icon(Icons.logout_rounded, size: 22),
-              label: const Text('Cerrar sesión',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              label: Text(l10n.logout,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.red[700],
@@ -1261,7 +1254,6 @@ class _StatCard extends StatelessWidget {
           Icon(icon, color: color, size: 28),
           const SizedBox(width: 12),
           Expanded(
-            // Añadido Expanded aquí
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1271,9 +1263,8 @@ class _StatCard extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
-                  maxLines: 2, // Limita a una línea
-                  overflow:
-                      TextOverflow.ellipsis, // Puntos suspensivos si no cabe
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   label,
@@ -1305,6 +1296,7 @@ class MembershipStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     String title;
     String subtitle;
     Color color;
@@ -1312,19 +1304,19 @@ class MembershipStatusWidget extends StatelessWidget {
     bool isActionable = true;
 
     if (isPremium) {
-      title = "Membresía Premium";
-      subtitle = "Estás disfrutando de todos los beneficios";
+      title = l10n.premiumMembership;
+      subtitle = l10n.enjoyingBenefits;
       color = Colors.green;
       icon = Icons.verified_user;
       isActionable = false;
     } else if (isInTrial) {
-      title = "En Período de Prueba";
-      subtitle = "Te quedan $trialDaysRemaining de prueba gratuita";
+      title = l10n.inTrialPeriod;
+      subtitle = l10n.trialDaysLeft(trialDaysRemaining);
       color = FrutiaColors.accent;
       icon = Icons.timer;
     } else {
-      title = "Actualiza tu membresía";
-      subtitle = "Desbloquea todas las funciones premium";
+      title = l10n.upgradeMembership;
+      subtitle = l10n.unlockPremium;
       color = Colors.red;
       icon = Icons.card_membership;
     }

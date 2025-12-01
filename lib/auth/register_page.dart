@@ -1,4 +1,5 @@
 import 'package:Frutia/auth/PhoneVerificationPage.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +8,7 @@ import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/auth/login_page.dart';
 import 'package:Frutia/services/storage_service.dart';
-import 'package:Frutia/utils/colors.dart'; // Import FrutiaColors
+import 'package:Frutia/utils/colors.dart';
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback showLoginPage;
@@ -20,28 +21,22 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage>
     with TickerProviderStateMixin {
   bool isObscure = true;
-  bool isObscureConfirm = true; // Estado separado para el campo de confirmación
-  String _fullPhoneNumber = ''; // <-- AÑADIR ESTA VARIABLE
+  bool isObscureConfirm = true;
+  String _fullPhoneNumber = '';
 
-  // Text Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController =
-      TextEditingController(); // Nuevo controlador
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController(); // <-- AÑADIR ESTE
-
+  final _phoneController = TextEditingController();
   final _ageController = TextEditingController();
   final _authService = AuthService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId:
         '237230625824-uhg81q3ro2at559t31bnorjqrlooe3lr.apps.googleusercontent.com',
   );
+  final _affiliateCodeController = TextEditingController();
 
-  final _affiliateCodeController =
-      TextEditingController(); // <-- CAMBIO: Nuevo controlador para el código de afiliado
-
-  // Animations
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -72,19 +67,17 @@ class _RegisterPageState extends State<RegisterPage>
     _controller.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose(); // Dispose del nuevo controlador
-    _phoneController.dispose(); // <-- AÑADIR ESTE
+    _confirmPasswordController.dispose();
+    _phoneController.dispose();
     _nameController.dispose();
     _ageController.dispose();
-    _affiliateCodeController
-        .dispose(); // <-- CAMBIO: Dispose del nuevo controlador
+    _affiliateCodeController.dispose();
     super.dispose();
   }
 
-// En RegisterPage.dart
-
-  // ▼▼▼ AGREGA ESTE MÉTODO COMPLETO ▼▼▼
   Future<void> signInWithGoogle() async {
+    final l10n = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -99,7 +92,6 @@ class _RegisterPageState extends State<RegisterPage>
       if (!mounted) return;
       Navigator.pop(context);
       if (success) {
-        // Si es exitoso, navega a la pantalla principal de la app
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const AuthCheckMain()),
         );
@@ -107,15 +99,16 @@ class _RegisterPageState extends State<RegisterPage>
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
-      showErrorSnackBar('Error al unirse con Google. Inténtalo de nuevo.');
+      showErrorSnackBar(l10n.googleSignInError);
     }
   }
 
   Future<void> signUp() async {
+    final l10n = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
-      barrierDismissible:
-          false, // El usuario no puede cerrar el diálogo tocando fuera
+      barrierDismissible: false,
       builder: (_) => const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(FrutiaColors.accent),
@@ -127,27 +120,22 @@ class _RegisterPageState extends State<RegisterPage>
       final response = await _authService.register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _fullPhoneNumber, // <- Usamos la variable que se actualiza
+        phone: _fullPhoneNumber,
         password: _passwordController.text,
-        affiliateCode:
-            _affiliateCodeController.text.trim(), // <-- AÑADE ESTA LÍNEA
+        affiliateCode: _affiliateCodeController.text.trim(),
       );
 
       Navigator.of(context).pop();
 
-      // 3. Manejar la respuesta exitosa.
       final userName = response['user']['name'];
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('¡Bienvenido, $userName! Registro exitoso.'),
+          content: Text(l10n.welcomeMessage(userName)),
           backgroundColor: FrutiaColors.success,
         ),
       );
     } on AuthException catch (e) {
-      // 4. Manejar errores de autenticación específicos (ej. email ya existe).
-      // El mensaje 'e.message' viene directamente de nuestro backend.
-      Navigator.of(context)
-          .pop(); // Asegúrate de cerrar el diálogo también en caso de error.
+      Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -156,13 +144,11 @@ class _RegisterPageState extends State<RegisterPage>
         ),
       );
     } catch (e) {
-      // 5. Manejar cualquier otro error inesperado (ej. no hay internet).
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.'),
+        SnackBar(
+          content: Text(l10n.unexpectedError),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -170,34 +156,35 @@ class _RegisterPageState extends State<RegisterPage>
   }
 
   bool validateRegister() {
-    // Priorizar validación de contraseñas si no están vacías
+    final l10n = AppLocalizations.of(context)!;
+
     if (_passwordController.text.isNotEmpty &&
         _confirmPasswordController.text.isNotEmpty &&
         _passwordController.text != _confirmPasswordController.text) {
-      showErrorSnackBar("Las contraseñas no coinciden");
+      showErrorSnackBar(l10n.passwordsDoNotMatch);
       return false;
     }
 
-    // Verificar campos vacíos (solo nombre, correo, contraseña y confirmar contraseña)
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty ||
         _nameController.text.isEmpty) {
-      showErrorSnackBar("Por favor complete todos los campos obligatorios");
+      showErrorSnackBar(l10n.completeAllRequiredFields);
       return false;
     }
 
-    // Otras validaciones relevantes
     if (!_emailController.text.contains('@')) {
-      showErrorSnackBar("Correo electrónico inválido");
+      showErrorSnackBar(l10n.invalidEmail);
       return false;
     }
+
     if (_nameController.text.contains(RegExp(r'[^a-zA-Z\s]'))) {
-      showErrorSnackBar("El nombre solo debe contener letras");
+      showErrorSnackBar(l10n.nameOnlyLetters);
       return false;
     }
+
     if (_passwordController.text.length < 6) {
-      showErrorSnackBar("La contraseña debe tener al menos 6 caracteres");
+      showErrorSnackBar(l10n.passwordMinLength);
       return false;
     }
 
@@ -220,6 +207,7 @@ class _RegisterPageState extends State<RegisterPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -229,15 +217,14 @@ class _RegisterPageState extends State<RegisterPage>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
+              Color(0xFFFFD1B3),
+              Color(0xFFFF6F61),
             ],
           ),
         ),
         child: SafeArea(
           child: Stack(
             children: [
-              // Imagen de la fruta en la parte superior
               Positioned(
                 top: size.height * 0.05,
                 left: 0,
@@ -256,11 +243,10 @@ class _RegisterPageState extends State<RegisterPage>
                   ),
                 ),
               ),
-              // Contenido principal
               Column(
                 children: [
                   AppBar(
-                    title: const Text("Registro"),
+                    title: Text(l10n.registration),
                     titleTextStyle: TextStyle(
                       color: Color(0xFF2D2D2D),
                       fontSize: 20,
@@ -295,8 +281,7 @@ class _RegisterPageState extends State<RegisterPage>
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Container(
-                              height: size.height *
-                                  0.75, // Ajustado para incluir AppBar
+                              height: size.height * 0.75,
                               width: size.width * 0.9,
                               padding: EdgeInsets.all(16.0),
                               child: SingleChildScrollView(
@@ -304,9 +289,8 @@ class _RegisterPageState extends State<RegisterPage>
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     SizedBox(height: 20),
-                                    // Welcome Text
                                     Text(
-                                      "Bienvenido, Completa tu registro.",
+                                      l10n.welcomeCompleteRegistration,
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.lato(
                                         fontSize: 18,
@@ -315,7 +299,6 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 30),
-                                    // Name TextField
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: TextField(
@@ -338,7 +321,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               width: 1.5,
                                             ),
                                           ),
-                                          labelText: "Nombre completo",
+                                          labelText: l10n.fullName,
                                           labelStyle: TextStyle(
                                               color: Color(0xFF2D2D2D)),
                                           prefixIcon: Icon(
@@ -353,9 +336,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             TextStyle(color: Color(0xFF2D2D2D)),
                                       ),
                                     ),
-
                                     SizedBox(height: 20),
-                                    // Email TextField
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: TextField(
@@ -378,7 +359,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               width: 1.5,
                                             ),
                                           ),
-                                          labelText: "Correo electrónico",
+                                          labelText: l10n.emailAddress,
                                           labelStyle: TextStyle(
                                               color: Color(0xFF2D2D2D)),
                                           prefixIcon: Icon(
@@ -394,13 +375,11 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 20),
-                                    // Phone Field con selector de país
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: IntlPhoneField(
                                         decoration: InputDecoration(
-                                          labelText: 'Número de teléfono',
-                                          // Mantenemos el estilo de tu app
+                                          labelText: l10n.phoneNumber,
                                           enabledBorder: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12),
@@ -421,11 +400,8 @@ class _RegisterPageState extends State<RegisterPage>
                                           fillColor:
                                               FrutiaColors.primaryBackground,
                                         ),
-                                        initialCountryCode:
-                                            'MX', // El país que aparecerá por defecto (México)
+                                        initialCountryCode: 'MX',
                                         onChanged: (phone) {
-                                          // Cada vez que el usuario cambia el número o el país,
-                                          // guardamos el número completo en formato E.164
                                           setState(() {
                                             _fullPhoneNumber =
                                                 phone.completeNumber;
@@ -434,23 +410,19 @@ class _RegisterPageState extends State<RegisterPage>
                                         validator: (phoneNumber) {
                                           if (phoneNumber == null ||
                                               phoneNumber.number.isEmpty) {
-                                            return 'Por favor ingresa un número';
+                                            return l10n.pleaseEnterNumber;
                                           }
-                                          // La librería puede validar si el número es plausiblemente correcto en longitud
                                           if (!phoneNumber.isValidNumber()) {
-                                            return 'El número de teléfono no es válido para el país seleccionado.';
+                                            return l10n.invalidPhoneNumber;
                                           }
-                                          return null; // Retorna null si es válido
+                                          return null;
                                         },
-                                        // Estilo del texto y cursor
                                         style:
                                             TextStyle(color: Color(0xFF2D2D2D)),
                                         cursorColor: FrutiaColors.accent,
                                       ),
                                     ),
                                     SizedBox(height: 20),
-
-                                    // Password TextField
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: TextField(
@@ -474,7 +446,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               width: 1.5,
                                             ),
                                           ),
-                                          labelText: "Contraseña",
+                                          labelText: l10n.password,
                                           labelStyle: TextStyle(
                                               color: Color(0xFF2D2D2D)),
                                           prefixIcon: Icon(
@@ -503,7 +475,6 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 20),
-                                    // Confirm Password TextField
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: TextField(
@@ -527,7 +498,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               width: 1.5,
                                             ),
                                           ),
-                                          labelText: "Confirmar Contraseña",
+                                          labelText: l10n.confirmPassword,
                                           labelStyle: TextStyle(
                                               color: Color(0xFF2D2D2D)),
                                           prefixIcon: Icon(
@@ -557,7 +528,6 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 20),
-
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: TextField(
@@ -580,8 +550,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               width: 1.5,
                                             ),
                                           ),
-                                          labelText:
-                                              "Código de afiliado (Opcional)",
+                                          labelText: l10n.affiliateCodeOptional,
                                           labelStyle: TextStyle(
                                               color: Color(0xFF2D2D2D)),
                                           prefixIcon: Icon(
@@ -597,8 +566,6 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 40),
-
-                                    // Sign Up Button
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: Container(
@@ -606,9 +573,7 @@ class _RegisterPageState extends State<RegisterPage>
                                         child: ElevatedButton(
                                           onPressed: () {
                                             if (validateRegister()) {
-                                              // Si la validación es correcta, navega y pasa los datos
                                               Navigator.push(
-                                                // Usamos push para que pueda regresar si hay un error
                                                 context,
                                                 MaterialPageRoute(
                                                   builder: (context) =>
@@ -625,7 +590,7 @@ class _RegisterPageState extends State<RegisterPage>
                                                     affiliateCode:
                                                         _affiliateCodeController
                                                             .text
-                                                            .trim(), // <-- AÑADE ESTA LÍNEA
+                                                            .trim(),
                                                   ),
                                                 ),
                                               );
@@ -643,7 +608,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             elevation: 8,
                                           ),
                                           child: Text(
-                                            "Crea tu cuenta",
+                                            l10n.createAccount,
                                             style: GoogleFonts.inter(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -655,7 +620,6 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                     ),
                                     SizedBox(height: 20),
-                                    // Sign Up with Google Button
                                     SlideTransition(
                                       position: _slideAnimation,
                                       child: Container(
@@ -692,7 +656,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               ),
                                               SizedBox(width: 10),
                                               Text(
-                                                "Unirse con Google",
+                                                l10n.signInWithGoogle,
                                                 style: GoogleFonts.inter(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.bold,

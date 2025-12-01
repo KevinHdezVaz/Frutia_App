@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,10 +9,12 @@ class TermsAndConditionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Términos y Condiciones',
+          l10n.termsAndConditionsTitle,
           style: GoogleFonts.lato(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -32,7 +35,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Términos y Condiciones de Uso',
+                l10n.termsTitle,
                 style: GoogleFonts.lato(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -41,7 +44,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                'Bienvenido(a) a Frutia. Al utilizar nuestra aplicación, aceptas cumplir con los siguientes términos y condiciones. Por favor, léelos cuidadosamente antes de continuar usando nuestros servicios.',
+                l10n.termsIntro,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -49,7 +52,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '1. Aceptación de los Términos\nAl descargar, instalar o usar la aplicación Frutia, aceptas estos términos y condiciones en su totalidad. Si no estás de acuerdo con alguna parte, te pedimos que no utilices la aplicación.',
+                l10n.termsSection1,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -57,7 +60,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '2. Uso de la Aplicación\nFrutia está diseñada para proporcionar planes de nutrición personalizados basados en tus preferencias, metas y estilo de vida. No garantizamos resultados específicos, ya que los resultados pueden variar según el usuario. Debes usar la aplicación bajo tu propia responsabilidad y consultar a un profesional de la salud antes de realizar cambios significativos en tu dieta.',
+                l10n.termsSection2,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -65,7 +68,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 800.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '3. Privacidad\nTu privacidad es importante para nosotros. La información que compartas con Frutia será tratada de acuerdo con nuestra Política de Privacidad, que puedes consultar en la aplicación o en nuestro sitio web.',
+                l10n.termsSection3,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -73,7 +76,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1000.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '4. Propiedad Intelectual\nTodo el contenido de la aplicación, incluyendo textos, gráficos, logotipos y software, es propiedad de Frutia o sus licenciantes y está protegido por las leyes de propiedad intelectual. No puedes copiar, modificar, distribuir o reproducir ningún contenido sin nuestro consentimiento expreso.',
+                l10n.termsSection4,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -81,7 +84,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1200.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '5. Modificaciones\nNos reservamos el derecho de modificar estos términos y condiciones en cualquier momento. Te notificaremos sobre cambios significativos a través de la aplicación o por otros medios. El uso continuado de la aplicación implica la aceptación de los términos actualizados.',
+                l10n.termsSection5,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -89,7 +92,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
               ).animate().fadeIn(delay: 1400.ms, duration: 800.ms),
               const SizedBox(height: 16),
               Text(
-                '6. Contacto\nSi tienes preguntas sobre estos términos, puedes contactarnos en soporte@frutia.com.',
+                l10n.termsSection6,
                 style: GoogleFonts.lato(
                   fontSize: 14,
                   color: FrutiaColors.secondaryText,
@@ -108,7 +111,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Volver',
+                    l10n.goBack,
                     style: GoogleFonts.lato(
                       fontSize: 16,
                       color: Colors.white,

@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -5,7 +6,7 @@ import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/auth/forget_pass_page.dart';
 import 'package:Frutia/utils/colors.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart'; // Import FrutiaColors
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback showLoginPage;
@@ -19,7 +20,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   bool isRemember = false;
   bool isObscure = true;
 
-  // Text Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -28,7 +28,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   );
   final _authService = AuthService();
 
-  // Animations
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -63,24 +62,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Future<void> _requestNotificationPermissions() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
-      // Verificar si ya tiene permisos
       final bool hasPermission = await OneSignal.Notifications.permission;
 
       if (!hasPermission) {
-        // Solicitar permiso
         final bool permissionGranted =
             await OneSignal.Notifications.requestPermission(true);
 
         if (permissionGranted) {
           print("Permisos de notificación concedidos");
-          // Opcional: mostrar mensaje al usuario
-       
         } else {
           print("Permisos de notificación denegados");
-          // Opcional: mostrar mensaje al usuario
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Notificaciones desactivadas")),
+            SnackBar(content: Text(l10n.notificationsDisabled)),
           );
         }
       }
@@ -89,9 +84,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     }
   }
 
-  // Email/Password Sign-In Logic
   Future<void> signIn() async {
-    // if (!validateLogin()) return; // Se asume que la validación se hace antes.
+    final l10n = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
@@ -109,16 +103,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         _passwordController.text.trim(),
       );
 
-      Navigator.of(context).pop(); // Cierra el diálogo de carga
+      Navigator.of(context).pop();
 
       await _requestNotificationPermissions();
 
-      // Navega a la pantalla principal si el login es exitoso
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => AuthCheckMain()),
       );
     } on AuthException catch (e) {
-      // Maneja errores específicos de la API (ej. credenciales inválidas)
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,12 +120,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         ),
       );
     } catch (e) {
-      // Maneja otros errores (ej. sin conexión a internet)
       Navigator.of(context).pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ocurrió un error inesperado. Inténtalo de nuevo.'),
+        SnackBar(
+          content: Text(l10n.unexpectedError),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -141,18 +132,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   bool validateLogin() {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      showErrorSnackBar("Por favor complete todos los campos");
+      showErrorSnackBar(l10n.completeAllFields);
       return false;
     }
 
     if (!_emailController.text.contains('@')) {
-      showErrorSnackBar("Correo electrónico inválido");
+      showErrorSnackBar(l10n.invalidEmail);
       return false;
     }
 
     if (_passwordController.text.length < 6) {
-      showErrorSnackBar("La contraseña debe tener al menos 6 caracteres");
+      showErrorSnackBar(l10n.passwordMinLength);
       return false;
     }
 
@@ -177,6 +170,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -186,15 +180,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFFD1B3), // Naranja suave
-              Color(0xFFFF6F61), // Rojo cálido
+              Color(0xFFFFD1B3),
+              Color(0xFFFF6F61),
             ],
           ),
         ),
         child: SafeArea(
           child: Stack(
             children: [
-              // Imagen de la fruta en la parte superior
               Positioned(
                 top: size.height * 0.05,
                 left: 0,
@@ -213,8 +206,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-
-              // Contenido principal
               Center(
                 child: FadeTransition(
                   opacity: _fadeAnimation,
@@ -235,9 +226,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(height: 20),
-
                               Text(
-                                "Bienvenido a Frutia",
+                                l10n.welcomeToFrutia,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.lato(
                                   fontSize: 24,
@@ -247,7 +237,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                               ),
                               SizedBox(height: 10),
                               Text(
-                                "Ingresa tus credenciales para continuar",
+                                l10n.enterCredentials,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.lato(
                                   fontSize: 16,
@@ -256,7 +246,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               SizedBox(height: 40),
-                              // Email TextField
                               SlideTransition(
                                 position: _slideAnimation,
                                 child: TextField(
@@ -278,7 +267,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                         width: 2.0,
                                       ),
                                     ),
-                                    labelText: "Correo",
+                                    labelText: l10n.email,
                                     labelStyle: GoogleFonts.lato(
                                       color: Color(0xFF2D2D2D).withOpacity(0.7),
                                       fontSize: 16,
@@ -299,7 +288,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               SizedBox(height: 20),
-                              // Password TextField
                               SlideTransition(
                                 position: _slideAnimation,
                                 child: TextField(
@@ -322,7 +310,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                         width: 2.0,
                                       ),
                                     ),
-                                    labelText: "Contraseña",
+                                    labelText: l10n.password,
                                     labelStyle: GoogleFonts.lato(
                                       color: Color(0xFF2D2D2D).withOpacity(0.7),
                                       fontSize: 16,
@@ -356,7 +344,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               SizedBox(height: 20),
-                              // Remember Me and Forget Password Row
                               SlideTransition(
                                 position: _slideAnimation,
                                 child: Row(
@@ -376,7 +363,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                           checkColor: Colors.white,
                                         ),
                                         Text(
-                                          'Recordarme',
+                                          l10n.rememberMe,
                                           style: GoogleFonts.lato(
                                             fontSize: 14,
                                             color: Color(0xFF2D2D2D),
@@ -395,7 +382,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                         );
                                       },
                                       child: Text(
-                                        "Olvidé mi contraseña",
+                                        l10n.forgotPassword,
                                         style: GoogleFonts.lato(
                                           color: Color(0xFFE63946),
                                           fontWeight: FontWeight.w500,
@@ -410,7 +397,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               SizedBox(height: 40),
-                              // Sign In Button
                               SlideTransition(
                                 position: _slideAnimation,
                                 child: Container(
@@ -427,7 +413,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                       elevation: 5,
                                     ),
                                     child: Text(
-                                      "Entrar",
+                                      l10n.signIn,
                                       style: GoogleFonts.lato(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -438,7 +424,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               SizedBox(height: 20),
-                              // Sign In with Google Button
                               SlideTransition(
                                 position: _slideAnimation,
                                 child: Container(
@@ -459,8 +444,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                             .signInWithGoogle();
 
                                         if (!mounted) return;
-                                        Navigator.pop(
-                                            context); // Cierra el diálogo de carga
+                                        Navigator.pop(context);
 
                                         if (success) {
                                           Navigator.of(context).pushReplacement(
@@ -471,10 +455,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                         }
                                       } catch (e) {
                                         if (!mounted) return;
-                                        Navigator.pop(
-                                            context); // Cierra el diálogo de carga
+                                        Navigator.pop(context);
                                         showErrorSnackBar(
-                                            "Error al iniciar sesión con Google");
+                                            l10n.googleSignInError);
                                       }
                                     },
                                     style: OutlinedButton.styleFrom(
@@ -505,7 +488,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                         ),
                                         SizedBox(width: 10),
                                         Text(
-                                          "Unirse con Google",
+                                          l10n.signInWithGoogle,
                                           style: GoogleFonts.lato(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
@@ -518,11 +501,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               SizedBox(height: 20),
-                              // Create Account Link
                               TextButton(
                                 onPressed: widget.showLoginPage,
                                 child: Text(
-                                  "Crea tu cuenta",
+                                  l10n.createAccount,
                                   style: GoogleFonts.lato(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,

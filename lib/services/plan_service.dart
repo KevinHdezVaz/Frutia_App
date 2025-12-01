@@ -31,6 +31,37 @@ class PlanService {
     }
   }
 
+
+// services/plan_service.dart
+
+Future<List<Map<String, dynamic>>> getTodayHistory() async {
+  final token = await _storage.getToken();
+  if (token == null) throw AuthException('No autenticado.');
+
+  final response = await http.get(
+    Uri.parse('$baseUrl/history/today'),
+    headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  _log('--- Respuesta getTodayHistory ---');
+  _log('Status Code: ${response.statusCode}');
+  _log('Response Body: ${response.body}');
+  _log('-----------------------------------');
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> responseData = json.decode(response.body);
+    final List<dynamic> historyList = responseData['data'] ?? [];
+    
+    return historyList.cast<Map<String, dynamic>>();
+  } else {
+    throw Exception('Error al cargar historial del día');
+  }
+}
+
+
   Future<String> getUserName() async {
     try {
       final token = await _storage.getToken();

@@ -1,16 +1,17 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/pages/Pantalla1.dart';
 import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/CompraDetailScreen.dart';
 import 'package:Frutia/pages/screens/ModificationsScreen.dart';
-import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart'; // Assuming RecetasScreen is in this file or a separate one
+import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
 import 'package:Frutia/pages/screens/RecipeDetailScreen.dart';
 import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
-import 'package:showcaseview/showcaseview.dart'; // Import showcaseview
-import 'package:shared_preferences/shared_preferences.dart'; // To manage shown state
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PlaceholderScreen extends StatefulWidget {
   const PlaceholderScreen({Key? key}) : super(key: key);
@@ -27,6 +28,8 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -52,8 +55,7 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
         iconTheme: IconThemeData(color: Colors.black),
       ),
       body: Container(
-        child: _screens[
-            _currentIndex], // Assuming _screens is used for the BottomNav
+        child: _screens[_currentIndex],
       ),
       bottomNavigationBar: Container(
         color: FrutiaColors.secondaryBackground,
@@ -78,13 +80,13 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
               unselectedFontSize: 12,
               showSelectedLabels: true,
               showUnselectedLabels: true,
-              items: const [
+              items: [
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: EdgeInsets.all(6),
                     child: Icon(Icons.person, size: 22),
                   ),
-                  label: "Perfil",
+                  label: l10n.profile,
                 ),
                 BottomNavigationBarItem(
                   icon: Padding(
@@ -98,21 +100,21 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
                     padding: EdgeInsets.all(6),
                     child: Icon(Icons.food_bank, size: 22),
                   ),
-                  label: "Mi Plan",
+                  label: l10n.myPlan,
                 ),
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: EdgeInsets.all(6),
                     child: Icon(Icons.auto_graph_outlined, size: 22),
                   ),
-                  label: "Progreso",
+                  label: l10n.progress,
                 ),
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: EdgeInsets.all(6),
                     child: Icon(Icons.book, size: 22),
                   ),
-                  label: "Nosotros",
+                  label: l10n.aboutUs,
                 ),
               ],
             ),
@@ -123,7 +125,6 @@ class _PlaceholderScreenState extends State<PlaceholderScreen> {
   }
 }
 
-// --- HomeContent, now a StatefulWidget to manage keys and trigger showcase ---
 class _HomeContent extends StatefulWidget {
   const _HomeContent({super.key});
 
@@ -132,7 +133,6 @@ class _HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<_HomeContent> {
-  // Define GlobalKeys for each category card
   final GlobalKey _miPlanKey = GlobalKey(debugLabel: 'miPlanShowcase');
   final GlobalKey _recetasKey = GlobalKey(debugLabel: 'recetasShowcase');
   final GlobalKey _comprasKey = GlobalKey(debugLabel: 'comprasShowcase');
@@ -140,7 +140,7 @@ class _HomeContentState extends State<_HomeContent> {
       GlobalKey(debugLabel: 'modificacionesShowcase');
 
   late List<Map<String, dynamic>> categories;
-  late List<GlobalKey> categoryKeys; // To hold the keys in order
+  late List<GlobalKey> categoryKeys;
 
   @override
   void initState() {
@@ -148,28 +148,27 @@ class _HomeContentState extends State<_HomeContent> {
 
     categories = [
       {
-        'name': 'Mi Plan',
+        'name': 'myPlan',
         'icon': Icons.home,
         'image': 'assets/images/plan_alimenticion.jpg'
       },
       {
-        'name': 'Recetas',
+        'name': 'recipes',
         'icon': Icons.restaurant_menu,
         'image': 'assets/images/receta.png'
       },
       {
-        'name': 'Compras',
+        'name': 'shopping',
         'icon': Icons.shopping_cart,
         'image': 'assets/images/compras.jpg'
       },
       {
-        'name': 'Modificaciones',
+        'name': 'modifications',
         'icon': Icons.edit,
         'image': 'assets/images/modificacione.png'
       },
     ];
 
-    // Assign keys in the same order as categories
     categoryKeys = [
       _miPlanKey,
       _recetasKey,
@@ -177,7 +176,6 @@ class _HomeContentState extends State<_HomeContent> {
       _modificacionesKey,
     ];
 
-    // Trigger the showcase after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showCategoryShowcase();
     });
@@ -185,15 +183,11 @@ class _HomeContentState extends State<_HomeContent> {
 
   Future<void> _showCategoryShowcase() async {
     final prefs = await SharedPreferences.getInstance();
-    // Use a unique key for this showcase, set to false for testing
-    // For production, use: final bool showcaseShown = prefs.getBool('categoryShowcaseShown') ?? false;
     final bool showcaseShown = prefs.getBool('categoryShowcaseShown') ?? false;
 
     if (!showcaseShown && mounted) {
-      // Add a small delay to ensure cards are fully rendered with their animations
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Ensure the ShowCaseWidget context is available before starting
       if (ShowCaseWidget.of(context).mounted) {
         ShowCaseWidget.of(context).startShowCase(categoryKeys);
         await prefs.setBool('categoryShowcaseShown', true);
@@ -224,8 +218,7 @@ class _HomeContentState extends State<_HomeContent> {
                     return _InteractiveCard(
                       category: categories[index],
                       index: index,
-                      cardKey: categoryKeys[
-                          index], // Pass the specific key to the card
+                      cardKey: categoryKeys[index],
                     );
                   }),
                 ),
@@ -238,16 +231,15 @@ class _HomeContentState extends State<_HomeContent> {
   }
 }
 
-// --- InteractiveCard, updated to receive and use the GlobalKey ---
 class _InteractiveCard extends StatefulWidget {
   final Map<String, dynamic> category;
   final int index;
-  final GlobalKey cardKey; // New: Accept a GlobalKey for the showcase
+  final GlobalKey cardKey;
 
   const _InteractiveCard({
     required this.category,
     required this.index,
-    required this.cardKey, // Required
+    required this.cardKey,
   });
 
   @override
@@ -279,26 +271,56 @@ class _InteractiveCardState extends State<_InteractiveCard>
     super.dispose();
   }
 
+  String _getCategoryName(BuildContext context, String key) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (key) {
+      case 'myPlan':
+        return l10n.myPlan;
+      case 'recipes':
+        return l10n.recipes;
+      case 'shopping':
+        return l10n.shopping;
+      case 'modifications':
+        return l10n.modifications;
+      default:
+        return key;
+    }
+  }
+
+  String _getShowcaseDescription(BuildContext context, String categoryKey) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (categoryKey) {
+      case 'myPlan':
+        return l10n.myPlanDescription;
+      case 'recipes':
+        return l10n.recipesDescription;
+      case 'shopping':
+        return l10n.shoppingDescription;
+      case 'modifications':
+        return l10n.modificationsDescription;
+      default:
+        return l10n.importantSection;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final categoryName = _getCategoryName(context, widget.category['name']);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
-      // Wrap the GestureDetector with Showcase
       child: Showcase(
-        key: widget.cardKey, // Use the key passed from _HomeContent
-        title: '${widget.category['name']}', // Dynamic title
-        description: _getShowcaseDescription(
-            widget.category['name']), // Dynamic description
+        key: widget.cardKey,
+        title: categoryName,
+        description: _getShowcaseDescription(context, widget.category['name']),
         tooltipBackgroundColor: FrutiaColors.accent,
         targetShapeBorder: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12))), // Card shape
+            borderRadius: BorderRadius.all(Radius.circular(12))),
         titleTextStyle: GoogleFonts.poppins(
             color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
         descTextStyle: GoogleFonts.lato(color: Colors.white, fontSize: 14),
-        disableMovingAnimation:
-            true, // Optional: disable animations for a quicker intro
-        disableScaleAnimation:
-            true, // Optional: disable animations for a quicker intro
+        disableMovingAnimation: true,
+        disableScaleAnimation: true,
         child: GestureDetector(
           onTapDown: (_) {
             setState(() {
@@ -331,29 +353,28 @@ class _InteractiveCardState extends State<_InteractiveCard>
             _controller.reverse();
           },
           onTap: () async {
-            // Navigation to the corresponding screen based on category
             switch (widget.category['name']) {
-              case 'Mi Plan':
+              case 'myPlan':
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => ProfessionalMiPlanDiarioScreen()),
                 );
                 break;
-              case 'Recetas':
+              case 'recipes':
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => PremiumRecetasScreen(),
                     ));
                 break;
-              case 'Compras':
+              case 'shopping':
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ComprasScreen()),
                 );
                 break;
-              case 'Modificaciones':
+              case 'modifications':
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -397,7 +418,7 @@ class _InteractiveCardState extends State<_InteractiveCard>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            widget.category['name'],
+                            categoryName,
                             style: GoogleFonts.lato(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -431,21 +452,5 @@ class _InteractiveCardState extends State<_InteractiveCard>
             curve: Curves.easeOut,
           ),
     );
-  }
-
-  // Helper method for dynamic descriptions
-  String _getShowcaseDescription(String categoryName) {
-    switch (categoryName) {
-      case 'Mi Plan':
-        return 'Aquí podrás ver y gestionar tu plan de alimentación personalizado.';
-      case 'Recetas':
-        return 'Explora deliciosas recetas adaptadas a tus necesidades y preferencias.';
-      case 'Compras':
-        return 'Organiza tus listas de compras para una experiencia sin estrés.';
-      case 'Modificaciones':
-        return 'Solicita cambios o ajustes en tu plan o recetas directamente aquí.';
-      default:
-        return 'Esta es una sección importante de la aplicación.';
-    }
   }
 }

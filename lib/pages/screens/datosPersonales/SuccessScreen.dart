@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
+import 'package:confetti/confetti.dart'; // ⭐ IMPORTAR
 import 'package:Frutia/utils/colors.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'dart:math';
 
 class SuccessScreen extends StatefulWidget {
   const SuccessScreen({super.key});
@@ -18,17 +19,40 @@ class _SuccessScreenState extends State<SuccessScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late VideoPlayerController _controller;
 
+  // ⭐ CONTROLADORES DE CONFETTI
+  late ConfettiController _confettiControllerCenter;
+  late ConfettiController _confettiControllerLeft;
+  late ConfettiController _confettiControllerRight;
+
   @override
   void initState() {
     super.initState();
-    // Initialize the video controller with the video asset
-    _controller = VideoPlayerController.asset('assets/images/fondoAppFrutiaVideo.mp4')
-      ..initialize().then((_) {
-        setState(() {}); // Update UI when video is initialized
-        _controller.setLooping(true); // Loop the video
-        _controller.play(); // Auto-play the video
-      });
+
+    // Initialize the video controller
+    _controller =
+        VideoPlayerController.asset('assets/images/fondoAppFrutiaVideo.mp4')
+          ..initialize().then((_) {
+            setState(() {});
+            _controller.setLooping(true);
+            _controller.play();
+          });
+
     _playSuccessSound();
+
+    // ⭐ INICIALIZAR CONTROLADORES DE CONFETTI
+    _confettiControllerCenter =
+        ConfettiController(duration: const Duration(seconds: 3));
+    _confettiControllerLeft =
+        ConfettiController(duration: const Duration(seconds: 3));
+    _confettiControllerRight =
+        ConfettiController(duration: const Duration(seconds: 3));
+
+    // ⭐ DISPARAR CONFETTI DESPUÉS DE 500ms
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _confettiControllerCenter.play();
+      _confettiControllerLeft.play();
+      _confettiControllerRight.play();
+    });
   }
 
   Future<void> _playSuccessSound() async {
@@ -41,9 +65,30 @@ class _SuccessScreenState extends State<SuccessScreen> {
 
   @override
   void dispose() {
-    _controller.dispose(); // Dispose of the video controller
+    _controller.dispose();
     _audioPlayer.dispose();
+
+    // ⭐ LIMPIAR CONTROLADORES DE CONFETTI
+    _confettiControllerCenter.dispose();
+    _confettiControllerLeft.dispose();
+    _confettiControllerRight.dispose();
+
     super.dispose();
+  }
+
+  // ⭐ GENERADOR DE COLORES ALEATORIOS PARA CONFETTI
+  Color _randomColor() {
+    final colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.yellow,
+      Colors.pink,
+      Colors.purple,
+      Colors.orange,
+      FrutiaColors.accent,
+    ];
+    return colors[Random().nextInt(colors.length)];
   }
 
   @override
@@ -60,6 +105,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
               ),
             ),
           ),
+
           SafeArea(
             child: Center(
               child: Column(
@@ -81,31 +127,13 @@ class _SuccessScreenState extends State<SuccessScreen> {
                             : Container(
                                 width: 200,
                                 height: 200,
-                                color: Colors.grey, // Placeholder while video loads
-                                child: Center(child: CircularProgressIndicator()),
+                                color: Colors.grey,
+                                child: const Center(
+                                    child: CircularProgressIndicator()),
                               ),
-                      ),
-                      Animate(
-                        effects: [
-                          ScaleEffect(
-                            begin: const Offset(0.8, 0.8),
-                            end: const Offset(1, 1),
-                            duration: 600.ms,
-                            curve: Curves.elasticOut,
-                          ),
-                          ShimmerEffect(duration: 1000.ms),
-                        ],
-                        child: Lottie.asset(
-                          'assets/images/animacioncontra.json',
-                          width: 400,
-                          height: 400,
-                          fit: BoxFit.contain,
-                          repeat: true,
-                        ),
                       ),
                     ],
                   ),
-                  // Text without fade-in animation
                   Text(
                     '¡Tu plan alimenticio ha sido creado! 🎉',
                     style: GoogleFonts.lato(
@@ -116,7 +144,6 @@ class _SuccessScreenState extends State<SuccessScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  // Second text without fade-in
                   Text(
                     'Estás listo para empezar tu viaje hacia una vida más saludable.',
                     style: GoogleFonts.lato(
@@ -127,7 +154,6 @@ class _SuccessScreenState extends State<SuccessScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
-                  // Button without fade-in
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pushReplacement(
@@ -154,6 +180,68 @@ class _SuccessScreenState extends State<SuccessScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          // ⭐ CONFETTI CENTRAL (EXPLOSION)
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiControllerCenter,
+              blastDirection: pi / 2, // Hacia abajo
+              emissionFrequency: 0.05,
+              numberOfParticles: 30,
+              gravity: 0.3,
+              shouldLoop: false,
+              colors: [
+                Colors.red,
+                Colors.blue,
+                Colors.green,
+                Colors.yellow,
+                Colors.pink,
+                Colors.purple,
+                FrutiaColors.accent,
+              ],
+            ),
+          ),
+
+          // ⭐ CONFETTI IZQUIERDA
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConfettiWidget(
+              confettiController: _confettiControllerLeft,
+              blastDirection: 0, // Hacia la derecha
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              gravity: 0.2,
+              shouldLoop: false,
+              colors: [
+                Colors.red,
+                Colors.blue,
+                Colors.green,
+                Colors.yellow,
+                Colors.pink,
+              ],
+            ),
+          ),
+
+          // ⭐ CONFETTI DERECHA
+          Align(
+            alignment: Alignment.centerRight,
+            child: ConfettiWidget(
+              confettiController: _confettiControllerRight,
+              blastDirection: pi, // Hacia la izquierda
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              gravity: 0.2,
+              shouldLoop: false,
+              colors: [
+                Colors.orange,
+                Colors.purple,
+                Colors.pink,
+                Colors.yellow,
+                FrutiaColors.accent,
+              ],
             ),
           ),
         ],

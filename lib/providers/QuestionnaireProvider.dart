@@ -16,12 +16,17 @@ class QuestionnaireProvider extends ChangeNotifier {
 
   // --- NUEVA LÍNEA ---
   String? weeklyActivity; // <--- AQUÍ SE AGREGA LA NUEVA VARIABLE
+  Set<String> favoriteProteins = {};
+  Set<String> favoriteCarbs = {};
+  Set<String> favoriteFats = {};
+  Set<String> favoriteFruits = {}; // ✅ AGREGAR ESTA LÍNEA
 
   // --- Moviendo estas variables a la sección de alimentación para mejor orden ---
   TimeOfDay? breakfastTime;
   TimeOfDay? lunchTime;
   TimeOfDay? dinnerTime;
   String? eatsOut;
+  String? _preferredSnackTime; // ✅ NUEVO
 
   // --- Pantalla 3: Tu Alimentación ---
   String dislikedFoods = '';
@@ -29,12 +34,20 @@ class QuestionnaireProvider extends ChangeNotifier {
   String allergyDetails = '';
   String? dietStyle;
   String? weeklyBudget;
- 
+
   // --- Pantalla 4: Tus Preferencias ---
   String? communicationTone;
   String? preferredName;
   Set<String> dietDifficulties = {};
   Set<String> dietMotivations = {};
+
+  String? get preferredSnackTime => _preferredSnackTime;
+
+  // Setter
+  set preferredSnackTime(String? value) {
+    _preferredSnackTime = value;
+    notifyListeners();
+  }
 
   // Método para actualizar y notificar
   void update(VoidCallback callback) {
@@ -48,7 +61,12 @@ class QuestionnaireProvider extends ChangeNotifier {
     medicalConditionDetails = '';
     mainGoal = null;
     sport = [];
+    _preferredSnackTime = null; // ✅ AGREGAR
 
+    favoriteProteins = {};
+    favoriteCarbs = {};
+    favoriteFats = {};
+    favoriteFruits = {};
     // --- CAMBIO EN RESET ---
     // Se eliminan las variables viejas
     // trainingFrequency = null;
@@ -65,7 +83,7 @@ class QuestionnaireProvider extends ChangeNotifier {
     allergyDetails = '';
     dietStyle = null;
     weeklyBudget = null;
-     communicationTone = null;
+    communicationTone = null;
     preferredName = null;
     dietDifficulties = {};
     dietMotivations = {};
@@ -92,7 +110,7 @@ class QuestionnaireProvider extends ChangeNotifier {
     debugPrint('No le gusta: $dislikedFoods');
     debugPrint('Alergias: $hasAllergies, Detalles: $allergyDetails');
     debugPrint('Estilo Dieta: $dietStyle, Presupuesto: $weeklyBudget');
-     debugPrint('---');
+    debugPrint('---');
     debugPrint('Tono: $communicationTone, Nombre preferido: $preferredName');
     debugPrint('Dificultades: $dietDifficulties');
     debugPrint('Motivaciones: $dietMotivations');

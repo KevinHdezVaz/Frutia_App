@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,7 +26,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
   @override
   void initState() {
     super.initState();
-    // Initialize the video controller
     _videoController = VideoPlayerController.asset(
       'assets/images/videoFrutiaProgreso.mp4',
     )..initialize().then((_) {
@@ -33,9 +33,9 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
           setState(() {
             _isInitialized = true;
           });
-          _videoController.setLooping(true); // Set video to loop
-          _videoController.setVolume(0.0); // Mute the video
-          _videoController.play(); // Start playing automatically
+          _videoController.setLooping(true);
+          _videoController.setVolume(0.0);
+          _videoController.play();
         }
       }).catchError((error) {
         print('Error initializing video: $error');
@@ -60,6 +60,8 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     bool isDarkMode(BuildContext context) {
       return Theme.of(context).brightness == Brightness.dark;
     }
@@ -94,15 +96,13 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
       return Padding(
         padding: EdgeInsets.only(bottom: 8),
         child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.center, // Esto centra el Row completo
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Text(
                 text,
-                textAlign: TextAlign
-                    .center, // Esto centra el texto dentro del Expanded
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 19,
                   color: Colors.black,
@@ -128,7 +128,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
           ),
           child: Stack(
             children: [
-              // Contenido principal (título y lista) en la parte superior
               Positioned(
                 top: size.height * 0.15,
                 left: 0,
@@ -139,8 +138,8 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Este es el primer paso hacia el cambio que mereces",
+                        Text(
+                          l10n.firstStepToChange,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -153,8 +152,8 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            BenefitItem("🌟 Y no estarás solo en el camino"),
-                            BenefitItem("🍓 Frutia te acompaña en cada paso"),
+                            BenefitItem(l10n.youWontBeAlone),
+                            BenefitItem(l10n.frutiaAccompaniesYou),
                           ],
                         ),
                       ],
@@ -162,8 +161,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   ),
                 ),
               ),
-
-              // Video en la parte inferior, reemplazando la imagen
               Positioned(
                 bottom: size.height * 0.10,
                 left: 0,
@@ -173,8 +170,7 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                     child: Container(
                       height: 300,
                       width: 350,
-                      color:
-                          Colors.black, // Fondo negro mientras carga el video
+                      color: Colors.black,
                       child: _isInitialized
                           ? VideoPlayer(_videoController)
                           : const Center(
@@ -186,8 +182,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   ),
                 ),
               ),
-
-              // Indicadores de página
               Positioned(
                 bottom: 30,
                 left: 0,
@@ -205,14 +199,11 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   ],
                 ),
               ),
-
-              // Botón de acción
               Positioned(
                 bottom: 30,
                 right: 30,
                 child: FloatingActionButton(
                   onPressed: () async {
-                    // Reproducir sonido y vibrar
                     await _playButtonSound();
                     await _storeOnboardInfo();
                     Navigator.push(
@@ -230,8 +221,6 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                   ),
                 ),
               ),
-
-              // Botón "Omitir"
               Padding(
                 padding:
                     EdgeInsets.only(top: appPadding * 2, right: appPadding),
@@ -248,7 +237,7 @@ class _OnBoardingCuatroState extends State<OnBoardingCuatro> {
                       );
                     },
                     child: Text(
-                      "OMITIR",
+                      l10n.skip,
                       style: TextStyle(
                         color: fondo,
                         fontSize: 20.0,
