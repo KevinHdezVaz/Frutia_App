@@ -226,42 +226,8 @@ class _ProfessionalMiPlanDiarioScreenState
     return warnings;
   }
 
-  // Calcular porción ajustada para no exceder macros
   Map<String, dynamic> _calculateAdjustedPortion(MealOption option,
       int caloriesExcess, int proteinExcess, int carbsExcess, int fatsExcess) {
-    double reductionFactor = 1.0;
-
-    // Calcular el factor de reducción basado en el macro que más se excede
-    if (caloriesExcess > 0) {
-      double caloriesFactor =
-          (option.calories - caloriesExcess) / option.calories;
-      if (caloriesFactor > 0 && caloriesFactor < reductionFactor) {
-        reductionFactor = caloriesFactor;
-      }
-    }
-
-    if (proteinExcess > 10) {
-      double proteinFactor = (option.protein - proteinExcess) / option.protein;
-      if (proteinFactor > 0 && proteinFactor < reductionFactor) {
-        reductionFactor = proteinFactor;
-      }
-    }
-
-    if (carbsExcess > 15) {
-      double carbsFactor = (option.carbs - carbsExcess) / option.carbs;
-      if (carbsFactor > 0 && carbsFactor < reductionFactor) {
-        reductionFactor = carbsFactor;
-      }
-    }
-
-    if (fatsExcess > 10) {
-      double fatsFactor = (option.fats - fatsExcess) / option.fats;
-      if (fatsFactor > 0 && fatsFactor < reductionFactor) {
-        reductionFactor = fatsFactor;
-      }
-    }
-
-    // Extraer el peso numérico de la porción original
     final portionMatch = RegExp(r'(\d+)g').firstMatch(option.portion);
     if (portionMatch == null) {
       return {
@@ -271,17 +237,69 @@ class _ProfessionalMiPlanDiarioScreenState
     }
 
     final originalWeight = int.parse(portionMatch.group(1)!);
-    final adjustedWeight = (originalWeight * reductionFactor).round();
+
+    // ✅ NUEVO ENFOQUE: Calcular cuántos gramos necesitas QUITAR
+    double gramsToRemove = 0;
+
+    // Para cada macro, calcular cuántos gramos del alimento necesitas eliminar
+    if (caloriesExcess > 0 && option.calories > 0) {
+      double gramsNeeded = (caloriesExcess / option.calories) * 100;
+      if (gramsNeeded > gramsToRemove) gramsToRemove = gramsNeeded;
+    }
+
+    if (proteinExcess > 10 && option.protein > 0) {
+      double gramsNeeded = (proteinExcess / option.protein) * 100;
+      if (gramsNeeded > gramsToRemove) gramsToRemove = gramsNeeded;
+    }
+
+    if (carbsExcess > 15 && option.carbs > 0) {
+      double gramsNeeded = (carbsExcess / option.carbs) * 100;
+      if (gramsNeeded > gramsToRemove) gramsToRemove = gramsNeeded;
+    }
+
+    if (fatsExcess > 10 && option.fats > 0) {
+      double gramsNeeded = (fatsExcess / option.fats) * 100;
+      if (gramsNeeded > gramsToRemove) gramsToRemove = gramsNeeded;
+    }
+
+    // ✅ Si no hay exceso que ajustar, retornar sin ajuste
+    if (gramsToRemove == 0) {
+      return {
+        'canAdjust': false,
+        'message': 'No hay exceso significativo para ajustar'
+      };
+    }
+
+    // ✅ Calcular nuevo peso
+    final adjustedWeight = (originalWeight - gramsToRemove).round();
+
+    // ✅ No permitir reducciones menores al 20% del peso original
+    final minAllowedWeight = (originalWeight * 0.2).round();
+
+    // ✅ Si la reducción es demasiado agresiva, no permitir
+    if (adjustedWeight < minAllowedWeight) {
+      return {
+        'canAdjust': false,
+        'message':
+            'La reducción necesaria es demasiado grande. Te sugerimos cambiar de alimento.'
+      };
+    }
+
+    // ✅ Calcular porcentaje de reducción
+    final reductionPercent = ((gramsToRemove / originalWeight) * 100).round();
+
+    // ✅ Calcular macros ajustados
+    final adjustmentRatio = adjustedWeight / originalWeight;
 
     return {
       'canAdjust': true,
       'originalWeight': originalWeight,
       'adjustedWeight': adjustedWeight,
-      'reductionPercent': ((1 - reductionFactor) * 100).round(),
-      'adjustedCalories': (option.calories * reductionFactor).round(),
-      'adjustedProtein': (option.protein * reductionFactor).round(),
-      'adjustedCarbs': (option.carbs * reductionFactor).round(),
-      'adjustedFats': (option.fats * reductionFactor).round(),
+      'reductionPercent': reductionPercent,
+      'adjustedCalories': (option.calories * adjustmentRatio).round(),
+      'adjustedProtein': (option.protein * adjustmentRatio).round(),
+      'adjustedCarbs': (option.carbs * adjustmentRatio).round(),
+      'adjustedFats': (option.fats * adjustmentRatio).round(),
     };
   }
 
@@ -320,8 +338,6 @@ class _ProfessionalMiPlanDiarioScreenState
         totalFatsExcess += int.tryParse(parts[7]) ?? 0;
       }
     }
-
-    // ⭐ NUEVO: Calcular porción ajustada
     final adjustment = _calculateAdjustedPortion(option, totalCaloriesExcess,
         totalProteinExcess, totalCarbsExcess, totalFatsExcess);
 
