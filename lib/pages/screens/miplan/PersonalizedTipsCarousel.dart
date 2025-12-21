@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -347,25 +348,47 @@ class _PersonalizedTipsCarouselState extends State<PersonalizedTipsCarousel> {
 // 2. WIDGET DEL CARD DE PERFIL NUTRICIONAL
 class NutritionalProfileCard extends StatelessWidget {
   final MealPlanData? mealPlanData;
+  final Map<String, dynamic>? profileData; // ✅ NUEVO: Recibir profileData
 
   const NutritionalProfileCard({
     Key? key,
     required this.mealPlanData,
+    this.profileData, // ✅ NUEVO
   }) : super(key: key);
+
+  double _calculateBMI(double? weight, double? height) {
+    if (weight == null || height == null || height == 0) return 0;
+    final heightInMeters = height / 100;
+    return weight / (heightInMeters * heightInMeters);
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (mealPlanData?.nutritionPlan.anthropometricSummary == null) {
+    final l10n = AppLocalizations.of(context)!; // ✅ Agregar esto al inicio
+
+    if (mealPlanData == null) {
       return const SizedBox.shrink();
     }
 
-    final anthro = mealPlanData!.nutritionPlan.anthropometricSummary!;
+    final anthro = mealPlanData!.nutritionPlan.anthropometricSummary;
     final nutritionalSummary = mealPlanData!.nutritionPlan.nutritionalSummary;
     final targetMacros = mealPlanData!.nutritionPlan.targetMacros;
 
+    // ✅ NUEVO: Obtener datos del perfil si anthro es null
+    final double? weight = anthro?.weight ??
+        (profileData?['weight'] != null
+            ? double.tryParse(profileData!['weight'].toString())
+            : null);
+    final double? height = anthro?.height ??
+        (profileData?['height'] != null
+            ? double.tryParse(profileData!['height'].toString())
+            : null);
+    final int? age = anthro?.age ?? profileData?['age'];
+    final double bmi = anthro?.bmi ?? _calculateBMI(weight, height);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16), // ✅ Reducido de 20 a 16
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -389,7 +412,7 @@ class NutritionalProfileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header - MÁS COMPACTO
           Row(
             children: [
               Container(
@@ -406,156 +429,229 @@ class NutritionalProfileCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Tu Perfil Nutricional",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    Text(
-                      "Información nutricional.",
-                      style: GoogleFonts.lato(
-                        fontSize: 13,
-                        color: FrutiaColors.secondaryText,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  l10n.yourNutritionalProfile, // ✅ CAMBIO
+                  style: GoogleFonts.poppins(
+                    fontSize: 16, // ✅ Reducido de 18 a 16
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12), // ✅ Reducido de 20 a 12
 
-          // Datos antropométricos en grid
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoChip(
-                  "Edad",
-                  "${anthro.age} años",
-                  Icons.cake,
-                  Colors.green,
-                ),
+          // ✅ NUEVO: Mostrar datos antropométricos si están disponibles
+          if (weight != null || height != null || age != null || bmi > 0) ...[
+            // Grid 2x2 más compacto
+            Row(
+              children: [
+                if (age != null)
+                  Expanded(
+                    child: _buildCompactInfoChip(
+                      l10n.age, // ✅ CAMBIO
+                      l10n.ageYears(age), // ✅ CAMBIO
+                      Icons.cake_outlined,
+                      Colors.green,
+                    ),
+                  ),
+                if (age != null && bmi > 0) const SizedBox(width: 8),
+                if (bmi > 0)
+                  Expanded(
+                    child: _buildCompactInfoChip(
+                      l10n.bmi, // ✅ CAMBIO
+                      bmi.toStringAsFixed(1),
+                      Icons.monitor_weight_outlined,
+                      Colors.orange,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                if (weight != null)
+                  Expanded(
+                    child: Builder(builder: (context) {
+                      final isEnglish =
+                          Localizations.localeOf(context).languageCode == 'en';
+                      String weightText;
+                      if (isEnglish) {
+                        // Convert kg to lbs: 1 kg = 2.20462 lbs
+                        final lbs = (weight * 2.20462).round();
+                        weightText = '$lbs lbs';
+                      } else {
+                        weightText = l10n.weightKg(weight.toStringAsFixed(0));
+                      }
+
+                      return _buildCompactInfoChip(
+                        l10n.weight,
+                        weightText,
+                        Icons.fitness_center_outlined,
+                        Colors.purple,
+                      );
+                    }),
+                  ),
+                if (weight != null && height != null) const SizedBox(width: 8),
+                if (height != null)
+                  Expanded(
+                    child: Builder(builder: (context) {
+                      final isEnglish =
+                          Localizations.localeOf(context).languageCode == 'en';
+                      String heightText;
+                      if (isEnglish) {
+                        // Convert cm to ft/in
+                        final inchesTotal = height / 2.54;
+                        final feet = (inchesTotal / 12).floor();
+                        final inches = (inchesTotal % 12).round();
+                        heightText = "$feet' $inches\"";
+                      } else {
+                        heightText = l10n.heightCm(height.toInt().toString());
+                      }
+
+                      return _buildCompactInfoChip(
+                        l10n.height,
+                        heightText,
+                        Icons.height,
+                        Colors.indigo,
+                      );
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Divider sutil
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.blue.withOpacity(0.2),
+                  Colors.transparent,
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInfoChip(
-                  "BMI",
-                  "${anthro.bmi.toStringAsFixed(1)}",
-                  Icons.monitor_weight,
-                  Colors.orange,
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
 
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Expanded(
-                child: _buildInfoChip(
-                  "Peso",
-                  "${anthro.weight} kg",
-                  Icons.fitness_center,
-                  Colors.purple,
-                ),
+              _buildCompactMacro(
+                l10n.calories, // ✅ CAMBIO
+                "${targetMacros.calories}",
+                Colors.red,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInfoChip(
-                  "Estatura",
-                  "${anthro.height.toInt()} cm",
-                  Icons.height,
-                  Colors.indigo,
-                ),
+              _buildVerticalDivider(),
+              _buildCompactMacro(
+                l10n.protein, // ✅ CAMBIO
+                "${targetMacros.protein}g",
+                Colors.blue,
+              ),
+              _buildVerticalDivider(),
+              _buildCompactMacro(
+                l10n.carbs, // ✅ CAMBIO
+                "${targetMacros.carbs}g",
+                Colors.orange,
+              ),
+              _buildVerticalDivider(),
+              _buildCompactMacro(
+                l10n.fats, // ✅ CAMBIO
+                "${targetMacros.fats}g",
+                Colors.purple,
               ),
             ],
           ),
 
-          // Información nutricional si está disponible
+          // Información nutricional del objetivo
           if (nutritionalSummary != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10), // ✅ Reducido de 12 a 10
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
                   Text(
-                    "🎯 ${nutritionalSummary.goal}",
-                    style: GoogleFonts.lato(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
+                    "🎯",
+                    style: TextStyle(fontSize: 16),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    nutritionalSummary.monthlyProgression,
-                    style: GoogleFonts.lato(
-                      fontSize: 12,
-                      color: FrutiaColors.secondaryText,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nutritionalSummary.goal,
+                          style: GoogleFonts.lato(
+                            fontSize: 13, // ✅ Reducido de 14 a 13
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                        Text(
+                          nutritionalSummary.monthlyProgression,
+                          style: GoogleFonts.lato(
+                            fontSize: 11, // ✅ Reducido de 12 a 11
+                            color: FrutiaColors.secondaryText,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ],
-
-          const SizedBox(height: 16),
-
-          // Macros resumen
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildMacroStat(
-                  "Calorías", "${targetMacros.calories}", Colors.red),
-              _buildMacroStat(
-                  "Proteínas", "${targetMacros.protein}g", Colors.blue),
-              _buildMacroStat(
-                  "Carbos", "${targetMacros.carbs}g", Colors.orange),
-              _buildMacroStat("Grasas", "${targetMacros.fats}g", Colors.purple),
-            ],
-          ),
         ],
       ),
     ).animate().fadeIn(duration: 600.ms, delay: 400.ms);
   }
 
-  Widget _buildInfoChip(
+  // ✅ NUEVO: Widget más compacto para info chips
+  Widget _buildCompactInfoChip(
       String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
-      child: Column(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: FrutiaColors.primaryText,
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.lato(
-              fontSize: 11,
-              color: FrutiaColors.secondaryText,
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.lato(
+                    fontSize: 9,
+                    color: FrutiaColors.secondaryText,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -563,8 +659,10 @@ class NutritionalProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMacroStat(String label, String value, Color color) {
+  // ✅ NUEVO: Widget más compacto para macros
+  Widget _buildCompactMacro(String label, String value, Color color) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.all(6),
@@ -572,20 +670,17 @@ class NutritionalProfileCard extends StatelessWidget {
             color: color.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+          child: Icon(
+            Icons.circle,
+            color: color,
+            size: 8,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -593,11 +688,20 @@ class NutritionalProfileCard extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.lato(
-            fontSize: 10,
+            fontSize: 9,
             color: FrutiaColors.secondaryText,
           ),
         ),
       ],
+    );
+  }
+
+  // ✅ NUEVO: Divisor vertical
+  Widget _buildVerticalDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Colors.grey.withOpacity(0.2),
     );
   }
 }
@@ -613,6 +717,7 @@ class PersonalizedMessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ✅ Agregar esto
     final message = mealPlanData?.nutritionPlan.personalizedMessage;
 
     if (message == null || message.isEmpty) {
@@ -655,7 +760,7 @@ class PersonalizedMessageCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "💝 Mensaje Personal",
+                  l10n.personalMessage, // ✅ CAMBIO
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

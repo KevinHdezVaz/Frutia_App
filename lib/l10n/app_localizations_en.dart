@@ -15,6 +15,281 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get progress => 'Progress';
 
+  String get personalMessage => '💝 Personal Message';
+
+// ⭐ ChatScreen translations
+  @override
+  String get chatTitle => 'Frutia';
+
+  @override
+  String get messagesRemaining => 'messages remaining';
+
+  @override
+  String get saveChat => 'Save';
+
+  @override
+  String get saveShowcaseTitle => 'Save Chat';
+
+  @override
+  String get saveShowcaseDesc =>
+      'Use this button to save the conversation, if you don\'t save it, it will be lost.';
+
+  @override
+  String get micShowcaseTitle => 'Voice Input';
+
+  @override
+  String get micShowcaseDesc =>
+      'If you don\'t want to type, you can tap here to record your message or stop recording.';
+
+  @override
+  String get voiceChatShowcaseTitle => 'Advanced Voice Chat';
+
+  @override
+  String get voiceChatShowcaseDesc =>
+      'Start a fluid voice conversation with the AI.';
+
+  @override
+  String get messageLimit => 'Message limit reached';
+
+  @override
+  String get messageLimitDesc =>
+      'Become premium to chat with Frutia without limits and access all features.';
+
+  @override
+  String get viewPremiumPlans => 'View Premium Plans';
+
+  @override
+  String get createPlanFirst => 'Create Your Plan First';
+
+  @override
+  String get needActivePlan =>
+      'You need an active meal plan to chat with Frutia and get personalized advice.';
+
+  @override
+  String get createMyPlan => 'Create My Plan';
+
+  @override
+  String get backToHome => 'Back to home';
+
+  @override
+  String get typeMessage => 'Type your message...';
+
+  @override
+  String get stopRecording => 'Stop recording';
+
+  @override
+  String get startRecording => 'Start recording';
+
+  @override
+  String get advancedVoiceChat => 'Advanced voice chat';
+
+  @override
+  String get imageAttached => 'Image attached';
+
+  @override
+  String get textCopied => 'Text copied';
+
+  @override
+  String get errorLoadingImage => 'Error loading image';
+
+  @override
+  String get bodyFatPercentage => '% Body Fat';
+
+  @override
+  String get estimated => '(Estimated)';
+
+  @override
+  String get recommendation => 'Recommendation:';
+
+  @override
+  String get observations => 'Observations:';
+
+  @override
+  String get thinkingResponse => 'Thinking about your response... 🤔';
+
+  @override
+  String get analyzingPlan => 'Analyzing your nutrition plan... 📊';
+
+  @override
+  String get consultingHistory => 'Checking your daily history... 📝';
+
+  @override
+  String get preparingResponse => 'Preparing a personalized response... ✨';
+
+  @override
+  String get reviewingMacros => 'Reviewing your remaining macros... 🔢';
+
+  @override
+  String get connectingAI => 'Connecting to Frutia\'s AI... 🧠';
+
+  @override
+  String get calculatingRecommendations => 'Calculating recommendations... 💡';
+
+  @override
+  String get verifyingProgress => 'Verifying your progress... 📈';
+
+  @override
+  String get searchingBestAnswer => 'Looking for the best answer for you... 🎯';
+
+  @override
+  String get processingQuery => 'Processing your query... ⚙️';
+
+  @override
+  String get almostReady => 'Almost ready with your answer... ⏳';
+
+  @override
+  String get noMessagesToSave => 'No messages to save';
+
+  @override
+  String get changeTitle => 'Change title';
+
+  @override
+  String get saveConversation => 'Save Conversation';
+
+  @override
+  String get titleLabel => 'Title';
+
+  @override
+  String get titleHint => 'Write a title...';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get chatSaved => 'Chat saved successfully';
+
+  @override
+  String get errorSavingChat => 'Error saving chat';
+
+  @override
+  String get micPermissionRequired => 'Microphone permission required';
+
+  @override
+  String get enableMicPermission =>
+      'Please enable microphone permissions in Settings';
+
+  @override
+  String get speechNotAvailable => 'Speech recognition is not available';
+
+  @override
+  String get personalData => 'Personal Data';
+
+  @override
+  String get tellUsAboutYou => 'Tell us a little about yourself';
+
+  @override
+  String get dataEssentialForPlan =>
+      'This data is essential to create your plan.';
+
+  @override
+  String get height => 'Height:';
+
+  @override
+  String get weight => 'Weight:';
+
+  @override
+  String get age => 'Age:';
+
+  @override
+  String get country => 'Country:';
+
+  @override
+  String get selectCountry => 'Select a country';
+
+  @override
+  String get iIdentifyAs => 'I identify as:';
+
+  @override
+  String get male => 'Male';
+
+  @override
+  String get female => 'Female';
+
+  @override
+  String get saveAndContinue => 'Save and Continue';
+
+  @override
+  String get dataSavedSuccess => 'Data saved successfully!';
+
+  @override
+  String get errorSavingProfile => 'Error saving profile';
+
+  @override
+  String get completeAllRequiredFields =>
+      'Please complete all required fields.';
+
+  @override
+  String get heightRequired => 'Height is required.';
+
+  @override
+  String get heightBetween => 'Height must be between 120 and 220 cm.';
+
+  @override
+  String get weightRequired => 'Weight is required.';
+
+  @override
+  String get weightBetween => 'Weight must be between 30 and 180 kg.';
+
+  @override
+  String get ageRequired => 'Age is required.';
+
+  @override
+  String get ageBetween => 'Age must be between 16 and 90 years.';
+
+  @override
+  String get selectCountryRequired => 'Please select a country.';
+
+  @override
+  String get selectOptionRequired => 'Please select an option.';
+
+  @override
+  String ageYears(int age) => '$age years';
+
+  @override
+  String get meters => 'm';
+
+  @override
+  String get pounds => 'lbs';
+
+  @override
+  String get years => 'years';
+
+  @override
+  String get errorStartingSpeech => 'Error starting';
+
+  @override
+  String get errorStoppingSpeech => 'Error stopping';
+
+  @override
+  String get errorVerifyingPlan => 'Could not verify your plan status.';
+
+  @override
+  String get newConversationTitle => 'New conversation';
+
+  @override
+  String get errorProcessingImage =>
+      'An error occurred while processing the image.';
+
+  @override
+  String get errorAnalyzingImage =>
+      'Sorry, I couldn\'t analyze the image. Please try again. 😥';
+
+  @override
+  String get pleaseLogin => 'Please log in to continue';
+
+  @override
+  String get errorStartingSession => 'Error starting session';
+
+  @override
+  String get sessionStartedError =>
+      'Could not start session. Please try again.';
+
+  @override
+  String get errorSendingMessage => 'Error sending message';
+
+  @override
+  String get errorAnalyzingImageShort => 'Error analyzing image';
+
   @override
   String get termsAndConditions => 'Terms and Conditions';
 
@@ -23,6 +298,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpAndSupport => 'Help and Support';
+
+  String get yourNutritionalProfile => 'Your Nutritional Profile';
+  String get bmi => 'BMI';
+  String weightKg(String kg) => '$kg kg';
+  String heightCm(String cm) => '$cm cm';
+  String get calories => 'Calories';
 
   @override
   String get myAccount => 'My account';
@@ -38,6 +319,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yourWeek => 'Your week';
+
+  @override
+  String get yourProgress => 'Your Progress';
+
+  @override
+  String get currentStreak => 'Current Streak';
+
+  @override
+  String get days => 'Days';
+
+  @override
+  String get yourGoal => 'Your Goal';
+
+  @override
+  String get balance => 'Balance';
+
+  @override
+  String get completeMyDay => 'I completed my day!';
+
+  @override
+  String get alreadyCompletedToday => 'Already completed today!';
+
+  @override
+  String get errorLoadingProgress => 'Error loading your progress';
+
+  @override
+  String get day => 'Day';
+
+  @override
+  String get milestone => 'Milestone';
+
+  @override
+  String get notDefined => 'Not defined';
 
   @override
   String get completeYourDay => 'Complete your day';
@@ -276,9 +590,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here you can see the days you have completed your plan and the status of your daily streak.';
 
   @override
-  String get notDefined => 'Not defined';
-
-  @override
   String get dayCompleted => 'Day completed! Your streak continues.';
 
   @override
@@ -459,9 +770,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get completeAllRequiredFields => 'Please complete all required fields';
-
-  @override
   String get nameOnlyLetters => 'Name should only contain letters';
 
   @override
@@ -567,6 +875,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get frutiaAccompaniesYou =>
       '🍓 Frutia accompanies you every step of the way';
+
+  @override
+  String congratsStreakNow(int streak) =>
+      'Congratulations! Your streak is now $streak days.';
 
   @override
   String get foodShouldPlease =>

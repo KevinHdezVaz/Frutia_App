@@ -824,15 +824,27 @@ class _ProfessionalMiPlanDiarioScreenState
     });
 
     try {
-      await _saveSelections();
+      await _saveSelections(); // Guardar antes de registrar
       await _planService.logMeal(
         date: DateTime.now(),
         mealType: mealTitle,
         selections: selections,
       );
+
       setState(() {
         _completedMeals.add(mealTitle);
+        // ⭐ AGREGAR ESTAS LÍNEAS:
+        _dailySelections[mealTitle]?.clear(); // Limpiar selecciones en memoria
+        _hasEggSelection.remove(mealTitle); // Limpiar estado de huevos
+        _validationWarnings.remove(mealTitle); // Limpiar warnings
       });
+
+      // ⭐ AGREGAR: Limpiar del storage local también
+      await _saveSelections();
+
+      // Recalcular totales después de limpiar
+      _calculateTotals();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.mealRegisteredSuccess(mealTitle)),
@@ -942,7 +954,10 @@ class _ProfessionalMiPlanDiarioScreenState
       final decodedData = json.decode(savedData) as Map<String, dynamic>;
 
       decodedData.forEach((meal, selections) {
-        if (_dailySelections.containsKey(meal)) {
+        // ⭐ AGREGAR ESTA VALIDACIÓN:
+        // Solo cargar selecciones de comidas que NO estén completadas
+        if (!_completedMeals.contains(meal) &&
+            _dailySelections.containsKey(meal)) {
           final Map<String, MealOption> loadedSelections = {};
           (selections as Map<String, dynamic>).forEach((cat, optJson) {
             loadedSelections[cat] = MealOption.fromJson(optJson);
@@ -2943,16 +2958,6 @@ class _MealOptionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              if (option.isHighBudget)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.star, size: 16, color: Colors.amber),
-                ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

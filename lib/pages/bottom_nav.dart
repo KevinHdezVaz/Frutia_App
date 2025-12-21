@@ -1,18 +1,11 @@
-import 'package:Frutia/pages/Pantalla1.dart';
-import 'package:Frutia/pages/Pantalla2.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/pages/screens/PlaceholderScreen.dart';
-import 'package:Frutia/pages/screens/datosPersonales/PlanSummaryScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:Frutia/pages/home_page.dart';
 import 'package:Frutia/pages/others/profile_page.dart';
-import 'package:Frutia/pages/screens/miplan/MyPlanPage.dart';
 import 'package:Frutia/pages/screens/chatFrutia/ChatHistoryPage.dart';
-import 'package:Frutia/pages/screens/chatFrutia/ChatScreen.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
-import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'package:Frutia/utils/colors.dart';
@@ -28,7 +21,6 @@ class BottomNavBar extends StatefulWidget {
 
 class _BottomNavBarState extends State<BottomNavBar> {
   late int _selectedIndex;
-  final BonoService _bonoService = BonoService(baseUrl: baseUrl);
   final StorageService _storageService = StorageService();
   late final List<Widget> _pages;
 
@@ -55,6 +47,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
@@ -96,7 +90,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                               size: 22,
                             ),
                           ),
-                          label: "Perfil",
+                          label: l10n.profile,
                         ),
                         BottomNavigationBarItem(
                           icon: Container(
@@ -112,31 +106,29 @@ class _BottomNavBarState extends State<BottomNavBar> {
                           label: "Frutia",
                         ),
                         BottomNavigationBarItem(
-                          icon: Container(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(
-                              Icons.food_bank,
-                              color: _selectedIndex == 2
-                                  ? FrutiaColors.accent
-                                  : FrutiaColors.disabledText,
-                              size: 22,
+                            icon: Container(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.food_bank,
+                                color: _selectedIndex == 2
+                                    ? FrutiaColors.accent
+                                    : FrutiaColors.disabledText,
+                                size: 22,
+                              ),
                             ),
-                          ),
-                          label: "Mi Plan",
-                        ),
+                            label: l10n.myPlan),
                         BottomNavigationBarItem(
-                          icon: Container(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(
-                              Icons.auto_graph_outlined,
-                              color: _selectedIndex == 3
-                                  ? FrutiaColors.accent
-                                  : FrutiaColors.disabledText,
-                              size: 22,
+                            icon: Container(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.auto_graph_outlined,
+                                color: _selectedIndex == 3
+                                    ? FrutiaColors.accent
+                                    : FrutiaColors.disabledText,
+                                size: 22,
+                              ),
                             ),
-                          ),
-                          label: "Progreso",
-                        ),
+                            label: l10n.progress),
                         BottomNavigationBarItem(
                           icon: Container(
                             padding: const EdgeInsets.all(6),
@@ -148,7 +140,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
                               size: 22,
                             ),
                           ),
-                          label: "Nosotros",
+                          label: l10n
+                              .aboutUs, // Cambia "Nosotros" por l10n.aboutUs
                         ),
                       ],
                     ),
@@ -190,7 +183,6 @@ class PlanFeature extends StatelessWidget {
   }
 }
 
-// Animated Button Widget (sin cambios)
 class AnimatedButton extends StatefulWidget {
   final String text;
   final IconData icon;

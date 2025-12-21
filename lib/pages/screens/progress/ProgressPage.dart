@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/services/RachaProgreso.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -44,10 +45,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
   late DynamicTheme _currentTheme;
   final double _stepHeight = 100.0;
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
-    initializeDateFormatting('es_ES', null);
+    // ⭐ CAMBIAR: Detectar idioma dinámicamente
+    final locale = WidgetsBinding.instance.window.locale.languageCode;
+    final localeString = locale == 'es' ? 'es_ES' : 'en_US';
+    initializeDateFormatting(localeString, null);
+
     _scrollController = ScrollController();
     _setCurrentTheme();
     _fetchProfileData();
@@ -61,7 +68,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       if (profile != null) {
         setState(() {
           _currentStreak = profile['racha_actual'] ?? 0;
-          _userGoal = profile['goal'] ?? 'No definido'; // <--- AÑADE ESTA LÍNEA
+          _userGoal = profile['goal'] ?? l10n.notDefined; // ⭐ CAMBIADO
 
           if (profile['ultima_fecha_racha'] != null) {
             _lastStreakUpdateDate =
@@ -95,7 +102,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = "Error al cargar tu progreso: ${e.toString()}";
+        _errorMessage =
+            "${l10n.errorLoadingProgress}: ${e.toString()}"; // ⭐ CAMBIADO
       });
     }
   }
@@ -111,8 +119,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       await _fetchProfileData(); // Recargamos para actualizar todo
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content:
-              Text('¡Felicidades! Tu racha ahora es de $_currentStreak días.'),
+          content: Text(l10n.congratsStreakNow(_currentStreak)), // ⭐ CAMBIADO
           backgroundColor: Colors.green,
         ),
       );
@@ -176,7 +183,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('Tu Progreso',
+        title: Text(l10n.yourProgress, // ⭐ CAMBIADO
             style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -258,7 +265,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       color:
                           canComplete ? Colors.white : Colors.green.shade200),
                   label: Text(
-                      canComplete ? "¡Cumplí mi día!" : "¡Ya cumpliste hoy!",
+                      canComplete
+                          ? l10n.completeMyDay
+                          : l10n.alreadyCompletedToday, // ⭐ CAMBIADO
                       style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -281,7 +290,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget _buildStreakIndicator(int displayedStreak) {
     return Column(
       children: [
-        Text("Racha Actual",
+        Text(l10n.currentStreak, // ⭐ CAMBIADO
             style: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText, fontSize: 14)),
         const SizedBox(height: 8),
@@ -300,7 +309,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     height: 1.1)),
           ],
         ),
-        Text("Días",
+        Text(l10n.days, // ⭐ CAMBIADO
             style: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText, fontSize: 14)),
       ],
@@ -314,7 +323,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       // Usamos Expanded para que el texto no se desborde
       child: Column(
         children: [
-          Text("Tu Objetivo",
+          Text(l10n.yourGoal, // ⭐ CAMBIADO
               style: GoogleFonts.lato(
                   color: FrutiaColors.secondaryText, fontSize: 14)),
           const SizedBox(height: 8),
@@ -346,7 +355,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget _buildWeightIndicator(double weightChange) {
     return Column(
       children: [
-        Text("Balance",
+        Text(l10n.balance, // ⭐ CAMBIADO
             style: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText, fontSize: 14)),
         const SizedBox(height: 8),
@@ -436,81 +445,82 @@ class _TimelineStepWidget extends StatefulWidget {
   @override
   State<_TimelineStepWidget> createState() => _TimelineStepWidgetState();
 }
- 
-
 
 class _TimelineStepWidgetState extends State<_TimelineStepWidget> {
   bool _isExpanded = false;
-  
+
   // Controlador de video
   VideoPlayerController? _videoController;
-  
+
   // Mapa de videos para cada tipo de fruta
 // En _TimelineStepWidgetState, actualiza el mapa de videos:
-final Map<int, String> _videoAssets = {
-  1: 'assets/images/frutaProgreso1_video.mp4',  // Para racha 0-1 días
-  2: 'assets/images/frutaProgreso2_video.mp4',  // Para racha 2-6 días
-  // No agregues videos para 3 y 4 - usarán imágenes
-};
+  final Map<int, String> _videoAssets = {
+    1: 'assets/images/frutaProgreso1_video.mp4', // Para racha 0-1 días
+    2: 'assets/images/frutaProgreso2_video.mp4', // Para racha 2-6 días
+    // No agregues videos para 3 y 4 - usarán imágenes
+  };
 
-int? _getVideoType() {
-  final bool isSad = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3);
-  
-  print('🎯 Calculando video type - Racha: ${widget.currentStreak}, isSad: $isSad');
-  
-  if (isSad) {
-    print('📛 No video - está triste');
-    return null;
-  }
-  
-  if (widget.currentStreak >= 30) {
-    print('🖼️ No video - fruta 4 (imagen)');
-    return null;
-  } else if (widget.currentStreak >= 7) {
-    print('🖼️ No video - fruta 3 (imagen)');
-    return null; 
-  } else if (widget.currentStreak >= 2) {
-    print('🎥 VIDEO - fruta 2');
-    return 2;
-  } else {
-    print('🎥 VIDEO - fruta 1');
-    return 1;
-  }
-}
+  int? _getVideoType() {
+    final bool isSad =
+        (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3);
 
+    print(
+        '🎯 Calculando video type - Racha: ${widget.currentStreak}, isSad: $isSad');
 
-void _initVideoController() {
-  final videoType = _getVideoType();
-  if (videoType == null || !_videoAssets.containsKey(videoType)) {
-    print('No se usará video - tipo: $videoType, disponible: ${_videoAssets.containsKey(videoType)}');
-    return;
+    if (isSad) {
+      print('📛 No video - está triste');
+      return null;
+    }
+
+    if (widget.currentStreak >= 30) {
+      print('🖼️ No video - fruta 4 (imagen)');
+      return null;
+    } else if (widget.currentStreak >= 7) {
+      print('🖼️ No video - fruta 3 (imagen)');
+      return null;
+    } else if (widget.currentStreak >= 2) {
+      print('🎥 VIDEO - fruta 2');
+      return 2;
+    } else {
+      print('🎥 VIDEO - fruta 1');
+      return 1;
+    }
   }
-  
-  final videoPath = _videoAssets[videoType]!;
-  print('🔄 Intentando cargar video: $videoPath');
-  
-  _videoController = VideoPlayerController.asset(videoPath)
-    ..initialize().then((_) {
-      print('✅ Video cargado exitosamente: $videoPath');
-      _videoController?.setLooping(true);
-      _videoController?.setVolume(0.0);
-      _videoController?.play();
-      if (mounted) setState(() {});
-    })
-    .onError((error, stackTrace) {
-      print('❌ Error al cargar el video $videoPath: $error');
-      if (mounted) {
-        setState(() {
-          _videoController = null;
-        });
-      }
-    });
-}
+
+  void _initVideoController() {
+    final videoType = _getVideoType();
+    if (videoType == null || !_videoAssets.containsKey(videoType)) {
+      print(
+          'No se usará video - tipo: $videoType, disponible: ${_videoAssets.containsKey(videoType)}');
+      return;
+    }
+
+    final videoPath = _videoAssets[videoType]!;
+    print('🔄 Intentando cargar video: $videoPath');
+
+    _videoController = VideoPlayerController.asset(videoPath)
+      ..initialize().then((_) {
+        print('✅ Video cargado exitosamente: $videoPath');
+        _videoController?.setLooping(true);
+        _videoController?.setVolume(0.0);
+        _videoController?.play();
+        if (mounted) setState(() {});
+      }).onError((error, stackTrace) {
+        print('❌ Error al cargar el video $videoPath: $error');
+        if (mounted) {
+          setState(() {
+            _videoController = null;
+          });
+        }
+      });
+  }
+
   // Helper method para el widget antiguo
   int? _getVideoTypeForWidget(_TimelineStepWidget oldWidget) {
-    final bool isSad = (oldWidget.daysSinceLastStreak == 2 || oldWidget.daysSinceLastStreak == 3);
+    final bool isSad = (oldWidget.daysSinceLastStreak == 2 ||
+        oldWidget.daysSinceLastStreak == 3);
     if (isSad) return null;
-    
+
     if (oldWidget.currentStreak >= 30) return 3;
     if (oldWidget.currentStreak >= 7) return 2;
     if (oldWidget.currentStreak >= 2) return 4;
@@ -524,13 +534,13 @@ void _initVideoController() {
       _initVideoController();
     }
   }
-  
+
   @override
   void didUpdateWidget(covariant _TimelineStepWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     final int? currentVideoType = _getVideoType();
     final int? oldVideoType = _getVideoTypeForWidget(oldWidget);
-    
+
     // Si el tipo de video cambió o el widget ahora es current
     if (widget.isCurrent && currentVideoType != null) {
       if (_videoController == null || currentVideoType != oldVideoType) {
@@ -579,132 +589,136 @@ void _initVideoController() {
     ).animate().fadeIn(delay: (100 * (widget.stepNumber % 10)).ms);
   }
 
-Widget _buildNode() {
-  final int? videoType = _getVideoType();
-  final bool useVideo = videoType != null;
-  String imagePath;
+  Widget _buildNode() {
+    final int? videoType = _getVideoType();
+    final bool useVideo = videoType != null;
+    String imagePath;
 
-  // Determinar la imagen según progresión lógica
-  if (widget.currentStreak >= 30) {
-    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
-        ? 'assets/images/frutaProgresoSad4.png'  // Fruta 4 triste
-        : 'assets/images/frutaProgreso4.png';    // Fruta 4 normal
-  } else if (widget.currentStreak >= 7) {
-    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
-        ? 'assets/images/frutaProgresoSad3.png'  // Fruta 3 triste
-        : 'assets/images/frutaProgreso3.png';    // Fruta 3 normal
-  } else if (widget.currentStreak >= 2) {
-    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
-        ? 'assets/images/frutaProgresoSad2.png'  // Fruta 2 triste
-        : 'assets/images/frutaProgreso2.png';    // Fruta 2 normal
-  } else {
-    imagePath = (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
-        ? 'assets/images/frutaProgresoSad1.png'  // Fruta 1 triste
-        : 'assets/images/frutaProgreso1.png';    // Fruta 1 normal
-  }
+    // Determinar la imagen según progresión lógica
+    if (widget.currentStreak >= 30) {
+      imagePath =
+          (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+              ? 'assets/images/frutaProgresoSad4.png' // Fruta 4 triste
+              : 'assets/images/frutaProgreso4.png'; // Fruta 4 normal
+    } else if (widget.currentStreak >= 7) {
+      imagePath =
+          (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+              ? 'assets/images/frutaProgresoSad3.png' // Fruta 3 triste
+              : 'assets/images/frutaProgreso3.png'; // Fruta 3 normal
+    } else if (widget.currentStreak >= 2) {
+      imagePath =
+          (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+              ? 'assets/images/frutaProgresoSad2.png' // Fruta 2 triste
+              : 'assets/images/frutaProgreso2.png'; // Fruta 2 normal
+    } else {
+      imagePath =
+          (widget.daysSinceLastStreak == 2 || widget.daysSinceLastStreak == 3)
+              ? 'assets/images/frutaProgresoSad1.png' // Fruta 1 triste
+              : 'assets/images/frutaProgreso1.png'; // Fruta 1 normal
+    }
 
-  Widget nodeContent;
-  
-  // Definir el contenido del nodo (Video o Imagen)
-  if (useVideo && _videoController != null && _videoController!.value.isInitialized) {
-    // Muestra el VideoPlayer para fruta 1 y 2
-    nodeContent = Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withOpacity(0.5),
-          width: 2,
-        ),
-      ),
-      child: ClipOval(
-        child: AspectRatio(
-          aspectRatio: _videoController!.value.aspectRatio,
-          child: VideoPlayer(_videoController!)
-        ),
-      ),
-    );
-  } else if (useVideo && _videoController != null && !_videoController!.value.isInitialized) {
-    // Muestra un cargador circular si es video pero no está listo
-    nodeContent = Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withOpacity(0.5),
-          width: 2,
-        ),
-      ),
-      child: const Center(
-        child: SizedBox(
-          width: 25,
-          height: 25,
-          child: CircularProgressIndicator(color: Colors.white)
-        ),
-      ),
-    );
-  } else {
-    // Muestra una imagen normal (para fruta 3, 4 o como fallback)
-    nodeContent = Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withOpacity(0.5),
-          width: 2,
-        ),
-      ),
-      child: ClipOval(
-        child: Image.asset(imagePath, 
-          width: 80,
-          height: 80,
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
+    Widget nodeContent;
 
-  return Stack(
-    alignment: Alignment.center,
-    children: [
-      // Fondo del nodo base (siempre visible)
-      Container(
-        width: 24,
-        height: 24,
+    // Definir el contenido del nodo (Video o Imagen)
+    if (useVideo &&
+        _videoController != null &&
+        _videoController!.value.isInitialized) {
+      // Muestra el VideoPlayer para fruta 1 y 2
+      nodeContent = Container(
+        width: 80,
+        height: 80,
         decoration: BoxDecoration(
-          color: widget.isMilestone ? Colors.yellow.shade600 : Colors.white,
           shape: BoxShape.circle,
           border: Border.all(
-            color: Colors.white.withOpacity(0.5), 
-            width: 1
-          )
-        ),
-      ),
-      
-      // Contenido principal (video/imagen) - solo visible si es el nodo actual
-      if (widget.isCurrent)
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: widget.accentColor.withOpacity(0.3),
+            color: Colors.white.withOpacity(0.5),
+            width: 2,
           ),
-          child: nodeContent
-              .animate()
-              .scale(
-                delay: 300.ms, 
-                duration: 600.ms, 
-                curve: Curves.elasticOut
-              ),
         ),
-    ],
-  );
-}
+        child: ClipOval(
+          child: AspectRatio(
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: VideoPlayer(_videoController!)),
+        ),
+      );
+    } else if (useVideo &&
+        _videoController != null &&
+        !_videoController!.value.isInitialized) {
+      // Muestra un cargador circular si es video pero no está listo
+      nodeContent = Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        child: const Center(
+          child: SizedBox(
+              width: 25,
+              height: 25,
+              child: CircularProgressIndicator(color: Colors.white)),
+        ),
+      );
+    } else {
+      // Muestra una imagen normal (para fruta 3, 4 o como fallback)
+      nodeContent = Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            imagePath,
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Fondo del nodo base (siempre visible)
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+              color: widget.isMilestone ? Colors.yellow.shade600 : Colors.white,
+              shape: BoxShape.circle,
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.5), width: 1)),
+        ),
+
+        // Contenido principal (video/imagen) - solo visible si es el nodo actual
+        if (widget.isCurrent)
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.accentColor.withOpacity(0.3),
+            ),
+            child: nodeContent.animate().scale(
+                delay: 300.ms, duration: 600.ms, curve: Curves.elasticOut),
+          ),
+      ],
+    );
+  }
+
   Widget _buildStepCard(bool isPast, bool isFuture) {
-    final DateFormat formatter = DateFormat('EEEE d', 'es_ES');
+    final locale = Localizations.localeOf(context).languageCode;
+    final localeString = locale == 'es' ? 'es_ES' : 'en_US';
+    final DateFormat formatter =
+        DateFormat('EEEE d', localeString); // ⭐ CAMBIADO
+
     final date = DateTime.now()
         .subtract(Duration(days: widget.currentStreak - widget.stepNumber));
     return Align(
@@ -741,7 +755,8 @@ Widget _buildNode() {
                     Icon(Icons.military_tech_rounded,
                         color: Colors.yellow.shade700, size: 18)
                   else
-                    Text('Día ${widget.stepNumber}',
+                    Text(
+                        '${AppLocalizations.of(context)!.day} ${widget.stepNumber}', // ⭐ CAMBIADO
                         style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -751,7 +766,7 @@ Widget _buildNode() {
                             ])),
                   if (widget.isMilestone) const SizedBox(width: 4),
                   if (widget.isMilestone)
-                    Text('Hito',
+                    Text(AppLocalizations.of(context)!.milestone, // ⭐ CAMBIADO
                         style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -784,7 +799,6 @@ Widget _buildNode() {
     );
   }
 }
-
 
 class _AnimatedParallaxBackground extends StatefulWidget {
   final String imagePath;

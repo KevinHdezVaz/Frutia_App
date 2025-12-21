@@ -600,6 +600,19 @@ class _DashboardViewState extends State<_DashboardView> {
     final List<InspirationRecipe> suggestedRecipes = [];
     final String? affiliateCode = user['applied_affiliate_code'];
 
+    // 🔍 DEBUG CRÍTICO
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    debugPrint('🎯 _DashboardView Build');
+    debugPrint('   hasPlan: $hasPlan');
+    debugPrint('   mealPlanData null?: ${widget.mealPlanData == null}');
+    if (hasPlan) {
+      debugPrint(
+          '   personalizedMessage: "${widget.mealPlanData!.nutritionPlan.personalizedMessage}"');
+      debugPrint(
+          '   meals count: ${widget.mealPlanData!.nutritionPlan.meals.length}');
+    }
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     if (hasPlan) {
       for (var meal in widget.mealPlanData!.nutritionPlan.meals.values) {
         if (meal.suggestedRecipes.isNotEmpty) {
@@ -607,6 +620,8 @@ class _DashboardViewState extends State<_DashboardView> {
         }
       }
     }
+    debugPrint(
+        '🎯 hasPlan: $hasPlan, mealPlanData: ${widget.mealPlanData != null}');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -660,7 +675,10 @@ class _DashboardViewState extends State<_DashboardView> {
           ),
           const SizedBox(height: 24),
           if (hasPlan) ...[
-            NutritionalProfileCard(mealPlanData: widget.mealPlanData),
+            NutritionalProfileCard(
+              mealPlanData: widget.mealPlanData,
+              profileData: profileData, // ✅ AÑADIR ESTO
+            ),
             const SizedBox(height: 24),
           ],
           _buildStatsRow(
@@ -833,6 +851,10 @@ class _DashboardViewState extends State<_DashboardView> {
     final startOfWindow = today.subtract(const Duration(days: 3));
     final ScrollController scrollController = ScrollController();
 
+    // ⭐ NUEVO: Detectar idioma del dispositivo
+    final locale = Localizations.localeOf(context).languageCode;
+    final localeString = locale == 'es' ? 'es_ES' : 'en_US';
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (scrollController.hasClients) {
         const itemExtent = 60.0 + 12.0;
@@ -901,7 +923,8 @@ class _DashboardViewState extends State<_DashboardView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                        DateFormat('E', 'es_ES')
+                        DateFormat('E',
+                                localeString) // ⭐ CAMBIADO: Usar locale dinámico
                             .format(day)
                             .substring(0, 3)
                             .toUpperCase(),

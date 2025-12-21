@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:Frutia/model/ChatMessage.dart';
 import 'package:Frutia/model/ChatSession.dart';
 import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/LocaleHelper.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -12,6 +13,22 @@ import 'package:mime/mime.dart';
 
 class ChatServiceApi {
   final StorageService storage = StorageService();
+
+  // ⭐ NUEVO: Método para obtener headers con idioma
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await storage.getToken();
+    if (token == null) throw Exception('No autenticado');
+
+    final languageCode =
+        LocaleHelper.getDeviceLanguageCode(); // ⭐ DETECTAR IDIOMA
+
+    return {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Accept-Language': languageCode, // ⭐ AGREGAR IDIOMA
+    };
+  }
 
   Future<dynamic> _authenticatedRequest({
     required String method,
@@ -27,11 +44,8 @@ class ChatServiceApi {
           ? {for (var e in queryParams.entries) e.key: e.value.toString()}
           : null,
     );
-    final headers = {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
+
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS CON IDIOMA
 
     try {
       final request = http.Request(method, uri)..headers.addAll(headers);
@@ -41,14 +55,14 @@ class ChatServiceApi {
       }
 
       final streamedResponse =
-          await request.send().timeout(const Duration(seconds: 10));
+          await request.send().timeout(const Duration(seconds: 60));
       final response = await http.Response.fromStream(streamedResponse);
 
       debugPrint('[$method] $endpoint - Status: ${response.statusCode}');
       debugPrint('Response: ${response.body}');
 
       if (response.statusCode == 401) {
-        await storage.removeToken(); // Limpiar token inválido
+        await storage.removeToken();
         throw Exception('Sesión expirada, por favor vuelve a iniciar sesión');
       }
 
@@ -65,9 +79,17 @@ class ChatServiceApi {
     }
   }
 
-  // En: lib/services/ChatServiceApi.dart
+  Future<void> markSessionAsSaved(int sessionId, String title) async {
+    await _authenticatedRequest(
+      method: 'PUT',
+      endpoint: 'chat/sessions/$sessionId/mark-saved',
+      body: {
+        'title': title,
+        'is_saved': true,
+      },
+    );
+  }
 
-// ▼▼▼ CAMBIO EN LA FIRMA DEL MÉTODO Y EL CUERPO DE LA PETICIÓN ▼▼▼
   Future<Map<String, dynamic>> analyzeBodyImage(File imageFile,
       {String? text}) async {
     debugPrint(
@@ -77,12 +99,10 @@ class ChatServiceApi {
       final imageBytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(imageBytes);
 
-      // Creamos el cuerpo de la petición dinámicamente
       final body = <String, dynamic>{
         'image': base64Image,
       };
 
-      // Si el texto no es nulo ni vacío, lo añadimos al cuerpo
       if (text != null && text.isNotEmpty) {
         body['text'] = text;
       }
@@ -90,7 +110,7 @@ class ChatServiceApi {
       final response = await _authenticatedRequest(
         method: 'POST',
         endpoint: 'body-analysis',
-        body: body, // Enviamos el cuerpo dinámico
+        body: body,
       );
 
       debugPrint(
@@ -211,9 +231,13 @@ class ChatServiceApi {
     return response;
   }
 
+  // ⭐ ACTUALIZAR: processAudio con header de idioma
   Future<void> processAudio(File audioFile) async {
     final token = await storage.getToken();
     if (token == null) throw Exception('No autenticado');
+
+    final languageCode =
+        LocaleHelper.getDeviceLanguageCode(); // ⭐ OBTENER IDIOMA
 
     debugPrint('Token enviado: $token');
     debugPrint('Enviando audio: ${audioFile.path}');
@@ -224,6 +248,8 @@ class ChatServiceApi {
     );
     request.headers['Authorization'] = 'Bearer $token';
     request.headers['Accept'] = 'application/json';
+    request.headers['Accept-Language'] = languageCode; // ⭐ AGREGAR IDIOMA
+
     request.files.add(await http.MultipartFile.fromPath(
       'audio',
       audioFile.path,
@@ -326,22 +352,24 @@ class ChatServiceApi {
     );
   }
 
-// En: lib/services/ChatServiceApi.dart
-
+  // ⭐ ACTUALIZAR: uploadImage con header de idioma
   Future<String> uploadImage(File imageFile) async {
     final token = await storage.getToken();
     if (token == null) throw Exception('No autenticado');
+
+    final languageCode =
+        LocaleHelper.getDeviceLanguageCode(); // ⭐ OBTENER IDIOMA
 
     final uri = Uri.parse('$baseUrl/chat/upload-image');
     final request = http.MultipartRequest('POST', uri);
 
     request.headers['Authorization'] = 'Bearer $token';
     request.headers['Accept'] = 'application/json';
+    request.headers['Accept-Language'] = languageCode; // ⭐ AGREGAR IDIOMA
 
     request.files.add(await http.MultipartFile.fromPath(
       'image',
       imageFile.path,
-      // Ayuda al backend a identificar el tipo de archivo
       contentType:
           MediaType.parse(lookupMimeType(imageFile.path) ?? 'image/jpeg'),
     ));
@@ -353,7 +381,7 @@ class ChatServiceApi {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['url']; // Devuelve la URL de la imagen subida
+      return data['url'];
     } else {
       throw Exception('Error al subir la imagen: ${response.body}');
     }

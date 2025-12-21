@@ -1,4 +1,5 @@
 import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/l10n/app_localizations.dart'; // ⭐ AGREGAR
 import 'package:Frutia/services/profile_service.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:Frutia/utils/gender_card.dart';
@@ -26,10 +27,13 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   final ProfileService _profileService = ProfileService();
   bool _isLoading = false;
 
-  double _height = 170.0; // Siempre almacenar en cm
-  double _weight = 70.0; // Siempre almacenar en kg
+  double _height = 170.0;
+  double _weight = 70.0;
   double _age = 25.0;
   Country? _selectedCountry;
+
+  // ⭐ AGREGAR HELPER
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -40,7 +44,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
           'height': _height,
           'weight': _weight,
           'age': _age,
-          'sex': 'Masculino',
+          'sex': l10n.male, // ⭐ CAMBIADO
           'pais': _selectedCountry?.name ?? '',
         });
       }
@@ -65,8 +69,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('¡Datos guardados con éxito!'),
+            SnackBar(
+                content: Text(l10n.dataSavedSuccess), // ⭐ CAMBIADO
                 backgroundColor: Colors.green),
           );
 
@@ -82,7 +86,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Error al guardar el perfil: $e'),
+                content: Text('${l10n.errorSavingProfile}: $e'), // ⭐ CAMBIADO
                 backgroundColor: Colors.redAccent),
           );
         }
@@ -93,8 +97,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, complete todos los campos requeridos.'),
+        SnackBar(
+          content: Text(l10n.completeAllRequiredFields), // ⭐ CAMBIADO
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -107,7 +111,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-          'Datos Personales',
+          l10n.personalData, // ⭐ CAMBIADO
           style: GoogleFonts.lato(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -133,7 +137,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Cuéntanos un poco sobre ti',
+                        l10n.tellUsAboutYou, // ⭐ CAMBIADO
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lato(
                           fontSize: 20,
@@ -143,7 +147,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Estos datos son esenciales para crear tu plan.',
+                        l10n.dataEssentialForPlan, // ⭐ CAMBIADO
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lato(
                           fontSize: 14,
@@ -173,7 +177,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                             ),
                           ),
                           child: Text(
-                            'Guardar y Continuar',
+                            l10n.saveAndContinue, // ⭐ CAMBIADO
                             style: GoogleFonts.lato(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -192,7 +196,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   }
 
   Widget _buildHeightSlider() {
-    // Calcular valores para ambas unidades
     final double meters = _height / 100.0;
     final double totalInches = _height / 2.54;
     final int feet = totalInches ~/ 12;
@@ -205,11 +208,11 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
           name: 'height',
           validator: FormBuilderValidators.compose([
             FormBuilderValidators.required(
-                errorText: 'La estatura es requerida.'),
+                errorText: l10n.heightRequired), // ⭐ CAMBIADO
             (value) {
-              if (value == null) return 'La estatura es requerida.';
+              if (value == null) return l10n.heightRequired; // ⭐ CAMBIADO
               if (value < 120 || value > 220) {
-                return 'La estatura debe estar entre 120 y 220 cm.';
+                return l10n.heightBetween; // ⭐ CAMBIADO
               }
               return null;
             },
@@ -222,7 +225,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Estatura:',
+                      l10n.height, // ⭐ CAMBIADO
                       style: GoogleFonts.lato(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -243,7 +246,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                       child: Row(
                         children: [
                           Text(
-                            '${meters.toStringAsFixed(2)} m',
+                            '${meters.toStringAsFixed(2)} ${l10n.meters}', // ⭐ CAMBIADO
                             style: GoogleFonts.lato(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -333,7 +336,6 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   }
 
   Widget _buildWeightSlider() {
-    // Calcular libras
     final double lbs = _weight * 2.20462;
 
     return Column(
@@ -342,11 +344,12 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         FormBuilderField<double>(
           name: 'weight',
           validator: FormBuilderValidators.compose([
-            FormBuilderValidators.required(errorText: 'El peso es requerido.'),
+            FormBuilderValidators.required(
+                errorText: l10n.weightRequired), // ⭐ CAMBIADO
             (value) {
-              if (value == null) return 'El peso es requerido.';
+              if (value == null) return l10n.weightRequired; // ⭐ CAMBIADO
               if (value < 30 || value > 180) {
-                return 'El peso debe estar entre 30 y 180 kg.';
+                return l10n.weightBetween; // ⭐ CAMBIADO
               }
               return null;
             },
@@ -359,7 +362,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Peso:',
+                      l10n.weight, // ⭐ CAMBIADO
                       style: GoogleFonts.lato(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -398,7 +401,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                             ),
                           ),
                           Text(
-                            '${lbs.toStringAsFixed(1)} lbs',
+                            '${lbs.toStringAsFixed(1)} ${l10n.pounds}', // ⭐ CAMBIADO
                             style: GoogleFonts.lato(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -477,11 +480,12 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         FormBuilderField<double>(
           name: 'age',
           validator: FormBuilderValidators.compose([
-            FormBuilderValidators.required(errorText: 'La edad es requerida.'),
+            FormBuilderValidators.required(
+                errorText: l10n.ageRequired), // ⭐ CAMBIADO
             (value) {
-              if (value == null) return 'La edad es requerida.';
+              if (value == null) return l10n.ageRequired; // ⭐ CAMBIADO
               if (value < 16 || value > 90) {
-                return 'La edad debe estar entre 16 y 90 años.';
+                return l10n.ageBetween; // ⭐ CAMBIADO
               }
               return null;
             },
@@ -491,7 +495,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Edad: ${_age.round()} años',
+                  '${l10n.age} ${l10n.ageYears(_age.round())}', // ⭐ CAMBIADO
                   style: GoogleFonts.lato(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -561,14 +565,14 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
       name: 'pais',
       validator: FormBuilderValidators.compose([
         FormBuilderValidators.required(
-            errorText: 'Por favor, selecciona un país.'),
+            errorText: l10n.selectCountryRequired), // ⭐ CAMBIADO
       ]),
       builder: (FormFieldState<String> field) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'País:',
+              l10n.country, // ⭐ CAMBIADO
               style: GoogleFonts.lato(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -605,7 +609,8 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _selectedCountry?.name ?? 'Selecciona un país',
+                        _selectedCountry?.name ??
+                            l10n.selectCountry, // ⭐ CAMBIADO
                         style: GoogleFonts.lato(
                           fontSize: 16,
                           color: _selectedCountry == null
@@ -637,17 +642,17 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   Widget _buildSexSelector() {
     return FormBuilderField<String>(
       name: 'sex',
-      initialValue: 'Masculino',
+      initialValue: l10n.male, // ⭐ CAMBIADO
       validator: FormBuilderValidators.compose([
         FormBuilderValidators.required(
-            errorText: 'Por favor, selecciona una opción.'),
+            errorText: l10n.selectOptionRequired), // ⭐ CAMBIADO
       ]),
       builder: (FormFieldState<String> field) {
         return Column(
           children: [
             const SizedBox(height: 10),
             Text(
-              'Me identifico como: ',
+              l10n.iIdentifyAs, // ⭐ CAMBIADO
               style: GoogleFonts.lato(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -658,9 +663,9 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
               children: [
                 Expanded(
                   child: GenderCard(
-                    title: 'Masculino',
+                    title: l10n.male, // ⭐ CAMBIADO
                     icon: Icons.male,
-                    value: 'Masculino',
+                    value: l10n.male, // ⭐ CAMBIADO
                     selectedValue: field.value,
                     onTap: (value) => field.didChange(value),
                   ),
@@ -668,9 +673,9 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: GenderCard(
-                    title: 'Femenino',
+                    title: l10n.female, // ⭐ CAMBIADO
                     icon: Icons.female,
-                    value: 'Femenino',
+                    value: l10n.female, // ⭐ CAMBIADO
                     selectedValue: field.value,
                     onTap: (value) => field.didChange(value),
                   ),

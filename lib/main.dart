@@ -9,7 +9,6 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Frutia/onscreen/SplashScreen.dart';
-import 'package:Frutia/services/BonoService.dart';
 import 'package:Frutia/services/settings/theme_data.dart';
 import 'package:Frutia/services/settings/theme_provider.dart';
 import 'package:Frutia/utils/constantes.dart';
@@ -22,7 +21,6 @@ import 'l10n/app_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
-final BonoService _bonoService = BonoService(baseUrl: baseUrl);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +68,6 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   final int isviewed;
-
   const MyApp({super.key, required this.isviewed});
 
   @override
@@ -88,7 +85,7 @@ class MyApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [
-            //Locale('en'),
+            Locale('en'),
             Locale('es'),
           ],
           themeMode: themeProvider.currentTheme,

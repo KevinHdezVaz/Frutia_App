@@ -14,6 +14,324 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get progress => 'Progreso';
+  String get personalMessage => '💝 Mensaje Personal';
+
+  @override
+  String get personalData => 'Datos Personales';
+
+  @override
+  String get tellUsAboutYou => 'Cuéntanos un poco sobre ti';
+
+  @override
+  String get dataEssentialForPlan =>
+      'Estos datos s°on esenciales para crear tu plan.';
+
+  @override
+  String get height => 'Estatura:';
+
+  @override
+  String get weight => 'Peso:';
+
+  String weightKg(String kg) => '$kg kg';
+  String heightCm(String cm) => '$cm cm';
+
+  @override
+  String get age => 'Edad:';
+
+  @override
+  String get country => 'País:';
+
+  @override
+  String get selectCountry => 'Selecciona un país';
+
+  @override
+  String get iIdentifyAs => 'Me identifico como:';
+
+  @override
+  String get male => 'Masculino';
+
+  @override
+  String get female => 'Femenino';
+
+  @override
+  String get saveAndContinue => 'Guardar y Continuar';
+
+  @override
+  String get dataSavedSuccess => '¡Datos guardados con éxito!';
+
+  @override
+  String get errorSavingProfile => 'Error al guardar el perfil';
+
+  @override
+  String get completeAllRequiredFields =>
+      'Por favor, complete todos los campos requeridos.';
+
+  @override
+  String get heightRequired => 'La estatura es requerida.';
+
+  @override
+  String get heightBetween => 'La estatura debe estar entre 120 y 220 cm.';
+
+  @override
+  String get weightRequired => 'El peso es requerido.';
+
+  @override
+  String get weightBetween => 'El peso debe estar entre 30 y 180 kg.';
+
+  @override
+  String get ageRequired => 'La edad es requerida.';
+
+  @override
+  String get ageBetween => 'La edad debe estar entre 16 y 90 años.';
+
+  @override
+  String get selectCountryRequired => 'Por favor, selecciona un país.';
+
+  @override
+  String get selectOptionRequired => 'Por favor, selecciona una opción.';
+
+  @override
+  String ageYears(int age) => '$age años';
+
+  @override
+  String get yourProgress => 'Tu Progreso';
+
+  @override
+  String get currentStreak => 'Racha Actual';
+
+  @override
+  String get days => 'Días';
+
+  @override
+  String get yourGoal => 'Tu Objetivo';
+
+  @override
+  String get balance => 'Balance';
+
+  @override
+  String get completeMyDay => '¡Cumplí mi día!';
+
+  @override
+  String get alreadyCompletedToday => '¡Ya cumpliste hoy!';
+
+  @override
+  String congratsStreakNow(int streak) =>
+      '¡Felicidades! Tu racha ahora es de $streak días.';
+
+  @override
+  String get errorLoadingProgress => 'Error al cargar tu progreso';
+
+  @override
+  String get day => 'Día';
+
+  @override
+  String get milestone => 'Hito';
+
+  @override
+  String get notDefined => 'No definido';
+
+  @override
+  String get meters => 'm';
+
+  @override
+  String get pounds => 'lbs';
+
+  @override
+  String get years => 'años';
+
+  // ⭐ ChatScreen translations
+  @override
+  String get chatTitle => 'Frutia';
+
+  @override
+  String get messagesRemaining => 'mensajes restantes';
+
+  @override
+  String get saveChat => 'Guardar';
+
+  @override
+  String get saveShowcaseTitle => 'Guardar Chat';
+
+  @override
+  String get saveShowcaseDesc =>
+      'Usa este botón para guardar la conversación, si no la guardas se perderá.';
+
+  @override
+  String get micShowcaseTitle => 'Entrada de Voz';
+
+  @override
+  String get micShowcaseDesc =>
+      'Si no quieres escribir, puedes tocar aqui para grabar tu mensaje o detener la grabación.';
+
+  @override
+  String get voiceChatShowcaseTitle => 'Chat de Voz Avanzado';
+
+  @override
+  String get voiceChatShowcaseDesc =>
+      'Inicia una conversación de voz fluida con la IA.';
+
+  @override
+  String get messageLimit => 'Límite de mensajes alcanzado';
+
+  @override
+  String get messageLimitDesc =>
+      'Hazte premium para chatear con Frutia sin límites y acceder a todas las funciones.';
+
+  @override
+  String get viewPremiumPlans => 'Ver Planes Premium';
+
+  @override
+  String get createPlanFirst => 'Crea tu Plan Primero';
+
+  @override
+  String get needActivePlan =>
+      'Necesitas un plan de alimentación activo para poder chatear con Frutia y obtener consejos personalizados.';
+
+  @override
+  String get createMyPlan => 'Crear Mi Plan';
+
+  @override
+  String get backToHome => 'Volver al inicio';
+
+  @override
+  String get typeMessage => 'Escribe tu mensaje...';
+
+  @override
+  String get stopRecording => 'Detener grabación';
+
+  @override
+  String get startRecording => 'Iniciar grabación';
+
+  @override
+  String get advancedVoiceChat => 'Chat de voz avanzado';
+
+  @override
+  String get imageAttached => 'Imagen adjunta';
+
+  @override
+  String get textCopied => 'Texto copiado';
+
+  @override
+  String get errorLoadingImage => 'Error al cargar imagen';
+
+  @override
+  String get bodyFatPercentage => '% Grasa Corporal';
+
+  @override
+  String get estimated => '(Estimado)';
+
+  @override
+  String get recommendation => 'Recomendación:';
+
+  @override
+  String get observations => 'Observaciones:';
+
+  @override
+  String get thinkingResponse => 'Pensando en tu respuesta... 🤔';
+
+  @override
+  String get analyzingPlan => 'Analizando tu plan nutricional... 📊';
+
+  @override
+  String get consultingHistory => 'Consultando tu historial del día... 📝';
+
+  @override
+  String get preparingResponse => 'Preparando una respuesta personalizada... ✨';
+
+  @override
+  String get reviewingMacros => 'Revisando tus macros restantes... 🔢';
+
+  @override
+  String get connectingAI => 'Conectando con la IA de Frutia... 🧠';
+
+  @override
+  String get calculatingRecommendations => 'Calculando recomendaciones... 💡';
+
+  @override
+  String get verifyingProgress => 'Verificando tu progreso... 📈';
+
+  @override
+  String get searchingBestAnswer => 'Buscando la mejor respuesta para ti... 🎯';
+
+  @override
+  String get processingQuery => 'Procesando tu consulta... ⚙️';
+
+  @override
+  String get almostReady => 'Casi lista tu respuesta... ⏳';
+
+  @override
+  String get noMessagesToSave => 'No hay mensajes para guardar';
+
+  @override
+  String get changeTitle => 'Cambiar título';
+
+  @override
+  String get saveConversation => 'Guardar Conversación';
+
+  @override
+  String get titleLabel => 'Título';
+
+  @override
+  String get titleHint => 'Escribe un título...';
+
+  @override
+  String get save => 'Guardar';
+
+  @override
+  String get chatSaved => 'Chat guardado correctamente';
+
+  @override
+  String get errorSavingChat => 'Error al guardar el chat';
+
+  @override
+  String get micPermissionRequired => 'Se requieren permisos de micrófono';
+
+  @override
+  String get enableMicPermission =>
+      'Por favor habilita los permisos de micrófono en Configuración';
+
+  @override
+  String get speechNotAvailable =>
+      'El reconocimiento de voz no está disponible';
+
+  @override
+  String get errorStartingSpeech => 'Error al iniciar';
+
+  @override
+  String get errorStoppingSpeech => 'Error al detener';
+
+  @override
+  String get errorVerifyingPlan => 'No se pudo verificar el estado de tu plan.';
+
+  @override
+  String get newConversationTitle => 'Nueva conversación';
+
+  @override
+  String get errorProcessingImage => 'Ocurrió un error al procesar la imagen.';
+
+  @override
+  String get errorAnalyzingImage =>
+      'Lo siento, no pude analizar la imagen. Inténtalo de nuevo. 😥';
+
+  @override
+  String get pleaseLogin => 'Por favor, inicia sesión para continuar';
+
+  @override
+  String get errorStartingSession => 'Error al iniciar la sesión';
+
+  @override
+  String get sessionStartedError =>
+      'No se pudo iniciar la sesión. Inténtalo de nuevo.';
+
+  @override
+  String get errorSendingMessage => 'Error al enviar el mensaje';
+
+  @override
+  String get errorAnalyzingImageShort => 'Error al analizar la imagen';
+
+  String get yourNutritionalProfile => 'Tu Perfil Nutricional';
+  String get bmi => 'IMC';
+  String get calories => 'Calorías';
 
   @override
   String get termsAndConditions => 'Términos y condiciones';
@@ -345,10 +663,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get protein => 'Proteína';
 
   @override
-  String get completeAllRequiredFields =>
-      'Por favor complete todos los campos obligatorios';
-
-  @override
   String get nameOnlyLetters => 'El nombre solo debe contener letras';
 
   @override
@@ -498,9 +812,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noMealPlan => 'No se encontró un plan de alimentación.';
-
-  @override
-  String get notDefined => 'No definido';
 
   @override
   String get myPlan => 'Mi Plan';

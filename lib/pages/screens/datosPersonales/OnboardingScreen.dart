@@ -654,13 +654,52 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
 
+    final budget = provider.weeklyBudget;
+    final dietStyle = provider.dietStyle;
+
+    if (budget == null || dietStyle == null) {
+      return QuestionnaireScreen(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const QuestionnaireTitleARRIBA(
+                title: 'Alimentos que más te gustan 🍴'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.orange, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Por favor, completa las pantallas anteriores primero:\n• Presupuesto\n• Estilo alimentario',
+                      style: GoogleFonts.lato(
+                        fontSize: 14,
+                        color: Colors.orange.shade800,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const QuestionnaireTitleARRIBA(
               title: 'Alimentos que más te gustan 🍴'),
-
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -686,16 +725,13 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // PROTEÍNAS
           _buildCategorySection(
             title: 'Proteínas',
             subtitle: 'Elige al menos 3',
             emoji: '🥩',
             selectedItems: provider.favoriteProteins,
-            items: _getProteinOptions(provider.weeklyBudget),
+            items: _getProteinOptions(budget, dietStyle),
             onToggle: (item) => setState(() {
               if (provider.favoriteProteins.contains(item)) {
                 provider.update(() => provider.favoriteProteins.remove(item));
@@ -705,19 +741,16 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             }),
             selectAll: () => setState(() {
               provider.update(() => provider.favoriteProteins
-                  .addAll(_getProteinOptions(provider.weeklyBudget)));
+                  .addAll(_getProteinOptions(budget, dietStyle)));
             }),
           ),
-
           const SizedBox(height: 24),
-
-          // CARBOHIDRATOS
           _buildCategorySection(
             title: 'Carbohidratos',
             subtitle: 'Elige al menos 3',
             emoji: '🍚',
             selectedItems: provider.favoriteCarbs,
-            items: _getCarbOptions(provider.weeklyBudget),
+            items: _getCarbOptions(budget, dietStyle),
             onToggle: (item) => setState(() {
               if (provider.favoriteCarbs.contains(item)) {
                 provider.update(() => provider.favoriteCarbs.remove(item));
@@ -727,19 +760,16 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             }),
             selectAll: () => setState(() {
               provider.update(() => provider.favoriteCarbs
-                  .addAll(_getCarbOptions(provider.weeklyBudget)));
+                  .addAll(_getCarbOptions(budget, dietStyle)));
             }),
           ),
-
           const SizedBox(height: 24),
-
-          // GRASAS
           _buildCategorySection(
             title: 'Grasas',
             subtitle: 'Elige al menos 2',
             emoji: '🥑',
             selectedItems: provider.favoriteFats,
-            items: _getFatOptions(provider.weeklyBudget),
+            items: _getFatOptions(budget, dietStyle),
             onToggle: (item) => setState(() {
               if (provider.favoriteFats.contains(item)) {
                 provider.update(() => provider.favoriteFats.remove(item));
@@ -749,20 +779,15 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             }),
             selectAll: () => setState(() {
               provider.update(() => provider.favoriteFats
-                  .addAll(_getFatOptions(provider.weeklyBudget)));
+                  .addAll(_getFatOptions(budget, dietStyle)));
             }),
           ),
-
           const SizedBox(height: 24),
-
-          const SizedBox(height: 24),
-
-// FRUTAS (PARA SNACKS)
           _buildCategorySection(
             title: 'Frutas (para Snacks)',
             subtitle: 'Opcional',
             emoji: '🍓',
-            selectedItems: provider.favoriteFruits, // ⭐ NUEVO CAMPO
+            selectedItems: provider.favoriteFruits,
             items: const [
               'Fresas',
               'Arándanos',
@@ -793,9 +818,6 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
                   ]));
             }),
           ),
-
-          const SizedBox(height: 24),
-
           const SizedBox(height: 24),
         ],
       ),
@@ -910,8 +932,63 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
     );
   }
 
-  List<String> _getProteinOptions(String? budget) {
-    final isLowBudget = budget?.toLowerCase().contains('bajo') ?? false;
+  List<String> _getProteinOptions(String budget, String dietStyle) {
+    final isLowBudget = budget.toLowerCase().contains('bajo');
+    final dietLower = dietStyle.toLowerCase();
+
+    if (dietLower.contains('vegano')) {
+      return const [
+        'Tofu',
+        'Tempeh',
+        'Seitán',
+        'Lentejas',
+        'Garbanzos',
+        'Frijoles',
+        'Proteína Vegetal En Polvo',
+      ];
+    }
+
+    if (dietLower.contains('vegetariano')) {
+      if (isLowBudget) {
+        return const [
+          'Huevo Entero',
+          'Yogurt Natural',
+          'Queso Fresco',
+          'Lentejas',
+          'Garbanzos',
+          'Frijoles',
+        ];
+      } else {
+        return const [
+          'Huevo Entero',
+          'Yogurt Griego',
+          'Queso Cottage',
+          'Queso Panela',
+          'Ricotta',
+          'Tempeh',
+          'Tofu',
+          'Proteína Vegetal En Polvo',
+        ];
+      }
+    }
+
+    if (dietLower.contains('keto')) {
+      if (isLowBudget) {
+        return const [
+          'Huevo Entero',
+          'Pollo Muslo Con Piel',
+          'Carne Molida 80/20',
+        ];
+      } else {
+        return const [
+          'Salmón',
+          'Ribeye',
+          'Pechuga De Pato',
+          'Huevo Entero',
+          'Queso Madurado',
+        ];
+      }
+    }
 
     if (isLowBudget) {
       return const [
@@ -936,8 +1013,19 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
     }
   }
 
-  List<String> _getCarbOptions(String? budget) {
-    final isLowBudget = budget?.toLowerCase().contains('bajo') ?? false;
+  List<String> _getCarbOptions(String budget, String dietStyle) {
+    final isLowBudget = budget.toLowerCase().contains('bajo');
+    final dietLower = dietStyle.toLowerCase();
+
+    if (dietLower.contains('keto')) {
+      return const [
+        'Brócoli',
+        'Coliflor',
+        'Espinacas',
+        'Lechuga',
+        'Calabacín',
+      ];
+    }
 
     if (isLowBudget) {
       return const [
@@ -966,12 +1054,53 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
     }
   }
 
-  List<String> _getFatOptions(String? budget) {
-    final isLowBudget = budget?.toLowerCase().contains('bajo') ?? false;
+  List<String> _getFatOptions(String budget, String dietStyle) {
+    final isLowBudget = budget.toLowerCase().contains('bajo');
+    final dietLower = dietStyle.toLowerCase();
+
+    if (dietLower.contains('vegano')) {
+      if (isLowBudget) {
+        return const [
+          'Aceite De Oliva',
+          'Maní / Mantequilla De Maní',
+          'Aguacate Pequeño',
+          'Semillas De Ajonjolí',
+        ];
+      } else {
+        return const [
+          'Aceite De Oliva Extra Virgen',
+          'Aceite De Aguacate',
+          'Almendras',
+          'Nueces',
+          'Aguacate Hass',
+          'Chía/Linaza Orgánicas',
+          'Frutos Secos Premium',
+        ];
+      }
+    }
+
+    if (dietLower.contains('keto')) {
+      if (isLowBudget) {
+        return const [
+          'Manteca De Cerdo',
+          'Mantequilla',
+          'Aguacate',
+          'Aceite De Oliva',
+        ];
+      } else {
+        return const [
+          'Aceite MCT',
+          'Mantequilla Ghee',
+          'Aguacate Hass',
+          'Aceite De Oliva Extra Virgen',
+          'Queso Madurado',
+        ];
+      }
+    }
 
     if (isLowBudget) {
       return const [
-        'Aceite de oliva', // ⭐ CAMBIADO de 'Aceite Vegetal'
+        'Aceite De Oliva',
         'Maní / Mantequilla De Maní',
         'Aguacate Pequeño',
         'Semillas De Ajonjolí',

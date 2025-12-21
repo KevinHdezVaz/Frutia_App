@@ -33,6 +33,7 @@ abstract class AppLocalizations {
     Locale('es')
   ];
 
+  // ⭐ GETTERS EXISTENTES (no cambiar)
   String get profile;
   String get helloAgain;
   String get user;
@@ -42,6 +43,48 @@ abstract class AppLocalizations {
   String get helpAndSupport;
   String get myAccount;
   String streakDays(int count);
+
+  // Personal Data Page
+  String get personalData;
+  String get tellUsAboutYou;
+  String get dataEssentialForPlan;
+  String get height;
+  String get weight;
+  String get age;
+  String get country;
+  String get selectCountry;
+  String get iIdentifyAs;
+  String get male;
+  String get female;
+  String get saveAndContinue;
+  String get dataSavedSuccess;
+  String get errorSavingProfile;
+  String get completeAllRequiredFields;
+  String get heightRequired;
+  String get heightBetween;
+  String get weightRequired;
+  String get weightBetween;
+  String get ageRequired;
+  String get ageBetween;
+  String get selectCountryRequired;
+  String get selectOptionRequired;
+  String ageYears(int age);
+  String get meters;
+  String get pounds;
+  String get years;
+// Progress Screen
+  String get yourProgress;
+  String get currentStreak;
+  String get days;
+  String get yourGoal;
+  String get balance;
+  String get completeMyDay;
+  String get alreadyCompletedToday;
+  String congratsStreakNow(int streak); // ⭐ MÉTODO, NO GETTER
+  String get errorLoadingProgress;
+  String get day;
+  String get milestone;
+  String get notDefined;
   String get streak;
   String get trialRemaining;
   String get yourWeek;
@@ -131,7 +174,6 @@ abstract class AppLocalizations {
   String get invalidEmail;
   String get passwordMinLength;
   String get googleSignInError;
-
   String get registration;
   String get welcomeCompleteRegistration;
   String get fullName;
@@ -140,7 +182,6 @@ abstract class AppLocalizations {
   String get confirmPassword;
   String get affiliateCodeOptional;
   String get passwordsDoNotMatch;
-  String get completeAllRequiredFields;
   String get nameOnlyLetters;
   String get pleaseEnterNumber;
   String get invalidPhoneNumber;
@@ -167,7 +208,6 @@ abstract class AppLocalizations {
   String get ourStoryParagraph2;
   String get ourStoryParagraph3;
   String get ourStoryParagraph4;
-
   String get plansAdaptedToYou;
   String get aiCoachPersonalTracking;
   String get adaptableToYourStyle;
@@ -181,7 +221,6 @@ abstract class AppLocalizations {
   String get shoppingDescription;
   String get modificationsDescription;
   String get importantSection;
-
   String get yourChatsWithFrutia;
   String get reload;
   String get newConversation;
@@ -196,12 +235,18 @@ abstract class AppLocalizations {
   String get noConversationsYet;
   String get startNewConversation;
   String get myPlanForToday;
+  String get personalMessage;
   String get yourDaySummary;
   String get viewHistory;
   String get downloadPDF;
   String get protein;
   String get carbs;
   String get fats;
+  String get yourNutritionalProfile;
+  String get bmi;
+  String weightKg(String kg);
+  String heightCm(String cm);
+  String get calories;
   String get accompanySaladFree;
   String selectAtLeastOneOption(String meal);
   String canAddMoreOptions(int selected, int total);
@@ -219,12 +264,71 @@ abstract class AppLocalizations {
   String get noMealPlan;
   String get streakReminderDescription;
   String get weekCalendarDescription;
-
-  String get notDefined;
   String todayAt(String time);
   String yesterdayAt(String time);
-
   String welcomeMessage(String name);
+
+  // ⭐⭐⭐ NUEVOS GETTERS PARA CHATSCREEN ⭐⭐⭐
+  String get chatTitle;
+  String get messagesRemaining;
+  String get saveChat;
+  String get saveShowcaseTitle;
+  String get saveShowcaseDesc;
+  String get micShowcaseTitle;
+  String get micShowcaseDesc;
+  String get voiceChatShowcaseTitle;
+  String get voiceChatShowcaseDesc;
+  String get messageLimit;
+  String get messageLimitDesc;
+  String get viewPremiumPlans;
+  String get createPlanFirst;
+  String get needActivePlan;
+  String get createMyPlan;
+  String get backToHome;
+  String get typeMessage;
+  String get stopRecording;
+  String get startRecording;
+  String get advancedVoiceChat;
+  String get imageAttached;
+  String get textCopied;
+  String get errorLoadingImage;
+  String get bodyFatPercentage;
+  String get estimated;
+  String get recommendation;
+  String get observations;
+  String get thinkingResponse;
+  String get analyzingPlan;
+  String get consultingHistory;
+  String get preparingResponse;
+  String get reviewingMacros;
+  String get connectingAI;
+  String get calculatingRecommendations;
+  String get verifyingProgress;
+  String get searchingBestAnswer;
+  String get processingQuery;
+  String get almostReady;
+  String get noMessagesToSave;
+  String get changeTitle;
+  String get saveConversation;
+  String get titleLabel;
+  String get titleHint;
+  String get save;
+  String get chatSaved;
+  String get errorSavingChat;
+  String get micPermissionRequired;
+  String get enableMicPermission;
+  String get speechNotAvailable;
+  String get errorStartingSpeech;
+  String get errorStoppingSpeech;
+  String get errorVerifyingPlan;
+  String get newConversationTitle;
+  String get errorProcessingImage;
+  String get errorAnalyzingImage;
+  String get pleaseLogin;
+  String get errorStartingSession;
+  String get sessionStartedError;
+  String get errorSendingMessage;
+  String get errorAnalyzingImageShort;
 }
 
 class _AppLocalizationsDelegate

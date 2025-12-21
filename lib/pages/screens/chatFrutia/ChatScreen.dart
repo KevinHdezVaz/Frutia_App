@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/model/ChatMessage.dart';
+import 'package:Frutia/model/ChatSession.dart';
 import 'package:Frutia/pages/screens/chatFrutia/PermissionService.dart';
 import 'package:Frutia/pages/screens/chatFrutia/VoiceChatScreen.dart';
 import 'package:Frutia/pages/screens/chatFrutia/WaveVisualizer.dart';
@@ -56,6 +58,8 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   final TextEditingController _controller = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isSpeechAvailable = false;
@@ -177,8 +181,50 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    // En lugar de llamar a _checkUserPlanStatus, llamamos a una función más completa
+    _initialMessageSent = false;
+
     _initializeScreen();
+  }
+
+  Future<void> _initializeScreen() async {
+    setState(() {
+      _isCheckingPlan = true;
+    });
+
+    try {
+      final responseData = await RachaProgresoService.getProgresoWithUser();
+      if (!mounted) return;
+
+      final user = responseData['user'];
+      final profile = responseData['profile'];
+
+      final bool planIsComplete = profile != null &&
+          (profile['plan_setup_complete'] == true ||
+              profile['plan_setup_complete'] == 1);
+
+      setState(() {
+        _hasActivePlan = planIsComplete;
+        _isPremium = user?['subscription_status'] == 'active';
+        _userMessageCount = user?['message_count'] ?? 0;
+        _isCheckingPlan = false;
+      });
+
+      if (planIsComplete) {
+        debugPrint('✅ Plan activo encontrado, inicializando chat...');
+        _initializeChat();
+      } else {
+        debugPrint('⚠️ Usuario sin plan activo');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCheckingPlan = false;
+          _hasActivePlan = false;
+        });
+        debugPrint('❌ Error en _initializeScreen: $e');
+        _showErrorSnackBar(l10n.errorVerifyingPlan); // ⭐ CAMBIADO
+      }
+    }
   }
 
   // En: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
@@ -388,7 +434,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               color: FrutiaColors.accent, size: 40),
           const SizedBox(height: 12),
           Text(
-            'Límite de mensajes alcanzado',
+            l10n.messageLimit, // ⭐ CAMBIADO
             style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -397,7 +443,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 8),
           Text(
-            'Hazte premium para chatear con Frutia sin límites y acceder a todas las funciones.',
+            l10n.messageLimitDesc, // ⭐ CAMBIADO
+
             style: GoogleFonts.lato(
                 fontSize: 14, color: FrutiaColors.secondaryText),
             textAlign: TextAlign.center,
@@ -414,7 +461,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Ver Planes Premium'),
+            child: Text(l10n.viewPremiumPlans), // ⭐ CAMBIADO
           )
         ],
       ),
@@ -436,7 +483,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 24),
               Text(
-                'Crea tu Plan Primero',
+                l10n.createPlanFirst, // ⭐ CAMBIADO
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -446,7 +493,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 12),
               Text(
-                'Necesitas un plan de alimentación activo para poder chatear con Frutia y obtener consejos personalizados.',
+                l10n.needActivePlan, // ⭐ CAMBIADO
                 style: GoogleFonts.lato(
                   fontSize: 16,
                   color: FrutiaColors.secondaryText,
@@ -462,10 +509,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     builder: (context) => const QuestionnaireFlow(),
                   ))
                       .then((_) {
-                    setState(() {
-                      _isCheckingPlan = true;
-                    });
-                    _checkUserPlanStatus();
+                    // ✅ CORRECTO: Usar _initializeScreen
+                    _initializeScreen();
                   });
                 },
                 style: ElevatedButton.styleFrom(
@@ -478,16 +523,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 icon: const Icon(Icons.arrow_forward_rounded),
-                label: const Text(
-                  'Crear Mi Plan',
+                label: Text(
+                  l10n.createMyPlan, // ⭐ CAMBIADO
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.5),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => _navigateBack(context),
-                child: const Text(
-                  'Volver al inicio',
+                child: Text(
+                  l10n.backToHome, // ⭐ CAMBIADO
                   style: TextStyle(color: FrutiaColors.secondaryText),
                 ),
               ),
@@ -541,7 +586,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Frutia",
+                          l10n.chatTitle, // ⭐ CAMBIADO
+
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 18,
@@ -550,7 +596,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                         if (!_isPremium)
                           Text(
-                            '${max(0, _messageLimit - _userMessageCount)} mensajes restantes',
+                            '${max(0, _messageLimit - _userMessageCount)} ${l10n.messagesRemaining}', // ⭐ CAMBIADO
                             style: GoogleFonts.lato(
                               color: Colors.white.withOpacity(0.8),
                               fontSize: 12,
@@ -566,15 +612,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   if (!_isSaved)
                     Showcase(
                       key: _saveButtonKey,
-                      title: 'Guardar Chat',
-                      description:
-                          'Usa este botón para guardar la conversación, si no la guardas se perderá.',
+                      title: l10n.saveShowcaseTitle, // ⭐ CAMBIADO
+                      description: l10n.saveShowcaseDesc, // ⭐ CAMBIADO
                       child: Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: TextButton.icon(
                           icon: const Icon(Icons.save,
                               color: Colors.white, size: 22),
-                          label: const Text("Guardar",
+                          label: Text(l10n.saveChat, // ⭐ CAMBIADO
                               style:
                                   TextStyle(color: Colors.white, fontSize: 14)),
                           onPressed: _saveChat,
@@ -617,75 +662,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
       ],
     );
-  }
-
-  /// Inicializa toda la lógica del chat una vez que se confirma que hay un plan.
-  void _initializeChat() {
-    _messages = widget.initialMessages?.reversed.toList() ?? [];
-    _currentSessionId = widget.sessionId;
-    _isSaved = widget.sessionId != null;
-
-    _initializeSpeech();
-    _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted && _isTyping) {
-        setState(() => _typingIndex = (_typingIndex + 1) % 3);
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) _showShowcase();
-        });
-      }
-    });
-
-    if (!_initialMessageSent) {
-      _initialMessageSent = true;
-      if (_currentSessionId == null && _messages.isEmpty) {
-        _startNewSession().then((_) {
-          if (widget.initialMessage != null &&
-              widget.initialMessage!.isNotEmpty) {
-            _sendMessage(widget.initialMessage!);
-          }
-        });
-      } else if (widget.initialMessage != null &&
-          widget.initialMessage!.isNotEmpty) {
-        _sendMessage(widget.initialMessage!);
-      }
-    }
-  }
-
-  /// Verifica si el usuario tiene un plan de comidas configurado.
-  Future<void> _checkUserPlanStatus() async {
-    try {
-      // Reutilizamos el servicio que obtiene el perfil del usuario
-      final responseData = await RachaProgresoService.getProgresoWithUser();
-      if (!mounted) return;
-
-      final profile = responseData['profile'];
-      final bool planIsComplete = profile != null &&
-          (profile['plan_setup_complete'] == true ||
-              profile['plan_setup_complete'] == 1);
-
-      setState(() {
-        _hasActivePlan = planIsComplete;
-        _isCheckingPlan = false; // Terminamos de verificar
-      });
-
-      // 2. Si el plan está completo, procedemos a inicializar el chat.
-      if (planIsComplete) {
-        _initializeChat();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isCheckingPlan = false; // Terminamos de verificar (con error)
-          _hasActivePlan = false; // Asumimos que no tiene plan si hay error
-        });
-        _showErrorSnackBar('No se pudo verificar el estado de tu plan.');
-      }
-    }
   }
 
   Future<void> _showShowcase() async {
@@ -749,6 +725,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
+// ❌ BORRAR TODO ESTO:
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -776,6 +753,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (_typingTimer?.isActive == true) {
       _typingTimer!.cancel();
     }
+    _loadingTextTimer?.cancel(); // ⬅️ AGREGAR ESTO
+
     if (_sunController?.isAnimating == true) {
       _sunController!.dispose();
     }
@@ -817,11 +796,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     setState(() {
       _isLoading = true;
     });
+
     try {
       final isAuthenticated = await _isUserAuthenticated();
       if (!isAuthenticated) {
-        print('User not authenticated, redirecting to login');
-        _showErrorSnackBar('Por favor, inicia sesión para continuar');
+        debugPrint('❌ User not authenticated, redirecting to login');
+        _showErrorSnackBar(l10n.pleaseLogin); // ⭐ CAMBIADO
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => AuthCheckMain()),
@@ -831,43 +811,32 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       final currentUser = await _storageService.getUser();
       final userName = currentUser?.name ?? 'Amigú';
+
+      debugPrint('📤 Creando nueva sesión para: $userName');
+
       final response = await _chatService.startNewSession(userName: userName);
 
       if (!mounted) return;
 
-      print('Start new session response: $response');
+      debugPrint('📥 Respuesta de nueva sesión: $response');
 
       if (response['session_id'] == null) {
         throw Exception('No session_id received from backend');
       }
 
-      final aiMessage = ChatMessage(
-        id: -1,
-        chatSessionId: response['session_id'] ?? -1,
-        userId: 0,
-        text: response['ai_message']?['text'] ??
-            'Error: No se recibió una respuesta válida.',
-        isUser: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
       setState(() {
         _currentSessionId = response['session_id'];
-        _emotionalState =
-            response['ai_message']['emotional_state'] ?? 'neutral';
-        _conversationLevel =
-            response['ai_message']['conversation_level'] ?? 'basic';
-        _messages.insert(0, aiMessage);
         _isLoading = false;
       });
+
+      debugPrint('✅ Sesión iniciada correctamente: $_currentSessionId');
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        print('Error starting new session: $e');
-        _showErrorSnackBar('Error al iniciar la sesión: $e');
+        debugPrint('❌ Error starting new session: $e');
+        _showErrorSnackBar('${l10n.errorStartingSession}: $e'); // ⭐ CAMBIADO
       }
     }
   }
@@ -875,13 +844,19 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   Future<void> _sendMessage(String message, {bool isTemporary = false}) async {
     if (message.trim().isEmpty) return;
 
+    // ⭐ CAMBIO CLAVE: Crear sesión SOLO si no existe
     if (_currentSessionId == null && !isTemporary) {
-      print('No session ID, starting new session');
+      debugPrint('⚠️ Primer mensaje, creando sesión...');
       await _startNewSession();
+
       if (_currentSessionId == null) {
         _showErrorSnackBar('No se pudo iniciar la sesión. Inténtalo de nuevo.');
         return;
       }
+
+      debugPrint('✅ Nueva sesión creada: $_currentSessionId');
+    } else if (_currentSessionId != null) {
+      debugPrint('✅ Usando sesión existente: $_currentSessionId');
     }
 
     final currentUser = await _storageService.getUser();
@@ -899,7 +874,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _messages.insert(0, newMessage);
       _isTyping = true;
       _typingIndex = 0;
-      _typingTimer?.cancel(); // Reinicia el timer para evitar solapamientos
+      _startLoadingTextAnimation();
+      _typingTimer?.cancel();
       _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
         if (mounted) setState(() => _typingIndex = (_typingIndex + 1) % 3);
       });
@@ -908,7 +884,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _controller.clear();
 
     try {
-      print('Sending message with session_id: $_currentSessionId');
+      debugPrint('📤 Enviando mensaje con session_id: $_currentSessionId');
+
       final response = isTemporary
           ? await _chatService.sendTemporaryMessage(
               message,
@@ -923,10 +900,23 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       if (!mounted) return;
 
-      print('Received response: $response');
+      debugPrint('📥 Respuesta recibida: $response');
+
+      // ⭐ IMPORTANTE: NO cambiar session_id si ya existe
+      if (_currentSessionId == null && response['session_id'] != null) {
+        debugPrint('✅ Asignando session_id: ${response['session_id']}');
+        setState(() {
+          _currentSessionId = response['session_id'];
+        });
+      } else if (response['session_id'] != _currentSessionId) {
+        debugPrint(
+            '⚠️ Backend devolvió session_id diferente: ${response['session_id']} vs $_currentSessionId');
+        // NO cambiar el session_id local
+      }
+
       final aiMessage = ChatMessage(
-        id: -1,
-        chatSessionId: response['session_id'] ?? _currentSessionId ?? -1,
+        id: response['ai_message']['id'] ?? -1,
+        chatSessionId: _currentSessionId ?? -1,
         userId: 0,
         text: response['ai_message']['text'],
         isUser: false,
@@ -938,13 +928,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _messages.insert(0, aiMessage);
         _isTyping = false;
         _typingTimer?.cancel();
+        _stopLoadingTextAnimation();
 
-        if (!isTemporary && response['session_id'] != null) {
-          _currentSessionId = response['session_id'];
-        }
-
-        // ▼▼▼ LÍNEA CLAVE ACTUALIZADA ▼▼▼
-        // Actualizamos el contador con el valor real que devuelve el backend
         if (response['user_message_count'] != null) {
           _userMessageCount = response['user_message_count'];
         }
@@ -952,37 +937,113 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _updateTokenCount(aiMessage.text!);
       });
 
+      // ⭐ Auto-guardar después del primer mensaje
+      if (!isTemporary && _currentSessionId != null) {
+        await _autoSaveChat();
+      }
+
       Vibration.vibrate(duration: 200);
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isTyping = false;
         _typingTimer?.cancel();
+        _stopLoadingTextAnimation();
       });
-      print('Error sending message: $e');
+      debugPrint('❌ Error sending message: $e');
       _showErrorSnackBar('Error al enviar el mensaje: $e');
     }
   }
 
+// ⭐ MÉTODO SIMPLIFICADO: Solo marcar como guardado
+  Future<void> _autoSaveChat() async {
+    if (_currentSessionId == null) return;
+
+    // Si ya está guardado, no hacer nada
+    if (_isSaved) return;
+
+    try {
+      debugPrint(
+          '💾 Marcando sesión como guardada (Session: $_currentSessionId)...');
+
+      // Generar título automático
+      final title = _generateAutoTitle();
+
+      // Solo actualizar el flag is_saved y el título
+      await _chatService.markSessionAsSaved(_currentSessionId!, title);
+
+      if (mounted) {
+        setState(() {
+          _isSaved = true;
+        });
+      }
+
+      debugPrint('✅ Sesión marcada como guardada');
+    } catch (e) {
+      debugPrint('❌ Error al marcar sesión: $e');
+    }
+  }
+
+  String _generateAutoTitle() {
+    if (_messages.isEmpty) return l10n.newConversationTitle; // ⭐ CAMBIADO
+
+    final firstUserMessage = _messages.reversed.firstWhere(
+      (m) => m.isUser && m.text != null && m.text!.trim().isNotEmpty,
+      orElse: () => _messages.last,
+    );
+
+    if (firstUserMessage.text == null)
+      return l10n.newConversationTitle; // ⭐ CAMBIADO
+
+    final title = firstUserMessage.text!.length > 40
+        ? '${firstUserMessage.text!.substring(0, 40)}...'
+        : firstUserMessage.text!;
+
+    return title;
+  }
+
   Future<void> _saveChat() async {
     if (_messages.isEmpty) {
-      _showErrorSnackBar('noMessagesToSave');
+      _showErrorSnackBar(l10n.noMessagesToSave); // ⭐ CAMBIADO
       return;
     }
 
     final titleController = TextEditingController();
+
+    if (_isSaved) {
+      try {
+        final sessions = await _chatService.getSessions(saved: true);
+        final currentSession = sessions.firstWhere(
+          (s) => s.id == _currentSessionId,
+          orElse: () => ChatSession(
+            id: _currentSessionId!,
+            userId: 0,
+            title: _generateAutoTitle(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            isSaved: true,
+          ),
+        );
+        titleController.text = currentSession.title;
+      } catch (e) {
+        debugPrint('Error obteniendo título actual: $e');
+      }
+    }
+
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Guardar Conversacion para despues",
-            style: TextStyle(color: Colors.black)),
+        title: Text(
+          _isSaved ? l10n.changeTitle : l10n.saveConversation, // ⭐ CAMBIADO
+          style: TextStyle(color: Colors.black),
+        ),
         content: TextField(
           controller: titleController,
           autofocus: true,
           style: TextStyle(color: Colors.black),
           decoration: InputDecoration(
-            labelText: "Titulo",
-            hintText: "Escribe titulo...",
+            labelText: l10n.titleLabel, // ⭐ CAMBIADO
+            hintText: l10n.titleHint, // ⭐ CAMBIADO
             hintStyle: TextStyle(color: Colors.grey),
             filled: true,
             fillColor: Color(0xFFF6F6F6),
@@ -999,7 +1060,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancelar", style: TextStyle(color: Colors.black)),
+            child: Text(l10n.cancel,
+                style: TextStyle(color: Colors.black)), // ⭐ CAMBIADO
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF4BB6A8)),
@@ -1008,7 +1070,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 Navigator.pop(context, titleController.text.trim());
               }
             },
-            child: Text("Guardar", style: TextStyle(color: Colors.white)),
+            child: Text(l10n.save,
+                style: TextStyle(color: Colors.white)), // ⭐ CAMBIADO
           ),
         ],
       ),
@@ -1017,14 +1080,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (title == null || title.isEmpty) return;
 
     try {
-      final session = await _chatService.saveChatSession(
+      await _chatService.saveChatSession(
         title: title,
         messages: _messages.reversed
             .map((m) => {
                   'text': m.text,
                   'is_user': m.isUser,
-                  'image_url': m.imageUrl, // <-- Enviamos la URL de la imagen
-
+                  'image_url': m.imageUrl,
                   'created_at': m.createdAt.toIso8601String(),
                 })
             .toList(),
@@ -1035,18 +1097,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       setState(() {
         _isSaved = true;
-        _currentSessionId = session.id;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Chat guardado corrrectamente"),
+          content: Text(l10n.chatSaved), // ⭐ CAMBIADO
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnackBar('errorSavingChat');
+      _showErrorSnackBar('${l10n.errorSavingChat}: $e'); // ⭐ CAMBIADO
     }
   }
 
@@ -1060,15 +1121,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     if (!micStatus.isGranted) {
       if (micStatus.isPermanentlyDenied) {
-        _showErrorSnackBar(
-            'Por favor habilita los permisos de micrófono en Configuración');
+        _showErrorSnackBar(l10n.enableMicPermission); // ⭐ CAMBIADO
+
         await openAppSettings();
       }
       return;
     }
 
     if (!_isSpeechInitialized || !_isSpeechAvailable) {
-      _showErrorSnackBar('El reconocimiento de voz no está disponible');
+      _showErrorSnackBar(l10n.speechNotAvailable); // ⭐ CAMBIADO
       await _initializeSpeech();
       if (!_isSpeechInitialized || !_isSpeechAvailable) {
         return;
@@ -1108,7 +1169,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     } catch (e, stackTrace) {
       debugPrint('Error starting speech recognition: $e\n$stackTrace');
       setState(() => _isListening = false);
-      _showErrorSnackBar('Error al iniciar: $e');
+      _showErrorSnackBar('${l10n.errorStartingSpeech}: $e'); // ⭐ CAMBIADO
     }
   }
 
@@ -1127,7 +1188,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _isListening = false;
         _soundLevel = 0.0;
       });
-      _showErrorSnackBar('Error al detener: $e');
+      _showErrorSnackBar('${l10n.errorStoppingSpeech}: $e'); // ⭐ CAMBIADO
     }
   }
 
@@ -1181,7 +1242,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 FlutterClipboard.copy(message.text!).then((_) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Texto copiado'),
+                      content: Text(l10n.textCopied), // ⭐ CAMBIADO
                       backgroundColor: FrutiaColors.accent,
                     ),
                   );
@@ -1227,7 +1288,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                         child: CircularProgressIndicator());
                                   },
                                   errorBuilder: (context, error, stackTrace) {
-                                    return Text('Error al cargar imagen');
+                                    return Text(
+                                        l10n.errorLoadingImage); // ⭐ CAMBIADO
                                   },
                                 );
                               }
@@ -1321,7 +1383,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Widget _buildAnalysisResultCard(Map<String, dynamic> result) {
     final double percentage = result['percentage']?.toDouble() ?? 0.0;
-    final String recommendation = result['recommendation'] ?? 'No disponible.';
+    final String recommendation =
+        result['recommendation'] ?? l10n.notDefined; // ⭐ CAMBIADO
     final List<dynamic> observations = result['observations'] ?? [];
 
     return ChatBubble(
@@ -1341,16 +1404,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${percentage.toStringAsFixed(1)}% Grasa Corporal',
+                  '${percentage.toStringAsFixed(1)}${l10n.bodyFatPercentage}', // ⭐ CAMBIADO
                   style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.teal.shade800),
                 ),
-                const Text('(Estimado)',
+                Text(l10n.estimated, // ⭐ CAMBIADO
                     style: TextStyle(color: Colors.grey, fontSize: 12)),
                 const Divider(height: 20),
-                Text('Recomendación:',
+                Text(l10n.recommendation, // ⭐ CAMBIADO
                     style: GoogleFonts.lato(
                         fontWeight: FontWeight.bold, color: Colors.black87)),
                 const SizedBox(height: 4),
@@ -1358,7 +1421,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     style: GoogleFonts.lato(color: Colors.black87)),
                 const SizedBox(height: 12),
                 if (observations.isNotEmpty) ...[
-                  Text('Observaciones:',
+                  Text(l10n.observations, // ⭐ CAMBIADO
                       style: GoogleFonts.lato(
                           fontWeight: FontWeight.bold, color: Colors.black87)),
                   const SizedBox(height: 4),
@@ -1395,64 +1458,148 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
+  // En ChatScreen.dart, reemplaza _buildTypingIndicator()
+
   Widget _buildTypingIndicator() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: ChatBubble(
         clipper: ChatBubbleClipper1(type: BubbleType.receiverBubble),
         alignment: Alignment.topLeft,
-        margin: EdgeInsets.only(top: 5),
-        backGroundColor: Colors.white.withOpacity(0.8),
+        margin: const EdgeInsets.only(top: 5),
+        backGroundColor: bot_bubble_color, // ⬅️ Usa el color del bot
         child: Container(
           constraints:
               BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+          padding: const EdgeInsets.all(12),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(3, (index) {
-              return AnimatedContainer(
-                duration: Duration(milliseconds: 500),
-                width: 8,
-                height: 8,
-                margin: EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: index == _typingIndex ? Colors.red : Colors.grey,
+            children: [
+              // ⭐ NUEVO: CircularProgressIndicator
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
-              );
-            }),
+              ),
+              const SizedBox(width: 12),
+              // Texto que cambia
+              Flexible(
+                child: Text(
+                  _getLoadingText(), // ⬅️ Texto dinámico
+                  style: GoogleFonts.lato(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0);
   }
 
-  Future<void> _initializeScreen() async {
-    setState(() {
-      _isCheckingPlan = true;
-    });
-    try {
-      final responseData = await RachaProgresoService.getProgresoWithUser();
-      if (!mounted) return;
+// ⭐ VARIABLES AL INICIO DE _ChatScreenState (junto a las otras variables)
+  int _loadingTextIndex = 0;
+  Timer? _loadingTextTimer;
 
-      final user = responseData['user'];
-      final profile = responseData['profile'];
+  String _getLoadingText() {
+    final texts = [
+      l10n.thinkingResponse, // ⭐ CAMBIADO
+      l10n.analyzingPlan, // ⭐ CAMBIADO
+      l10n.consultingHistory, // ⭐ CAMBIADO
+      l10n.preparingResponse, // ⭐ CAMBIADO
+      l10n.reviewingMacros, // ⭐ CAMBIADO
+      l10n.connectingAI, // ⭐ CAMBIADO
+      l10n.calculatingRecommendations, // ⭐ CAMBIADO
+      l10n.verifyingProgress, // ⭐ CAMBIADO
+      l10n.searchingBestAnswer, // ⭐ CAMBIADO
+      l10n.processingQuery, // ⭐ CAMBIADO
+      l10n.almostReady, // ⭐ CAMBIADO
+    ];
+    return texts[_loadingTextIndex % texts.length];
+  }
 
-      final bool planIsComplete = profile != null &&
-          (profile['plan_setup_complete'] == true ||
-              profile['plan_setup_complete'] == 1);
+// ⭐ FUNCIÓN PARA INICIAR EL TIMER (llamar cuando empiece _isTyping)
+  void _startLoadingTextAnimation() {
+    _loadingTextIndex = 0;
+    _loadingTextTimer?.cancel();
 
-      setState(() {
-        _hasActivePlan = planIsComplete;
-        _isPremium = user?['subscription_status'] == 'active';
-        _userMessageCount = user?['message_count'] ?? 0;
-        _isCheckingPlan = false;
-      });
-
-      if (planIsComplete) {
-        _initializeChat();
+    // ⬅️ CAMBIO AQUÍ: De 500ms a 3000ms (3 segundos)
+    _loadingTextTimer =
+        Timer.periodic(const Duration(milliseconds: 3000), (timer) {
+      if (mounted && _isTyping) {
+        setState(() {
+          _loadingTextIndex++;
+        });
       }
-    } catch (e) {
-      // ... (tu manejo de errores)
+    });
+  }
+
+// ⭐ FUNCIÓN PARA DETENER EL TIMER (llamar cuando termine _isTyping)
+  void _stopLoadingTextAnimation() {
+    _loadingTextTimer?.cancel();
+    _loadingTextIndex = 0;
+  }
+
+  void _initializeChat() {
+    // Cargar mensajes previos (si vienen del widget)
+    _messages = widget.initialMessages?.reversed.toList() ?? [];
+    _currentSessionId = widget.sessionId;
+    _isSaved = widget.sessionId != null;
+
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('🔧 INICIALIZANDO CHAT:');
+    debugPrint('   - Session ID recibido: ${widget.sessionId}');
+    debugPrint('   - Session ID actual: $_currentSessionId');
+    debugPrint('   - Mensajes cargados: ${_messages.length}');
+    debugPrint('   - ¿Es guardado?: $_isSaved');
+    debugPrint('   - Initial message: ${widget.initialMessage}');
+    debugPrint('═══════════════════════════════════════');
+
+    // Inicializar speech
+    _initializeSpeech();
+
+    // Timer para los puntos de "typing"
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (mounted && _isTyping) {
+        setState(() => _typingIndex = (_typingIndex + 1) % 3);
+      }
+    });
+
+    // Mostrar showcase después de un delay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _showShowcase();
+        });
+      }
+    });
+
+    // ⭐ NUEVA LÓGICA SIMPLE:
+    if (_currentSessionId == null && _messages.isEmpty) {
+      debugPrint('📝 Chat nuevo sin sesión, esperando primer mensaje...');
+      return;
+    }
+
+    debugPrint('✅ Chat listo para usar (Session: $_currentSessionId)');
+
+    // ⭐ NUEVO: Manejar initialMessage aquí
+    if (widget.initialMessage != null &&
+        widget.initialMessage!.isNotEmpty &&
+        !_initialMessageSent) {
+      _initialMessageSent = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          debugPrint('📨 Enviando mensaje inicial: ${widget.initialMessage}');
+          _sendMessage(widget.initialMessage!);
+        }
+      });
     }
   }
 
@@ -1552,8 +1699,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         width: 60, height: 60, fit: BoxFit.cover),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
-                      child: Text("Imagen adjunta",
+                  Expanded(
+                      child: Text(l10n.imageAttached, // ⭐ CAMBIADO
                           style: TextStyle(color: Colors.black54))),
                   IconButton(
                     icon: Icon(Icons.close, color: Colors.grey.shade600),
@@ -1596,7 +1743,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   keyboardType: TextInputType.multiline,
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
-                    hintText: "Escribe tu mensaje...",
+                    hintText: l10n.typeMessage, // ⭐ CAMBIADO
                     hintStyle: const TextStyle(color: Colors.black),
                     filled: true,
                     fillColor: Colors.grey.shade200,
@@ -1610,10 +1757,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         if (!canSend) ...[
                           Showcase(
                             key: _micButtonKey,
-                            title: 'Entrada de Voz',
-                            description:
-                                'Si no quieres escribir, puedes tocar aqui para grabar tu mensaje o detener la grabación.',
-                            tooltipBackgroundColor: FrutiaColors.accent,
+                            title: l10n.micShowcaseTitle, // ⭐ CAMBIADO
+                            description: l10n
+                                .micShowcaseDesc, // ⭐ CAMBIADO  tooltipBackgroundColor: FrutiaColors.accent,
                             targetShapeBorder: const CircleBorder(),
                             titleTextStyle: const TextStyle(
                                 color: Colors.white,
@@ -1634,8 +1780,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 size: _isListening ? 30 : 24,
                               ),
                               tooltip: _isListening
-                                  ? 'Detener grabación'
-                                  : 'Iniciar grabación',
+                                  ? l10n.stopRecording // ⭐ CAMBIADO
+                                  : l10n.startRecording, // ⭐ CAMBIADO
                               onPressed: () async {
                                 if (_isListening) {
                                   await _stopListening();
@@ -1647,9 +1793,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           ),
                           Showcase(
                             key: _voiceChatButtonKey,
-                            title: 'Chat de Voz Avanzado',
+                            title: l10n.voiceChatShowcaseTitle, // ⭐ CAMBIADO
                             description:
-                                'Inicia una conversación de voz fluida con la IA.',
+                                l10n.voiceChatShowcaseDesc, // ⭐ CAMBIADO
                             tooltipBackgroundColor: FrutiaColors.accent,
                             targetShapeBorder: const CircleBorder(),
                             titleTextStyle: const TextStyle(
@@ -1679,7 +1825,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   color: FrutiaColors.accent,
                                   size: 22,
                                 ),
-                                tooltip: 'Chat de voz avanzado',
+                                tooltip: l10n.advancedVoiceChat, // ⭐ CAMBIADO
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -1744,10 +1890,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   // En: lib/pages/screens/chatFrutia/ChatScreen.dart -> _ChatScreenState
 
   Future<void> _sendImageAndTextForAnalysis() async {
-    // 1. Comprobación de seguridad (esto está bien)
     if (_stagedImageFile == null) return;
 
-    // 2. Guardamos los datos y limpiamos la UI (esto está bien)
     final imageToSend = _stagedImageFile!;
     final userText = _controller.text;
 
@@ -1757,33 +1901,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       FocusManager.instance.primaryFocus?.unfocus();
     });
 
-    // ▼▼▼ LÓGICA CORREGIDA Y MEJORADA ▼▼▼
-
-    // 3. Creamos un ID temporal para encontrar y actualizar nuestro mensaje después.
     final tempMessageId = DateTime.now().millisecondsSinceEpoch;
     final userMessage = ChatMessage(
       id: tempMessageId,
       chatSessionId: _currentSessionId ?? -1,
       isUser: true,
-      imagePath: imageToSend
-          .path, // Usamos la ruta LOCAL para mostrar la imagen al instante
+      imagePath: imageToSend.path,
       text: userText.isNotEmpty ? userText : null,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    // 4. Mostramos el mensaje del usuario en el chat inmediatamente.
     setState(() {
       _messages.insert(0, userMessage);
       _isTyping = true;
     });
 
     try {
-      // 5. PRIMERO, subimos la imagen para obtener la URL remota.
       final imageUrl = await _chatService.uploadImage(imageToSend);
 
-      // 6. AHORA, actualizamos nuestro mensaje en la lista con la URL obtenida.
-      // Esto es CRUCIAL para que la función de "Guardar Chat" funcione después.
       setState(() {
         final index = _messages.indexWhere((m) => m.id == tempMessageId);
         if (index != -1) {
@@ -1792,7 +1928,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             chatSessionId: _messages[index].chatSessionId,
             isUser: true,
             imagePath: _messages[index].imagePath,
-            imageUrl: imageUrl, // <-- ¡AQUÍ GUARDAMOS LA URL!
+            imageUrl: imageUrl,
             text: _messages[index].text,
             createdAt: _messages[index].createdAt,
             updatedAt: DateTime.now(),
@@ -1800,7 +1936,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         }
       });
 
-      // 7. SEGUNDO, llamamos a la API de análisis.
       final analysisResult =
           await _chatService.analyzeBodyImage(imageToSend, text: userText);
 
@@ -1815,12 +1950,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       setState(() => _messages.insert(0, assistantResponseMessage));
     } catch (e) {
-      // Tu lógica para manejar errores
       final errorMessage = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch + 1,
         chatSessionId: _currentSessionId ?? -1,
         isUser: false,
-        text: 'Ocurrió un error al procesar la imagen.',
+        text: l10n.errorProcessingImage, // ⭐ CAMBIADO
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
