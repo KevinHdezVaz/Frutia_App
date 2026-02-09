@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 
 // --- Helper Functions para convertir Strings a Widgets ---
@@ -206,12 +205,11 @@ class PersonalizedTips {
 
 class NutritionPlan {
   final TargetMacros targetMacros;
-  final Map<String, Meal> meals;
+  Map<String, Meal> meals;
   final List<String> generalRecommendations;
   final List<String> rememberRecommendations;
   final String recommendation;
   final String? currencySymbol;
-
   // CAMPOS NUEVOS COMPLETOS:
   final String? personalizedMessage;
   final AnthropometricSummary? anthropometricSummary;
@@ -219,7 +217,7 @@ class NutritionPlan {
   final PersonalizedTips? personalizedTips;
   final Map<String, String>? mealSchedule;
 
-  const NutritionPlan({
+  NutritionPlan({
     required this.targetMacros,
     required this.meals,
     required this.generalRecommendations,
@@ -236,7 +234,6 @@ class NutritionPlan {
   factory NutritionPlan.fromJson(Map<String, dynamic> json) {
     final mealsData = json['meals'] as Map<String, dynamic>? ?? {};
     final Map<String, Meal> parsedMeals = {};
-
     mealsData.forEach((key, value) {
       if (value is Map<String, dynamic>) {
         parsedMeals[key] = Meal.fromJson(value);
@@ -263,8 +260,8 @@ class NutritionPlan {
           List<String>.from(general.map((item) => item.toString())),
       rememberRecommendations:
           List<String>.from(remember.map((item) => item.toString())),
-      recommendation: json['recommendation'] as String? ??
-          '¡Tu plan está listo para que alcances tus metas!',
+      recommendation:
+          json['recommendation'] as String? ?? 'plan_ready_goal_reach',
       currencySymbol: json['currency_symbol'] as String?,
       personalizedMessage: json['personalizedMessage'] as String?,
       anthropometricSummary: json['anthropometricSummary'] != null
@@ -366,7 +363,6 @@ class MealCategory {
     var optionsList = json['options'] as List? ?? [];
     List<MealOption> parsedOptions =
         optionsList.map((i) => MealOption.fromJson(i)).toList();
-
     return MealCategory(
       title: json['title'] ?? 'Sin título',
       options: parsedOptions,
@@ -375,29 +371,31 @@ class MealCategory {
 }
 
 class MealOption {
+  final bool isHighBudget;
+  final bool isLowBudget;
+  final bool budgetAppropriate;
   final String name;
   final String portion;
   final int calories;
   final int protein;
   final int carbs;
   final int fats;
-   final bool isHighBudget;  // AGREGAR
-  final bool isLowBudget;   // AGREGAR
-  final bool isEgg;         // AGREGAR
+  final bool isEgg;
   final List<PriceInfo> prices;
   final String imageUrl;
   final List<String> ingredients;
 
   const MealOption({
+    required this.isEgg,
+    this.isHighBudget = false,
+    this.isLowBudget = false,
+    this.budgetAppropriate = true,
     required this.name,
     required this.portion,
     required this.calories,
     required this.protein,
     required this.carbs,
     required this.fats,
-    required this.isHighBudget,
-    required this.isLowBudget,
-    required this.isEgg,
     required this.prices,
     required this.imageUrl,
     required this.ingredients,
@@ -410,11 +408,16 @@ class MealOption {
       portion: json['portion'] as String? ?? 'N/A',
       calories: (json['calories'] as num?)?.toInt() ?? 0,
       protein: (json['protein'] as num?)?.toInt() ?? 0,
-      carbs: (json['carbohydrates'] as num?)?.toInt() ??  (json['carbs'] as num?)?.toInt() ?? 0,
-      fats: (json['fats'] as num?)?.toInt() ?? (json['fat'] as num?)?.toInt() ??       0,
-        isHighBudget: json['isHighBudget'] ?? false,  // NUEVO
-      isLowBudget: json['isLowBudget'] ?? false,    // NUEVO
-      isEgg: json['isEgg'] ?? false,                // NUEVO
+      carbs: (json['carbohydrates'] as num?)?.toInt() ??
+          (json['carbs'] as num?)?.toInt() ??
+          0,
+      fats: (json['fats'] as num?)?.toInt() ??
+          (json['fat'] as num?)?.toInt() ??
+          0,
+      isEgg: json['isEgg'] as bool? ?? false,
+      isHighBudget: json['isHighBudget'] as bool? ?? false,
+      isLowBudget: json['isLowBudget'] as bool? ?? false,
+      budgetAppropriate: json['budgetAppropriate'] as bool? ?? true,
       prices: pricesList
           .map((p) => PriceInfo.fromJson(p as Map<String, dynamic>))
           .toList(),
@@ -424,8 +427,6 @@ class MealOption {
     );
   }
 
- 
-  
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -546,56 +547,57 @@ class Meal {
   final List<InspirationRecipe> suggestedRecipes;
   final String? mealTiming;
   final List<String>? personalizedTips;
-    final TrialMessage? trialMessage; // NUEVO
-
+  final TrialMessage? trialMessage;
 
   const Meal({
     required this.components,
     required this.suggestedRecipes,
     this.mealTiming,
     this.personalizedTips,
-        this.trialMessage, // NUEVO
-
+    this.trialMessage,
   });
 
   factory Meal.fromJson(Map<String, dynamic> json) {
-    // Parse components from the new structure
-    final componentsData = json['components'] as Map<String, dynamic>? ?? {};
     final List<MealCategory> parsedComponents = [];
 
-    // If it's the old structure, parse directly
-  if (json.containsKey('Proteínas') ||
-    json.containsKey('Carbohidratos') ||
-    json.containsKey('Grasas') ||
-    json.containsKey('Vegetales') ||
-    json.containsKey('Frutas')) {  // ← AGREGAR FRUTAS
-
-  ['Proteínas', 'Carbohidratos', 'Grasas', 'Vegetales', 'Frutas'].forEach((key) {  // ← AGREGAR FRUTAS
-        if (json.containsKey(key) && json[key] is Map<String, dynamic>) {
+    // Caso 1: Nuevo formato (components como array de categorías)
+    if (json.containsKey('components') && json['components'] is List) {
+      final componentsList = json['components'] as List;
+      parsedComponents.addAll(
+        componentsList
+            .map((c) => MealCategory.fromJson(c as Map<String, dynamic>))
+            .toList(),
+      );
+    }
+    // Caso 2: Formato actual del backend (categorías como keys directas: "Proteínas", "Carbohidratos", etc.)
+    else {
+      final possibleCategories = [
+        'Proteínas',
+        'Carbohidratos',
+        'Grasas',
+        'Vegetales',
+        'Frutas'
+      ];
+      possibleCategories.forEach((catKey) {
+        if (json.containsKey(catKey) && json[catKey] is Map<String, dynamic>) {
+          final catData = json[catKey] as Map<String, dynamic>;
+          // Creamos una MealCategory con el título y las options
           parsedComponents.add(MealCategory.fromJson({
-            'title': key,
-            'options': json[key]['options'] ?? [],
-          }));
-        }
-      });
-    } else {
-      // New structure with components wrapper
-      componentsData.forEach((title, optionsData) {
-        if (optionsData is Map<String, dynamic>) {
-          parsedComponents.add(MealCategory.fromJson({
-            'title': title,
-            'options': optionsData['options'] ?? [],
+            'title': catKey,
+            'options': catData['options'] ?? [],
           }));
         }
       });
     }
 
-    final recipesList = json['suggested_recipes'] as List? ?? [];
+    // Recetas sugeridas
+    final recipesList = json['suggested_recipes'] as List<dynamic>? ?? [];
     final parsedRecipes = recipesList
         .map((r) => InspirationRecipe.fromJson(r as Map<String, dynamic>))
         .toList();
 
-    final tipsList = json['personalized_tips'] as List? ?? [];
+    // Tips personalizados
+    final tipsList = json['personalized_tips'] as List<dynamic>? ?? [];
     final parsedTips = tipsList.map((tip) => tip.toString()).toList();
 
     return Meal(
@@ -603,9 +605,6 @@ class Meal {
       suggestedRecipes: parsedRecipes,
       mealTiming: json['meal_timing'] as String?,
       personalizedTips: parsedTips.isNotEmpty ? parsedTips : null,
-        trialMessage: json['trial_message'] != null 
-          ? TrialMessage.fromJson(json['trial_message'])
-          : null, // NUEVO
     );
   }
 }

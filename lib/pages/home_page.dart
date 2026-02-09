@@ -13,8 +13,10 @@ import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/pages/screens/miplan/TrialExpiredDialog.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/pages/screens/progress/ProgressPage.dart';
+import 'package:Frutia/providers/daily_consumption_provider.dart';
 import 'package:Frutia/services/RachaProgreso.dart';
 import 'package:Frutia/services/plan_service.dart';
+import 'package:Frutia/utils/DailyConsumptionUtils.dart';
 import 'package:Frutia/utils/PlanCarousel.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,8 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:provider/provider.dart';
+import 'package:Frutia/providers/locale_provider.dart';
 
 enum PageState { loading, error, needsOnboarding, needsPlan, hasPlan }
 
@@ -374,6 +378,20 @@ class _HomePageState extends State<HomePage> {
                 delay: 600.ms,
                 curve: Curves.easeOut),
             ListTile(
+              leading: Icon(Icons.language_rounded, color: FrutiaColors.accent),
+              title: Text(l10n.language,
+                  style: GoogleFonts.lato(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(context);
+                _showLanguageDialog(context);
+              },
+            ).animate().slideX(
+                begin: -0.2,
+                duration: 400.ms,
+                delay: 750.ms,
+                curve: Curves.easeOut),
+            ListTile(
               leading:
                   Icon(Icons.help_outline_rounded, color: FrutiaColors.accent),
               title: Text(l10n.helpAndSupport,
@@ -469,6 +487,53 @@ class _HomePageState extends State<HomePage> {
       ),
     ).animate().fadeIn(delay: const Duration(milliseconds: 400));
   }
+
+  void _showLanguageDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(l10n.selectLanguage,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Text('🇪🇸', style: TextStyle(fontSize: 24)),
+              title: Text('Español', style: GoogleFonts.lato()),
+              trailing: localeProvider.locale?.languageCode == 'es'
+                  ? const Icon(Icons.check_circle, color: FrutiaColors.accent)
+                  : null,
+              onTap: () async {
+                await localeProvider.setLocale(const Locale('es'));
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _fetchAndCheckProfile();
+                }
+              },
+            ),
+            ListTile(
+              leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
+              title: Text('English', style: GoogleFonts.lato()),
+              trailing: localeProvider.locale?.languageCode == 'en'
+                  ? const Icon(Icons.check_circle, color: FrutiaColors.accent)
+                  : null,
+              onTap: () async {
+                await localeProvider.setLocale(const Locale('en'));
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _fetchAndCheckProfile();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DashboardView extends StatefulWidget {
@@ -514,10 +579,25 @@ class _DashboardViewState extends State<_DashboardView> {
   @override
   void initState() {
     super.initState();
+
+    // Cargar showcase si aplica (sin cambios)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.shouldShowShowcase) {
         _showHomePageShowcase();
+      }
+    });
+
+    // ← CARGAR CONSUMO DEL DÍA
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (widget.mealPlanData != null) {
+        final provider = Provider.of<DailyConsumptionProvider>(
+          context,
+          listen: false,
+        );
+        provider.loadTodayConsumption(currentPlan: widget.mealPlanData);
       }
     });
   }
@@ -590,26 +670,26 @@ class _DashboardViewState extends State<_DashboardView> {
     final Map<String, dynamic> user = widget.userData['user'] ?? {};
     final Map<String, dynamic> profileData = widget.userData['profile'] ?? {};
     final bool hasPlan = widget.mealPlanData != null;
+
     final String currentWeight = profileData['weight']?.toString() ?? '--';
     final String mainGoal = profileData['goal'] ?? l10n.notDefined;
     final int streakDays = (widget.daysSinceLastStreak >= 4)
         ? 0
         : (profileData['racha_actual'] ?? 0);
     final String trialDaysRemaining = _getTrialDaysRemaining();
-
     final List<InspirationRecipe> suggestedRecipes = [];
     final String? affiliateCode = user['applied_affiliate_code'];
 
-    // 🔍 DEBUG CRÍTICO
+    // DEBUG (puedes quitarlo después)
     debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     debugPrint('🎯 _DashboardView Build');
-    debugPrint('   hasPlan: $hasPlan');
-    debugPrint('   mealPlanData null?: ${widget.mealPlanData == null}');
+    debugPrint(' hasPlan: $hasPlan');
+    debugPrint(' mealPlanData null?: ${widget.mealPlanData == null}');
     if (hasPlan) {
       debugPrint(
-          '   personalizedMessage: "${widget.mealPlanData!.nutritionPlan.personalizedMessage}"');
+          ' personalizedMessage: "${widget.mealPlanData!.nutritionPlan.personalizedMessage}"');
       debugPrint(
-          '   meals count: ${widget.mealPlanData!.nutritionPlan.meals.length}');
+          ' meals count: ${widget.mealPlanData!.nutritionPlan.meals.length}');
     }
     debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -620,107 +700,195 @@ class _DashboardViewState extends State<_DashboardView> {
         }
       }
     }
-    debugPrint(
-        '🎯 hasPlan: $hasPlan, mealPlanData: ${widget.mealPlanData != null}');
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildProfileHeader(context),
-          const SizedBox(height: 24),
-          if (hasPlan) ...[
-            PersonalizedMessageCard(mealPlanData: widget.mealPlanData),
-            const SizedBox(height: 24),
-          ],
-          if (hasPlan && widget.canCompleteStreakToday)
-            Showcase(
-              key: _streakReminderKey,
-              title: l10n.completeYourDay,
-              description: l10n.streakReminderDescription,
-              tooltipBackgroundColor: FrutiaColors.accent,
-              targetShapeBorder: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12))),
-              titleTextStyle: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
-              descTextStyle:
-                  GoogleFonts.lato(color: Colors.white, fontSize: 14),
-              disableMovingAnimation: true,
-              disableScaleAnimation: true,
-              child: _StreakReminderCard(
-                streakCount: streakDays,
-                isLoading: widget.isStreakButtonLoading,
-                onPressed: widget.onCompleteStreak,
-                daysSinceLastStreak: widget.daysSinceLastStreak,
-                canCompleteToday: widget.canCompleteStreakToday,
+    return Consumer<DailyConsumptionProvider>(
+      builder: (context, consumption, child) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Saludo / header de perfil
+              _buildProfileHeader(context),
+              const SizedBox(height: 16),
+
+              // ────────────────────────────────────────────────
+              // NUEVA TARJETA: CONSUMO DEL DÍA (lo que pidió el cliente)
+              // ────────────────────────────────────────────────
+              if (hasPlan)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Builder(
+                    builder: (context) {
+                      if (consumption.isLoading) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (consumption.error != null) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            consumption.error ?? 'Error al cargar consumo',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        );
+                      }
+
+                      return DailyConsumptionUtils.buildDailyConsumptionSummary(
+                        context: context,
+                        mealPlanData: widget.mealPlanData,
+                        caloriesConsumed: consumption.caloriesConsumed,
+                        proteinConsumed: consumption.proteinConsumed,
+                        carbsConsumed: consumption.carbsConsumed,
+                        fatsConsumed: consumption.fatsConsumed,
+                      );
+                    },
+                  ),
+                ),
+
+              const SizedBox(height: 24),
+
+              // Mensaje personalizado (si existe plan)
+              if (hasPlan) ...[
+                PersonalizedMessageCard(
+                  mealPlanData: widget.mealPlanData,
+                  userName: widget.userName ?? user['name'] ?? '',
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // Tarjeta de racha (solo si aplica)
+              if (hasPlan && widget.canCompleteStreakToday)
+                Showcase(
+                  key: _streakReminderKey,
+                  title: l10n.completeYourDay,
+                  description: l10n.streakReminderDescription,
+                  tooltipBackgroundColor: FrutiaColors.accent,
+                  targetShapeBorder: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12))),
+                  titleTextStyle: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                  descTextStyle:
+                      GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                  disableMovingAnimation: true,
+                  disableScaleAnimation: true,
+                  child: _StreakReminderCard(
+                    streakCount: streakDays,
+                    isLoading: widget.isStreakButtonLoading,
+                    onPressed: widget.onCompleteStreak,
+                    daysSinceLastStreak: widget.daysSinceLastStreak,
+                    canCompleteToday: widget.canCompleteStreakToday,
+                  ),
+                ),
+
+              const SizedBox(height: 24),
+
+              // Calendario semanal
+              Showcase(
+                key: _weekCalendarKey,
+                title: l10n.yourWeek,
+                description: l10n.weekCalendarDescription,
+                tooltipBackgroundColor: FrutiaColors.accent,
+                targetShapeBorder: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16))),
+                titleTextStyle: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
+                descTextStyle:
+                    GoogleFonts.lato(color: Colors.white, fontSize: 14),
+                disableMovingAnimation: true,
+                disableScaleAnimation: true,
+                child: _buildWeekCalendar(context, widget.streakHistory),
               ),
-            ),
-          const SizedBox(height: 24),
-          Showcase(
-            key: _weekCalendarKey,
-            title: l10n.yourWeek,
-            description: l10n.weekCalendarDescription,
-            tooltipBackgroundColor: FrutiaColors.accent,
-            targetShapeBorder: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16))),
-            titleTextStyle: GoogleFonts.poppins(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-            descTextStyle: GoogleFonts.lato(color: Colors.white, fontSize: 14),
-            disableMovingAnimation: true,
-            disableScaleAnimation: true,
-            child: _buildWeekCalendar(context, widget.streakHistory),
-          ),
-          const SizedBox(height: 24),
-          if (hasPlan) ...[
-            NutritionalProfileCard(
-              mealPlanData: widget.mealPlanData,
-              profileData: profileData, // ✅ AÑADIR ESTO
-            ),
-            const SizedBox(height: 24),
-          ],
-          _buildStatsRow(
-              context, streakDays, currentWeight, mainGoal, trialDaysRemaining),
-          if (affiliateCode != null && affiliateCode.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: _buildAffiliateCodeCard(affiliateCode),
-            ),
-          const SizedBox(height: 30),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(hasPlan ? l10n.yourRecipesToday : l10n.createYourPlan,
-                style: GoogleFonts.lato(
-                    fontSize: 20, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 30),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: hasPlan
-                ? PlanCarousel(recipes: suggestedRecipes)
-                : _buildCreatePlanCard(context),
-          ),
-          if (hasPlan) ...[
-            const SizedBox(height: 30),
-            PersonalizedTipsCarousel(mealPlanData: widget.mealPlanData),
-          ],
-          if (hasPlan) const SizedBox(height: 16),
-          const SizedBox(height: 40),
-          _buildUpcomingMealCard(),
-          const SizedBox(height: 24),
-          MembershipStatusWidget(
-            isPremium: widget.isPremium,
-            isInTrial: widget.isInTrial,
-            trialDaysRemaining: trialDaysRemaining,
-          ),
-          const SizedBox(height: 40),
-          const SizedBox(height: 120),
-        ],
-      )
-          .animate()
-          .fadeIn(delay: const Duration(milliseconds: 400), duration: 500.ms),
+
+              const SizedBox(height: 24),
+
+              // Perfil nutricional
+              if (hasPlan) ...[
+                NutritionalProfileCard(
+                  mealPlanData: widget.mealPlanData,
+                  profileData: profileData,
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // Estadísticas (racha, peso, meta, trial si aplica)
+              _buildStatsRow(
+                context,
+                streakDays,
+                currentWeight,
+                mainGoal,
+                trialDaysRemaining,
+              ),
+
+              if (affiliateCode != null && affiliateCode.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: _buildAffiliateCodeCard(affiliateCode),
+                ),
+
+              const SizedBox(height: 30),
+
+              // Título de recetas / crear plan
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  hasPlan ? l10n.yourRecipesToday : l10n.createYourPlan,
+                  style: GoogleFonts.lato(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              // Carrusel de recetas o botón crear plan
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: hasPlan
+                    ? PlanCarousel(recipes: suggestedRecipes)
+                    : _buildCreatePlanCard(context),
+              ),
+
+              if (hasPlan) ...[
+                const SizedBox(height: 30),
+                PersonalizedTipsCarousel(mealPlanData: widget.mealPlanData),
+              ],
+
+              if (hasPlan) const SizedBox(height: 16),
+
+              const SizedBox(height: 40),
+
+              // Próxima comida
+              _buildUpcomingMealCard(),
+
+              const SizedBox(height: 24),
+
+              // Estado de membresía
+              MembershipStatusWidget(
+                isPremium: widget.isPremium,
+                isInTrial: widget.isInTrial,
+                trialDaysRemaining: trialDaysRemaining,
+              ),
+
+              const SizedBox(height: 40),
+              const SizedBox(height: 120), // espacio final
+            ],
+          ).animate().fadeIn(
+              delay: const Duration(milliseconds: 400), duration: 500.ms),
+        );
+      },
     );
   }
 

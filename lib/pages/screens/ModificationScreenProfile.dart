@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:Frutia/services/ChatServiceApi.dart'; // Asegúrate de importar tu servicio de chat
 import 'package:Frutia/pages/screens/datosPersonales/OnboardingScreen.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart'; // Importa la pantalla del cuestionario
 
 class UpdateProfileScreen extends StatefulWidget {
@@ -63,8 +64,9 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
-          _loadingError = "Error al cargar tu perfil: $e";
+          _loadingError = l10n.errorLoadingProfileWithMsg(e.toString());
           _isScreenLoading = false;
         });
       }
@@ -87,51 +89,58 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     );
   }
 
-Future<void> _pickAndAnalyzeImage() async {
-  // ▼▼▼ 2. LÓGICA DE PERMISOS ▼▼▼
-  final status = await Permission.photos.request();
+  Future<void> _pickAndAnalyzeImage() async {
+    // ▼▼▼ 2. LÓGICA DE PERMISOS ▼▼▼
+    final status = await Permission.photos.request();
 
-  if (status.isGranted) {
-    // Si el permiso fue concedido, continúa con la selección de imagen
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile == null) {
-      _showSnackBar('No se seleccionó ninguna imagen.', isError: true);
-      return;
+    if (status.isGranted) {
+      // Si el permiso fue concedido, continúa con la selección de imagen
+      final l10n = AppLocalizations.of(context)!;
+      final XFile? pickedFile =
+          await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile == null) {
+        _showSnackBar(l10n.noImageSelected, isError: true);
+        return;
+      }
+
+      setState(() {
+        _imageFile = File(pickedFile.path);
+        _isAnalyzing = true;
+        _analysisResult = null;
+      });
+
+      try {
+        final result =
+            await _chatService.analyzeBodyImage(File(pickedFile.path));
+        if (mounted) setState(() => _analysisResult = result);
+      } catch (e) {
+        _showSnackBar(l10n.errorAnalyzingImageWithMsg(e.toString()),
+            isError: true);
+      } finally {
+        if (mounted) setState(() => _isAnalyzing = false);
+      }
+    } else if (status.isPermanentlyDenied) {
+      // Si el usuario denegó permanentemente, lo mandamos a la configuración
+      final l10n = AppLocalizations.of(context)!;
+      _showSnackBar(l10n.galleryPermissionDenied, isError: true);
+    } else {
+      // Si denegó una vez, le informamos
+      final l10n = AppLocalizations.of(context)!;
+      _showSnackBar(l10n.galleryPermissionRequired, isError: true);
     }
-
-    setState(() {
-      _imageFile = File(pickedFile.path);
-      _isAnalyzing = true;
-      _analysisResult = null;
-    });
-
-    try {
-      final result = await _chatService.analyzeBodyImage(File(pickedFile.path));
-      if (mounted) setState(() => _analysisResult = result);
-    } catch (e) {
-      _showSnackBar('Error al analizar la imagen: $e', isError: true);
-    } finally {
-      if (mounted) setState(() => _isAnalyzing = false);
-    }
-
-  } else if (status.isPermanentlyDenied) {
-    // Si el usuario denegó permanentemente, lo mandamos a la configuración
-    _showSnackBar('Permiso a la galería denegado. Habilítalo en la configuración.', isError: true);
-   } else {
-    // Si denegó una vez, le informamos
-    _showSnackBar('El permiso a la galería es necesario para seleccionar una foto.', isError: true);
+    // ▲▲▲ FIN DE LA LÓGICA DE PERMISOS ▲▲▲
   }
-  // ▲▲▲ FIN DE LA LÓGICA DE PERMISOS ▲▲▲
-}
+
   Future<void> _saveWeight() async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
     final newWeight = double.tryParse(_weightController.text) ?? 0.0;
 
+    final l10n = AppLocalizations.of(context)!;
     try {
       await RachaProgresoService.updateWeight(_weightController.text);
-      _showSnackBar('Peso actualizado correctamente.',
+      _showSnackBar(l10n.weightUpdatedSuccess,
           backgroundColor: Colors.green.shade600);
 
       // ▼▼▼ LÓGICA PARA VERIFICAR CAMBIO SIGNIFICATIVO ▼▼▼
@@ -145,7 +154,7 @@ Future<void> _pickAndAnalyzeImage() async {
         }
       }
     } catch (e) {
-      _showSnackBar('Error al guardar el peso: $e', isError: true);
+      _showSnackBar(l10n.errorSavingWeightWithMsg(e.toString()), isError: true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -157,27 +166,25 @@ Future<void> _pickAndAnalyzeImage() async {
       context: context,
       barrierDismissible: false, // El usuario debe elegir una opción
       builder: (BuildContext dialogContext) {
+        final l10n = AppLocalizations.of(context)!;
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('¡Felicidades por tu Progreso!',
+          title: Text(l10n.congratsProgressTitle,
               style: GoogleFonts.lato(fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Hemos notado un cambio significativo en tu peso.',
-                    style: GoogleFonts.lato()),
+                Text(l10n.weightChangeDetected, style: GoogleFonts.lato()),
                 const SizedBox(height: 10),
-                Text(
-                    'Para asegurar que tu plan de alimentación siga siendo efectivo, te recomendamos recalcularlo.',
-                    style: GoogleFonts.lato()),
+                Text(l10n.recommendRecalculatePlan, style: GoogleFonts.lato()),
               ],
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Más tarde',
-                  style: GoogleFonts.lato(color: Colors.grey)),
+              child:
+                  Text(l10n.later, style: GoogleFonts.lato(color: Colors.grey)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
@@ -187,7 +194,7 @@ Future<void> _pickAndAnalyzeImage() async {
                   backgroundColor: FrutiaColors.accent,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10))),
-              child: Text('Actualizar Plan',
+              child: Text(l10n.updatePlanNow,
                   style: GoogleFonts.lato(color: Colors.white)),
               onPressed: () {
                 Navigator.of(dialogContext).pop(); // Cierra el diálogo
@@ -205,11 +212,12 @@ Future<void> _pickAndAnalyzeImage() async {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // ... Tu widget build no necesita cambios ...
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Actualizar Perfil',
+        title: Text(l10n.updateProfileTitle,
             style: GoogleFonts.lato(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
@@ -259,25 +267,18 @@ Future<void> _pickAndAnalyzeImage() async {
 
   // ... Tus otros widgets (_buildBodyFatCard, _buildProgressCard, etc.) no necesitan cambios ...
   Widget _buildBodyFatCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-                color: FrutiaColors.accent.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10))
-          ]),
+      // ... (省略) ...
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Análisis Corporal',
+          Text(l10n.bodyAnalysisTitle,
               style:
                   GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          Text('Sube una foto para una estimación de tu % de grasa corporal.',
+          Text(l10n.bodyAnalysisSubtitle,
               style: GoogleFonts.lato(
                   fontSize: 15, color: FrutiaColors.secondaryText)),
           const SizedBox(height: 20),
@@ -293,7 +294,7 @@ Future<void> _pickAndAnalyzeImage() async {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Para un mejor resultado: Foto de cuerpo completo, en ropa interior o traje de baño, luz natural o buena iluminación',
+                    l10n.bodyAnalysisTip,
                     style: GoogleFonts.lato(
                         fontSize: 15,
                         color: FrutiaColors.secondaryText,
@@ -357,7 +358,7 @@ Future<void> _pickAndAnalyzeImage() async {
                             Icon(Icons.camera_alt_outlined,
                                 color: Colors.white, size: 40),
                             const SizedBox(height: 8),
-                            Text('Subir Foto',
+                            Text(l10n.uploadPhoto,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.lato(
                                     color: Colors.white,
@@ -382,8 +383,7 @@ Future<void> _pickAndAnalyzeImage() async {
                     ? Container(
                         height: 210,
                         child: Center(
-                            child: Text(
-                                'Sube una imagen para ver tu resultado aquí.',
+                            child: Text(l10n.uploadPhotoInstruction,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.lato(
                                     color: FrutiaColors.secondaryText))))
@@ -399,8 +399,9 @@ Future<void> _pickAndAnalyzeImage() async {
   }
 
   Widget _buildAnalysisResultWidget(Map<String, dynamic> result) {
+    final l10n = AppLocalizations.of(context)!;
     final double percentage = result['percentage']?.toDouble() ?? 0.0;
-    final String recommendation = result['recommendation'] ?? 'No disponible.';
+    final String recommendation = result['recommendation'] ?? l10n.notAvailable;
     final List<dynamic> observations = result['observations'] ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +415,7 @@ Future<void> _pickAndAnalyzeImage() async {
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
                     color: FrutiaColors.accent)),
-            Text('Grasa Corporal (Estimado)',
+            Text('${l10n.bodyFatPercentage} ${l10n.estimated}',
                 style: GoogleFonts.lato(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -430,7 +431,7 @@ Future<void> _pickAndAnalyzeImage() async {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Recomendación:',
+              Text(l10n.recommendation,
                   style: GoogleFonts.lato(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -448,7 +449,7 @@ Future<void> _pickAndAnalyzeImage() async {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Observaciones:',
+            Text(l10n.observations,
                 style: GoogleFonts.lato(
                     fontWeight: FontWeight.w700, fontSize: 13)),
             const SizedBox(height: 4),
@@ -466,6 +467,7 @@ Future<void> _pickAndAnalyzeImage() async {
   }
 
   Widget _buildProgressCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
@@ -480,11 +482,11 @@ Future<void> _pickAndAnalyzeImage() async {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Registro de Progreso',
+          Text(l10n.progressRegistryTitle,
               style:
                   GoogleFonts.lato(fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          Text('Actualiza tu peso para mantener tus métricas al día.',
+          Text(l10n.progressRegistrySubtitle,
               style: GoogleFonts.lato(
                   fontSize: 14, color: FrutiaColors.secondaryText)),
           const SizedBox(height: 24),
@@ -560,6 +562,7 @@ Future<void> _pickAndAnalyzeImage() async {
   }
 
   Widget _buildActionButtons() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
       child: ElevatedButton(
@@ -579,7 +582,7 @@ Future<void> _pickAndAnalyzeImage() async {
                 height: 24,
                 child: CircularProgressIndicator(
                     color: Colors.white, strokeWidth: 3))
-            : Text('Guardar Cambios',
+            : Text(l10n.saveChanges,
                 style: GoogleFonts.lato(
                     fontSize: 18, fontWeight: FontWeight.w800)),
       ).animate().slideY(

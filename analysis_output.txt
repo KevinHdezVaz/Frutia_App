@@ -1,0 +1,176 @@
+Analyzing Pantalla1.dart...                                     
+
+   info • The file name 'Pantalla1.dart' isn't a lower_case_with_underscores identifier • lib/pages/Pantalla1.dart:1:1 • file_names
+   info • Parameter 'key' could be a super parameter • lib/pages/Pantalla1.dart:23:9 • use_super_parameters
+   info • Invalid use of a private type in a public API • lib/pages/Pantalla1.dart:26:3 • library_private_types_in_public_api
+warning • The value of the field '_userName' isn't used • lib/pages/Pantalla1.dart:36:11 • unused_field
+warning • The value of the field '_selectedSnack' isn't used • lib/pages/Pantalla1.dart:50:11 • unused_field
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:188:23 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:188:75 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:193:23 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:193:57 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:198:28 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:198:62 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:202:30 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:202:65 • unnecessary_brace_in_string_interps
+warning • The declaration '_getMealPercentage' isn't referenced • lib/pages/Pantalla1.dart:300:10 • unused_element
+warning • The value of the local variable 'suggestions' isn't used • lib/pages/Pantalla1.dart:318:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:352:35 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:355:22 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:380:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:382:58 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:389:27 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:412:31 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:412:49 • prefer_const_constructors
+warning • The declaration '_buildMiniMacroWithRemaining' isn't referenced • lib/pages/Pantalla1.dart:481:10 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:523:26 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:524:26 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:528:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:538:39 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:542:21 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:563:54 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:592:21 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:620:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:670:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:671:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:676:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:686:46 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:689:24 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:711:61 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:728:21 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:747:48 • deprecated_member_use
+   info • Function literals shouldn't be passed to 'forEach' • lib/pages/Pantalla1.dart:780:21 • avoid_function_literals_in_foreach_calls
+   info • Function literals shouldn't be passed to 'forEach' • lib/pages/Pantalla1.dart:782:25 • avoid_function_literals_in_foreach_calls
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:792:29 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:792:113 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:799:20 • unnecessary_brace_in_string_interps
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:799:180 • unnecessary_brace_in_string_interps
+   info • Don't use 'BuildContext's across async gaps • lib/pages/Pantalla1.dart:855:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/pages/Pantalla1.dart:862:28 • use_build_context_synchronously
+warning • The declaration '_fetchUserNews' isn't referenced • lib/pages/Pantalla1.dart:881:16 • unused_element
+   info • Function literals shouldn't be passed to 'forEach' • lib/pages/Pantalla1.dart:924:37 • avoid_function_literals_in_foreach_calls
+   info • Function literals shouldn't be passed to 'forEach' • lib/pages/Pantalla1.dart:990:25 • avoid_function_literals_in_foreach_calls
+   info • Don't use 'BuildContext's across async gaps • lib/pages/Pantalla1.dart:1112:28 • use_build_context_synchronously
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1135:29 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1179:33 • prefer_const_constructors
+  error • The name '_buildHowToUseSection' is already defined • lib/pages/Pantalla1.dart:1258:13 • duplicate_definition
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1276:33 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1305:24 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1367:33 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1396:24 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1450:19 • prefer_const_constructors
+   info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/pages/Pantalla1.dart:1451:19 • prefer_const_literals_to_create_immutables
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1463:29 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1492:20 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1576:22 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1593:19 • prefer_const_constructors
+   info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/pages/Pantalla1.dart:1594:19 • prefer_const_literals_to_create_immutables
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1619:20 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1647:22 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1669:29 • prefer_const_constructors
+warning • The value of the local variable 'optionCount' isn't used • lib/pages/Pantalla1.dart:1736:9 • unused_local_variable
+   info • Unnecessary braces in a string interpolation • lib/pages/Pantalla1.dart:1787:57 • unnecessary_brace_in_string_interps
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1792:34 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1794:34 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1796:34 • prefer_const_constructors
+   info • 'Table.fromTextArray' is deprecated and shouldn't be used. Use TableHelper.fromTextArray() instead • lib/pages/Pantalla1.dart:1802:17 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1829:36 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1857:22 • prefer_const_constructors
+warning • The declaration '_buildRecommendationsSection' isn't referenced • lib/pages/Pantalla1.dart:1891:13 • unused_element
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1909:23 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1910:21 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1911:23 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1937:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1941:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1945:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1961:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1965:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1969:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1973:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1989:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1993:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:1997:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2001:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2018:18 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2040:29 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2046:26 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2063:20 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2069:20 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2075:20 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2106:35 • deprecated_member_use
+warning • The declaration '_getRecommendationColor' isn't referenced • lib/pages/Pantalla1.dart:2243:9 • unused_element
+warning • The declaration '_getRecommendationIcon' isn't referenced • lib/pages/Pantalla1.dart:2260:12 • unused_element
+warning • The declaration '_contactFrutiaSupport' isn't referenced • lib/pages/Pantalla1.dart:2277:8 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2301:34 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2307:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2308:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2328:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2335:12 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2351:24 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2353:38 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2357:19 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2359:13 • prefer_const_constructors
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/pages/Pantalla1.dart:2372:18 • sized_box_for_whitespace
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2380:26 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2384:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2385:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2389:57 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2393:21 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2395:21 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2408:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2416:37 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2417:38 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2419:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2422:54 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2429:44 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2431:58 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2439:39 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2445:33 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2464:15 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2468:26 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2472:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2473:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2478:61 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2482:21 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2484:21 • prefer_const_constructors
+warning • The declaration '_buildUserInfoHeader' isn't referenced • lib/pages/Pantalla1.dart:2518:10 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2530:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2531:34 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2537:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2547:46 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2550:24 • prefer_const_constructors
+   info • Unnecessary use of 'toList' in a spread • lib/pages/Pantalla1.dart:2665:14 • unnecessary_to_list_in_spreads
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2743:18 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2749:37 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2751:25 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:2763:13 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2869:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2887:57 • deprecated_member_use
+warning • A value for optional parameter 'userBudget' isn't ever given • lib/pages/Pantalla1.dart:2952:10 • unused_element
+warning • The value of the local variable 'budgetMismatch' isn't used • lib/pages/Pantalla1.dart:2957:10 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2982:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2983:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:2993:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3015:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3069:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3074:26 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3095:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3096:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3159:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3162:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3163:24 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3186:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3202:50 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3205:54 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:3212:35 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3245:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3266:38 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3268:57 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:3272:21 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/pages/Pantalla1.dart:3309:25 • prefer_const_constructors
+   info • Unnecessary use of 'toList' in a spread • lib/pages/Pantalla1.dart:3337:24 • unnecessary_to_list_in_spreads
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3351:45 • deprecated_member_use
+   info • Use 'isEmpty' instead of 'length' to test whether the collection is empty • lib/pages/Pantalla1.dart:3419:9 • prefer_is_empty
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3438:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/pages/Pantalla1.dart:3445:42 • deprecated_member_use
+

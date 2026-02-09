@@ -1756,6 +1756,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       children: [
                         if (!canSend) ...[
                           Showcase(
+                            tooltipBackgroundColor: FrutiaColors.accent,
                             key: _micButtonKey,
                             title: l10n.micShowcaseTitle, // ⭐ CAMBIADO
                             description: l10n

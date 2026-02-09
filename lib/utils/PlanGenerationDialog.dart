@@ -1,4 +1,6 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/utils/LoadingMessagesWidget.dart';
+
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -82,8 +84,8 @@ class PlanGenerationDialog extends StatelessWidget {
                 // Título principal
                 Text(
                   isEditing
-                      ? 'Actualizando tu plan personalizado...'
-                      : 'Generando tu plan personalizado...',
+                      ? AppLocalizations.of(context)!.updatingYourPlan
+                      : AppLocalizations.of(context)!.generatingYourPlan,
                   style: GoogleFonts.lato(
                     fontSize: 21,
                     fontWeight: FontWeight.w700,
@@ -97,7 +99,7 @@ class PlanGenerationDialog extends StatelessWidget {
 
                 // Mensaje de tiempo estimado
                 Text(
-                  'El proceso puede tomar 4-6 minutos aproximadamente.',
+                  AppLocalizations.of(context)!.processTakesTime,
                   style: GoogleFonts.lato(
                     fontSize: 15,
                     height: 1.4,
@@ -122,7 +124,7 @@ class PlanGenerationDialog extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Por favor no cierres la aplicación',
+                    AppLocalizations.of(context)!.dontCloseApp,
                     style: GoogleFonts.lato(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -145,7 +147,7 @@ class PlanGenerationDialog extends StatelessWidget {
 
                 // Texto final
                 Text(
-                  '⏳ Procesando tu solicitud...',
+                  AppLocalizations.of(context)!.processingRequest,
                   style: GoogleFonts.lato(
                     fontSize: 14,
                     color: FrutiaColors.disabledText,

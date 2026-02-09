@@ -55,9 +55,9 @@ dependencies:
   speech_to_text: ^7.0.0
   flutter_tts: ^4.0.2
   flutter_chat_bubble: ^2.0.2
-  audioplayers: ^5.0.0
   audio_session: ^0.1.18
-  pusher_channels_flutter: ^2.2.1
+  audioplayers: ^6.5.1
+  pusher_channels_flutter: ^2.6.0
   smooth_page_indicator: ^1.1.0 
   firebase_auth: ^5.5.3
   country_picker: ^2.0.26

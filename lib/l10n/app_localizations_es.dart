@@ -17,7 +17,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get personalMessage => '💝 Mensaje Personal';
 
   @override
+  String get personalizedMessageAM =>
+      'Hola :name, tu plan incluye 3 comidas principales (Desayuno, Almuerzo, Cena) y un snack en la media mañana, como prefieres.';
+
+  @override
+  String get personalizedMessagePM =>
+      'Hola :name, tu plan incluye 3 comidas principales (Desayuno, Almuerzo, Cena) y un snack en la media tarde, como prefieres.';
+
+  @override
+  String get personalizedMessageDefault =>
+      'Hola :name, tu plan incluye 3 comidas principales (Desayuno, Almuerzo, Cena) y un snack en la media mañana.';
+
+  @override
   String get personalData => 'Datos Personales';
+
+  @override
+  String get selectTime => 'Seleccionar hora';
+
+  @override
+  String get useEnglish => 'Usar Inglés';
+
+  @override
+  String get checkInFewMinutes =>
+      'Revisa en unos minutos desde la pantalla principal.';
 
   @override
   String get tellUsAboutYou => 'Cuéntanos un poco sobre ti';
@@ -874,6 +896,390 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String yesterdayAt(String time) => 'Ayer a las $time';
 
+// ⭐ QUESTIONNAIRE TRANSLATIONS
+  @override
+  String get aboutYou => 'Sobre ti 👤';
+
+  @override
+  String get doYouHaveMedicalCondition => '¿Tienes alguna condición médica? 🩺';
+
+  @override
+  String get specifySuchAs => 'Específica (ej. diabetes)';
+
+  @override
+  String get mainGoal => 'Objetivo Principal';
+
+  @override
+  String get loseBodyFat => '🔥 Bajar grasa';
+
+  @override
+  String get gainMuscle => '💪 Aumentar músculo';
+
+  @override
+  String get eatHealthier => '🥗 Comer más saludable';
+
+  @override
+  String get improvePerformance => '📈 Mejorar rendimiento';
+
+  @override
+  String get yourRoutine => 'Tu Rutina 🏃‍♂️';
+
+  @override
+  String get whatSportsDoYouPractice =>
+      '¿Qué deporte practicas? (puedes seleccionar varios) 🏀';
+
+  @override
+  String get selectMultiple => 'puedes seleccionar varios';
+
+  @override
+  String get whichMostLikeYourWeek => '¿Cuál se parece más a tu semana?';
+
+// ⭐ SPORT SELECTION TRANSLATIONS
+  @override
+  String get gym => '💪 Gym';
+
+  @override
+  String get soccer => '⚽ Fútbol';
+
+  @override
+  String get running => '🏃 Running';
+
+  @override
+  String get tennis => '🎾 Tenis';
+
+  @override
+  String get other => '✏️ Otro';
+
+  @override
+  String get none => '❌ Ninguno';
+
+  @override
+  String get specifyYourSport => '✏️ Especifica tu deporte';
+
+  @override
+  String get noMoveNoTrain => 'No me muevo y no entreno (Ej: oficina + sofá)';
+
+  @override
+  String get officeTrainOneTwoTimes =>
+      'Oficina + entreno 1-2 veces (Ej: gym lunes y jueves)';
+
+  @override
+  String get officeTrainThreeFourTimes =>
+      'Oficina + entreno 3-4 veces (Ej: gym lunes a jueves)';
+
+  @override
+  String get officeTrainFiveSixTimes =>
+      'Oficina + entreno 5-6 veces (Ej: gym casi todos los días)';
+
+  @override
+  String get activeWorkTrainOneTwoTimes =>
+      'Trabajo activo + entreno 1-2 veces (Ej: mozo + gym 2 días)';
+
+  @override
+  String get activeWorkTrainThreeFourTimes =>
+      'Trabajo activo + entreno 3-4 veces (Ej: mozo + gym 4 días)';
+
+  @override
+  String get veryPhysicalWorkTrainFiveSixTimes =>
+      'Trabajo muy físico + entreno 5-6 veces (Ej: construcción + gym diario)';
+
+  @override
+  String get yourMealStructure => 'Tu Estructura de Comidas 🍽️';
+
+  @override
+  String get whenPreferSnack => '¿Cuándo prefieres tu snack? 🍎';
+
+  @override
+  String get planIncludesOneSnack =>
+      'Tu plan incluirá SOLO UN snack. Elige cuándo lo prefieres:';
+
+  @override
+  String get midMorningSnackAM => 'Media mañana (Snack AM)';
+
+  @override
+  String get betweenBreakfastLunch => 'Entre desayuno y almuerzo';
+
+  @override
+  String get midAfternoonSnackPM => 'Media tarde (Snack PM)';
+
+  @override
+  String get betweenLunchDinner => 'Entre almuerzo y cena';
+
+  @override
+  String get whatTimeDoYouUsuallyEat => '¿A qué hora sueles comer? (opcional)';
+
+  @override
+  String get optional => 'opcional';
+
+  @override
+  String get howOftenEatOut => '¿Con qué frecuencia comes fuera de casa? 🍔';
+
+  @override
+  String get almostEveryDay => '🍔 Casi todos los días';
+
+  @override
+  String get sometimesTwoToFourTimesWeek =>
+      '🍎 A veces (2 a 4 veces por semana)';
+
+  @override
+  String get rarelyOnceWeekOrLess => '🥗 Rara vez (1 vez por semana o menos)';
+
+  @override
+  String get never => '🚫 Nunca';
+
+  @override
+  String get tasteAllergiesDietaryStyle =>
+      'Gustos, alergias y estilo alimentario 🥗';
+
+  @override
+  String get whatFoodsDontYouLike => '¿Qué alimentos NO te gusta?';
+
+  @override
+  String get exampleBroccoliLiver => 'Ej: brócoli, hígado, etc.';
+
+  @override
+  String get doYouHaveFoodAllergies => '¿Tienes alguna alergia alimentaria? 🚨';
+
+  @override
+  String get yesIHaveAllergies => 'Sí, tengo alergias 😷';
+
+  @override
+  String get noNone => 'No, ninguna ✅';
+
+  @override
+  String get specifyHere => 'Especifícalas aquí';
+
+  @override
+  String get doYouFollowDietaryStyle => '¿Sigues algún estilo de alimentación?';
+
+  @override
+  String get omnivore => '🍖 Omnívoro';
+
+  @override
+  String get vegetarian => '🥕 Vegetariano';
+
+  @override
+  String get vegan => '🌱 Vegano';
+
+  @override
+  String get keto => '🥚 Keto';
+
+  @override
+  String get specifyYourStyle => '✏️ Especifica tu estilo';
+
+  @override
+  String get whatBudgetForWeeklyFood =>
+      '¿Con qué tipo de presupuesto cuentas para tu alimentación semanal? 💰';
+
+  @override
+  String get lowOnlyBasics =>
+      '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)';
+
+  @override
+  String get highNoRestrictions =>
+      '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)';
+
+  @override
+  String get foodsYouLikemost => 'Alimentos que más te gustan 🍴';
+
+  @override
+  String get selectFavoritesToAppearMore =>
+      'Selecciona tus favoritos para que aparezcan más en tu plan';
+
+  @override
+  String get proteins => 'Proteínas';
+
+  @override
+  String get chooseAtLeastThree => 'Elige al menos 3';
+
+  @override
+  String get carbohydrates => 'Carbohidratos';
+
+  @override
+  String get chooseAtLeastTwo => 'Elige al menos 2';
+
+  @override
+  String get fruitsForSnacks => 'Frutas (para Snacks)';
+
+  @override
+  String get selectAll => 'Seleccionar todo';
+
+  @override
+  String get emotionalPersonalization =>
+      'Personalización emocional (opcional) 🌟';
+
+  @override
+  String get whatHardestMaintainInPlan =>
+      '¿Qué es lo que más te cuesta mantener en un plan de alimentación?';
+
+  @override
+  String get stayConsistent => 'Mantenerme constante 🔄';
+
+  @override
+  String get knowWhatToEatWhenDontHavePlan =>
+      'Saber qué comer cuando no tengo lo del plan 🤔';
+
+  @override
+  String get eatHealthyOutsideHome => 'Comer saludable fuera de casa 🍽️';
+
+  @override
+  String get controlCravings => 'Controlar los antojos 🍫';
+
+  @override
+  String get prepareMeals => 'Preparar la comida 🧑‍🍳';
+
+  @override
+  String get specify => 'Especifica';
+
+  @override
+  String get whatMotivatesYouMostToFollowPlan =>
+      '¿Qué es lo que más te motiva a seguir un plan de alimentación?';
+
+  @override
+  String get seeQuickResults => 'Ver resultados rápidos ⚡';
+
+  @override
+  String get feelBetterPhysically =>
+      'Sentirme mejor físicamente (energía, digestión, menos pesadez) 💪';
+
+  @override
+  String get proveToMyselfICanDoIt => 'Demostrarme que puedo lograrlo 💯';
+
+  @override
+  String get improveHealthLongTerm => 'Mejorar mi salud a largo plazo 🏥';
+
+  @override
+  String get notClearYet => 'Aún no lo tengo claro ❓';
+
+  @override
+  String get yourPreferences => 'Tus Preferencias 🌟';
+
+  @override
+  String get howPreferICommunicateWithYou =>
+      '¿Cómo prefieres que me comunique contigo?';
+
+  @override
+  String get motivational =>
+      'Motivadora (que te empuje a dar más cuando lo necesites) 🏋️';
+
+  @override
+  String get close => 'Cercana (como un amigo que te acompaña sin presión) 😊';
+
+  @override
+  String get direct => 'Directa (clara, sin vueltas ni frases suaves) 🤗';
+
+  @override
+  String get whateverWorksForYou => 'Como te salga a ti, yo me adapto 🔄';
+
+  @override
+  String get whatWouldYouLikeToCallYou => '¿Cómo te gustaría que te llame?';
+
+  @override
+  String get yourNameOrNickname => 'Tu nombre o apodo';
+
+  @override
+  String get back => 'Atrás';
+
+  @override
+  String get continue_ => 'Continuar';
+
+  @override
+  String get saveChanges => 'Guardar Cambios';
+
+  @override
+  String get finish => 'Finalizar';
+
+  @override
+  String get readyForPersonalizedPlan =>
+      '¡Listo para un plan hecho solo para ti! 🌟';
+
+  @override
+  String get modifyYourPersonalizedPlan =>
+      '¡Modifica tu plan personalizado! 🌟';
+
+  @override
+  String get answerQuestionsForIdealPlan =>
+      'Responde estas preguntas para armar tu plan ideal según tu vida real. 📋';
+
+  @override
+  String get updateAnswersToAdjust =>
+      'Actualiza tus respuestas para ajustar tu plan a tus nuevas necesidades. 📋';
+
+  @override
+  String get swipeOrPressContinue => "Desliza o presiona 'Continuar' ➡️";
+
+  @override
+  String get selectMainGoal => 'Selecciona un objetivo principal.';
+
+  @override
+  String get specifyMedicalCondition => 'Específica tu condición médica.';
+
+  @override
+  String get selectAtLeastOneSport => 'Selecciona al menos un deporte.';
+
+  @override
+  String get selectWhenPreferSnack => 'Selecciona cuándo prefieres tu snack.';
+
+  @override
+  String get selectHowOftenEatOut =>
+      'Selecciona con qué frecuencia comes fuera de casa.';
+
+  @override
+  String get selectDietaryStyle => 'Selecciona un estilo de alimentación.';
+
+  @override
+  String get specifyFoodAllergies => 'Específica tus alergias alimentarias.';
+
+  @override
+  String get selectWeeklyBudget => 'Selecciona tu presupuesto semanal.';
+
+  @override
+  String get selectAtLeastOneFavoriteFruit =>
+      'Selecciona al menos una fruta favorita.';
+
+  @override
+  String get selectCommunicationStyle =>
+      'Selecciona un estilo de comunicación.';
+
+  @override
+  String get selectAtLeastOneDifficulty =>
+      'Selecciona al menos una dificultad en la dieta.';
+
+  @override
+  String get specifyOtherDifficulty =>
+      'Por favor, especifica tu otra dificultad alimentaria.';
+
+  @override
+  String get selectAtLeastOneMotivation =>
+      'Selecciona al menos una motivación para tu dieta.';
+
+  @override
+  String get generatingPlan => 'Generando tu plan...';
+
+  @override
+  String get updatingPlan => 'Actualizando tu plan...';
+
+  @override
+  String get pleaseWait => 'Por favor espera';
+
+  @override
+  String get planTakingLonger =>
+      'Tu plan está tardando más de lo esperado. Revisa en unos minutos desde la pantalla principal.';
+
+  @override
+  String errorGeneratingPlan(String error) =>
+      'Error al generar tu plan: $error';
+
+  @override
+  String errorUpdatingPlan(String error) =>
+      'Error al actualizar tu plan: $error';
+
+  @override
+  String get morningSnack => 'media mañana';
+
+  @override
+  String get afternoonSnack => 'media tarde';
+
   @override
   String get importantSection =>
       'Esta es una sección importante de la aplicación.';
@@ -912,4 +1318,1126 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String errorCompletingDay(String error) =>
       'Error al completar el día: $error';
+  @override
+  String get updatingYourPlan => 'Actualizando tu plan personalizado...';
+
+  @override
+  String get generatingYourPlan => 'Generando tu plan personalizado...';
+
+  @override
+  String get processTakesTime =>
+      'El proceso puede tomar 4-6 minutos aproximadamente.';
+
+  @override
+  String get dontCloseApp => 'Por favor no cierres la aplicación';
+
+  @override
+  String get processingRequest => '⏳ Procesando tu solicitud...';
+
+  // LoadingMessagesWidget
+  @override
+  String get analyzingResponses => 'Analizando tus respuestas...';
+
+  @override
+  String get creatingUniquePlan => 'Creando un plan único para ti...';
+
+  @override
+  String get frutiaAccompaniesYouLoading =>
+      'Frutia está aquí para acompañarte.';
+
+  @override
+  String get almostPerfectPlan => 'Ya casi queda tu plan perfecto.';
+
+  @override
+  String get frutiaKnowsNeeds =>
+      'Frutia sabe lo que necesitas en todo momento.';
+
+  @override
+  String get usersTrustUs => 'Más de mil usuarios confían en nosotros.';
+
+  @override
+  String get selectingBestRecipes =>
+      'Estamos seleccionando las mejores recetas...';
+
+  @override
+  String get prepareForPositiveChange => '¡Prepárate para un cambio positivo!';
+
+  @override
+  String get calculatingMacros => 'Calculando tus macros y calorías...';
+
+  @override
+  String get adjustingPortions => 'Ajustando las porciones a tu medida.';
+
+  @override
+  String get filteringRecipes =>
+      'Filtrando recetas según tus gustos y alergias...';
+
+  @override
+  String get aiWorkingForYou =>
+      'Nuestra inteligencia artificial trabaja para ti.';
+
+  @override
+  String get investingInHealth => 'Estás invirtiendo en tu salud. ¡Bien hecho!';
+
+  @override
+  String get structuringMeals => 'Estructurando tus comidas para el éxito.';
+
+  @override
+  String get consistencyIsKey =>
+      'La constancia es la clave, y estamos para ayudarte.';
+
+  @override
+  String get compilingShoppingList =>
+      'Compiling tu lista de compras inteligente...';
+
+  @override
+  String get eatingHealthyPossible => 'Comer rico y saludable es posible.';
+
+  @override
+  String get imagineEnergy => 'Imagina la energía que tendrás.';
+
+  @override
+  String get journeyBeginsNow =>
+      'Tu viaje hacia una mejor versión de ti comienza ahora.';
+
+  @override
+  String get wellnessSeriously => 'Nos tomamos tu bienestar muy en serio.';
+
+  @override
+  String get smallStepGreatLeap =>
+      'Un pequeño paso para ti, un gran salto para tu salud.';
+
+  @override
+  String get patienceSecretIngredient =>
+      'La paciencia es un ingrediente secreto.';
+
+  @override
+  String get optimizingBudget => 'Optimizando el plan para tu presupuesto.';
+
+  // PlanSummaryScreen
+  @override
+  String planSummaryTitle(String clientName) => 'Plan de $clientName';
+
+  @override
+  String get personalMessageTitle => 'Mensaje Personal';
+
+  @override
+  String get nutritionalProfileTitle => 'Tu Perfil Nutricional';
+
+  @override
+  String get ageLabel => 'Edad';
+
+  @override
+  String get weightLabel => 'Peso';
+
+  @override
+  String get heightLabel => 'Estatura';
+
+  @override
+  String get foodExchangesTitle => 'Tus Intercambios de Alimentos';
+
+  @override
+  String get foodExchangesSubtitle =>
+      'Puedes intercambiar cualquier alimento del mismo grupo por otro. ¡Flexibilidad total!';
+
+  @override
+  String get mealTimeLabel => 'Horario';
+
+  @override
+  String get tapToViewExchanges => 'Toca para ver opciones de intercambio';
+
+  @override
+  String get tipsForMeal => '💡 Consejos para esta comida:';
+
+  @override
+  String get suggestedRecipesTitle => 'Recetas Sugeridas';
+
+  @override
+  String get suggestedRecipesSubtitle =>
+      'Ideas de cómo preparar tus alimentos de forma deliciosa';
+
+  @override
+  String get recipeFor => 'Para';
+
+  @override
+  String get instructionsTitle => 'Instrucciones:';
+
+  @override
+  String get goalAlignmentTitle => '🎯 Alineación con tu objetivo:';
+
+  @override
+  String get sportsSupportTitle => '🏃 Apoyo deportivo:';
+
+  @override
+  String get readyToStartButton => '¡Listo para empezar!';
+
+  @override
+  String get backButton => 'Volver';
+
+  // SuccessScreen
+  @override
+  String get planCreatedTitle => '¡Tu plan alimenticio ha sido creado! 🎉';
+
+  @override
+  String get planCreatedSubtitle =>
+      'Estás listo para empezar tu viaje hacia una vida más saludable.';
+
+  @override
+  String get startNowButton => 'Comenzar ahora';
+
+  // HistoryScreen
+  @override
+  String get historyScreenTitle => 'Historial de Comidas';
+
+  @override
+  String get historyErrorLoading => 'Error al cargar el historial: ';
+
+  @override
+  String get historyNoRecords => 'Aún no tienes registros';
+
+  @override
+  String get historyYouSelected => 'Seleccionaste:';
+
+  // ProfessionalMiPlanDiarioScreen (Pantalla1)
+  @override
+  String get userDefault => 'Usuario';
+
+  @override
+  String get dataLoadError => 'Error al cargar tus datos: ';
+
+  @override
+  String get noDataForPDF =>
+      'No hay datos del plan o perfil para generar el PDF.';
+
+  @override
+  String get pdfGenError => 'Error al generar PDF: ';
+
+  @override
+  String pdfWelcome(String name) =>
+      '¡Bienvenido a tu Plan Personalizado, $name!';
+
+  @override
+  String get pdfHowToUse => '¿CÓMO SEGUIR TU PLAN CORRECTAMENTE?';
+
+  @override
+  String get pdfSelectOneOption => 'SELECCIONA SOLO UNA OPCIÓN POR GRUPO';
+
+  @override
+  String get pdfFoodGroups =>
+      'Proteínas: Elige UNA opción\nCarbohidratos: Elige UNA opción\nGrasas: Elige UNA opción';
+
+  @override
+  String get pdfImportantWarning =>
+      'IMPORTANTE: NO selecciones todas las opciones. Solo UNA de cada grupo por comida.';
+
+  @override
+  String get pdfUseAppControl => 'USA LA APP PARA CONTROLAR TUS MACROS';
+
+  @override
+  String get pdfAppHelps => 'La aplicación FRUTIA te ayudará a:';
+
+  @override
+  String get pdfAppFeature1 => 'Seleccionar tus alimentos cada día';
+
+  @override
+  String get pdfAppFeature2 =>
+      'Ver en tiempo real tus macronutrientes acumulados';
+
+  @override
+  String get pdfAppFeature3 => 'Advertirte ANTES de exceder tus límites';
+
+  @override
+  String get pdfAppFeature4 => 'Ajustar tu plan según tus preferencias diarias';
+
+  @override
+  String get pdfTip =>
+      'TIP: No todos los alimentos tienen el mismo aporte calórico. Por eso es crucial que uses la app para ir seleccionando lo que consumes.';
+
+  @override
+  String get pdfLearnToManipulate => 'APRENDE A MANIPULAR TU DIETA';
+
+  @override
+  String get pdfFlexiblePlan => 'Tu plan es FLEXIBLE. Puedes:';
+
+  @override
+  String get pdfFlexibility1 => 'Comer más en el desayuno y menos en la cena';
+
+  @override
+  String get pdfFlexibility2 => 'Distribuir tus macros como prefieras';
+
+  @override
+  String get pdfFlexibility3 =>
+      'Variar tus alimentos cada día para no aburrirte';
+
+  @override
+  String get pdfFlexibility4 =>
+      'Ajustar porciones según tu hambre (sin exceder macros)';
+
+  @override
+  String get pdfObjective =>
+      'OBJETIVO: Que aprendas a medir tu plan y evitar excesos. La variedad de alimentos te ayudará a no saturarte.';
+
+  @override
+  String get pdfFrutiaChatTitle => 'FRUTIA CHAT: Tu Nutricionista IA';
+
+  @override
+  String get pdfFrutiaChatDesc =>
+      '¿Tienes dudas sobre tu plan? FRUTIA Chat es tu inteligencia artificial que simula ser tu nutricionista personal.';
+
+  @override
+  String get pdfAskAbout => 'Pregúntale sobre:';
+
+  @override
+  String get pdfAsk1 => 'Dudas sobre tu plan alimenticio';
+
+  @override
+  String get pdfAsk2 => 'Sustituciones de alimentos';
+
+  @override
+  String get pdfAsk3 => 'Recetas con los ingredientes de tu plan';
+
+  @override
+  String get pdfAsk4 => 'Consejos para tu progreso físico';
+
+  @override
+  String get pdfAsk5 => 'Cómo preparar cada alimento';
+
+  @override
+  String get pdfAsk6 => 'Cualquier duda nutricional';
+
+  @override
+  String get pdfAvailable247 =>
+      'Disponible 24/7 dentro de la aplicación FRUTIA';
+
+  @override
+  String get attentionTitle => '¡Atención!';
+
+  @override
+  String get willExceedMacros => 'Excederás tus macros:';
+
+  @override
+  String exceedWarningMessage(String food, String macro, String excess) =>
+      'Si seleccionas "$food", excederás $macro: +$excess';
+
+  @override
+  String get adjustmentSuggestion => '💡 Sugerencia de Ajuste';
+
+  @override
+  String get originalPortion => 'Porción Original';
+
+  @override
+  String get adjustedPortion => 'Porción Ajustada';
+
+  @override
+  String reducePortionMessage(String percent, String grams) =>
+      'Reduce $percent% la porción (aproximadamente $grams menos)';
+
+  @override
+  String get customAdviceTitle => '💡 Consejo Personalizado';
+
+  @override
+  String get askFrutiaChat => 'Pregunta a Frutia Chat:';
+
+  @override
+  String get askFrutiaChatExample =>
+      '"Ya comí [X], ¿puedo comer esto sin excederme?"';
+
+  @override
+  String get selectAnyway => 'Seleccionar de todas formas';
+
+  @override
+  String get cancelButton => 'Cancelar';
+
+  @override
+  String get lowBudgetWarning =>
+      '💰 Este ítem es de presupuesto alto, pero tu plan es económico';
+
+  @override
+  String get alreadySelectedEgg =>
+      '🥚 Ya seleccionaste huevos en otra comida. Máximo 1 vez al día';
+
+  // Additional PDF Keys
+  @override
+  String get pdfGoldRule => '!';
+
+  @override
+  String get pdfGoldRuleTitle => '¡REGLA DE ORO!';
+
+  @override
+  String get pdfGoldRuleDesc =>
+      'De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.';
+
+  @override
+  String get pdfGoldRuleWarning =>
+      'Si seleccionas más de una opción por grupo, excederás tus calorías y NO alcanzarás tu objetivo.';
+
+  @override
+  String get pdfMealTableComponent => 'Componente';
+
+  @override
+  String get pdfMealTableOption => 'Opción de Alimento';
+
+  @override
+  String get pdfMealTablePortion => 'Porción Sugerida';
+
+  @override
+  String get pdfMealCalories => 'Calorías';
+
+  @override
+  String get wholeEgg => 'Huevo entero';
+
+  @override
+  String get eggWhitesWholeEgg => 'Claras + Huevo entero';
+
+  @override
+  String get cannedTuna => 'Atún en lata';
+
+  @override
+  String get chickenThigh => 'Muslo de pollo';
+
+  @override
+  String get groundBeef => 'Carne molida';
+
+  @override
+  String get greekYogurt => 'Yogur griego';
+
+  @override
+  String get broccoli => 'Brócoli';
+  @override
+  String get cauliflower => 'Coliflor';
+  @override
+  String get spinach => 'Espinacas';
+  @override
+  String get lettuce => 'Lechuga';
+  @override
+  String get zucchini => 'Calabacín';
+  @override
+  String get whiteRice => 'Arroz blanco';
+  @override
+  String get potato => 'Papa';
+  @override
+  String get traditionalOats => 'Avena tradicional';
+  @override
+  String get cornTortillas => 'Tortillas de maíz';
+  @override
+  String get basicNoodlesPasta => 'Fideos básicos';
+  @override
+  String get beans => 'Frijoles';
+  @override
+  String get sweetPotato => 'Camote';
+  @override
+  String get riceCrackers => 'Galletas de arroz';
+  @override
+  String get creamOfRice => 'Crema de arroz';
+  @override
+  String get quinoa => 'Quinua';
+  @override
+  String get organicOats => 'Avena orgánica';
+  @override
+  String get artisanWholeWheatBread => 'Pan integral artesanal';
+
+  @override
+  String get strawberries => 'Fresas';
+  @override
+  String get blueberries => 'Arándanos';
+  @override
+  String get blackberries => 'Moras';
+  @override
+  String get banana => 'Plátano';
+  @override
+  String get apple => 'Manzana';
+  @override
+  String get mango => 'Mango';
+  @override
+  String get watermelon => 'Sandía';
+  @override
+  String get pear => 'Pera';
+
+  @override
+  String get tofu => 'Tofu';
+  @override
+  String get tempeh => 'Tempeh';
+  @override
+  String get seitan => 'Seitán';
+  @override
+  String get lentils => 'Lentejas';
+  @override
+  String get chickpeas => 'Garbanzos';
+  @override
+  String get plantProteinPowder => 'Proteína vegetal en polvo';
+  @override
+  String get freshCheese => 'Queso fresco';
+  @override
+  String get cottageCheese => 'Queso cottage';
+  @override
+  String get panelaCheese => 'Queso panela';
+  @override
+  String get ricotta => 'Ricotta';
+  @override
+  String get chickenThighWithSkin => 'Muslo de pollo con piel';
+  @override
+  String get groundBeef8020 => 'Carne molida 80/20';
+  @override
+  String get salmon => 'Salmón';
+  @override
+  String get ribeye => 'Ribeye';
+  @override
+  String get duckBreast => 'Pechuga de pato';
+  @override
+  String get agedCheese => 'Queso añejo';
+  @override
+  String get chickenBreastOrThigh => 'Pechuga o muslo de pollo';
+  @override
+  String get leanBeef => 'Carne magra de res';
+  @override
+  String get whiteFish => 'Pescado blanco';
+  @override
+  String get chickenBreast => 'Pechuga de pollo';
+  @override
+  String get freshSalmon => 'Salmón fresco';
+  @override
+  String get turkeyBreast => 'Pechuga de pavo';
+  @override
+  String get naturalYogurt => 'Yogur natural';
+  @override
+  String get wheyProtein => 'Whey Protein';
+  @override
+  String get casein => 'Caseína';
+
+  @override
+  String get oliveOil => 'Aceite de oliva';
+
+  @override
+  String get peanutsPeanutButter => 'Maní / Mantequilla de maní';
+
+  @override
+  String get smallAvocado => 'Aguacate pequeño';
+
+  @override
+  String get sesameSeeds => 'Semillas de sésamo';
+
+  @override
+  String get extraVirginOliveOil => 'Aceite de oliva extra virgen';
+
+  @override
+  String get avocadoOil => 'Aceite de aguacate';
+
+  @override
+  String get almonds => 'Almendras';
+
+  @override
+  String get walnuts => 'Nueces';
+
+  @override
+  String get hassAvocado => 'Aguacate hass';
+
+  @override
+  String get organicChiaFlax => 'Chía/linaza orgánica';
+
+  @override
+  String get premiumNuts => 'Nueces premium';
+
+  @override
+  String get lard => 'Manteca';
+
+  @override
+  String get butter => 'Mantequilla';
+
+  @override
+  String get avocado => 'Aguacate';
+
+  @override
+  String get mctOil => 'Aceite MCT';
+
+  @override
+  String get gheeButter => 'Mantequilla ghee';
+
+  @override
+  String get olives => 'Aceitunas';
+
+  @override
+  String get avocadoHassAvocado => 'Aguacate / Aguacate hass';
+
+  @override
+  String get honey => 'Miel';
+
+  @override
+  String get darkChocolate70 => 'Chocolate 70%';
+
+  @override
+  String get pdfSuggestedRecipes => 'Recetas Sugeridas:';
+
+  @override
+  String get consumptionToday => 'Hoy llevas consumido';
+
+  @override
+  String caloriesRemaining(int calories) =>
+      'Te faltan $calories kcal para el día';
+
+  @override
+  String get pdfProfileWeight => 'Peso';
+
+  @override
+  String get pdfProfileHeight => 'Talla';
+
+  @override
+  String get pdfProfileAge => 'Edad';
+
+  @override
+  String get pdfMacrosTargetTitle => 'Macros Objetivo';
+
+  @override
+  String get pdfPersonalizedMsgTitle => '¡Hola!:';
+
+  @override
+  String get pdfRecsTitle => 'Recomendaciones Generales y Tips';
+
+  @override
+  String get pdfRecsWeighingTitle => '* Pesaje de Alimentos:';
+
+  @override
+  String get pdfRecsWeighingBody1 => 'Proteínas: SIEMPRE se pesan en CRUDO';
+
+  @override
+  String get pdfRecsWeighingBody2 =>
+      'Carbohidratos: Se pesan COCIDOS (excepto avena, crema de arroz, cereales = peso seco)';
+
+  @override
+  String get pdfRecsWeighingBody3 =>
+      'Vegetales: Son libres, úsalos con variedad para sumar fibra';
+
+  @override
+  String get pdfRecsHydrationTitle => '* Hidratación y Medición:';
+
+  @override
+  String get pdfRecsHydrationBody1 =>
+      'Agua: Consume 30-40 ml por cada kg de peso corporal al día';
+
+  @override
+  String get pdfRecsHydrationBody2 =>
+      'Usa balanza digital y cucharas medidoras para mayor precisión';
+
+  @override
+  String get pdfRecsHydrationBody3 => '1 cucharada sopera = 15ml de aceite';
+
+  @override
+  String get pdfRecsHydrationBody4 => '1 taza = 250ml aproximadamente';
+
+  @override
+  String get pdfRecsOrgTitle => '* Organización:';
+
+  @override
+  String get pdfRecsOrgBody1 =>
+      'Establece horarios fijos de comida y respétalos todos los días';
+
+  @override
+  String get pdfRecsOrgBody2 =>
+      'Varía tus recetas e innova en la cocina para evitar la monotonía';
+
+  @override
+  String get pdfRecsOrgBody3 => 'Prepara salsas caseras a base de vegetales';
+
+  @override
+  String get pdfRecsOrgBody4 =>
+      'Si tendrás un día complicado, adelanta tus comidas o llévalas contigo';
+
+  @override
+  String get pdfRecsKitchenTitle => '* Cocina:';
+
+  @override
+  String get pdfRemember => 'Recuerda:';
+
+  @override
+  String get pdfRememberBody1 =>
+      '• Las porciones en tu plan ya están calculadas en el peso correcto (cocido o crudo según corresponda)';
+
+  @override
+  String get pdfRememberBody2 =>
+      '• Si tienes dudas sobre cómo preparar un alimento, consulta con el chat de FRUTIA (tu nuevo nutricionista)';
+
+  @override
+  String get pdfRememberBody3 =>
+      '• Este plan es personalizado para TI, no lo compartas sin ajustar para otras personas';
+
+  @override
+  String get pdfWelcomeDesc =>
+      'Este plan ha sido diseñado específicamente para ti, tomando en cuenta tu objetivo, estilo de vida y preferencias alimentarias.';
+
+  @override
+  String pdfPersonalizedPlanTitle(String userName) =>
+      'Plan de Alimentación Personalizado para $userName';
+
+  @override
+  String get contactSupport => 'Contacta a Frutia en WhatsApp: +1234567890';
+
+  @override
+  String get macroExcessWarning =>
+      'Exceso de macronutrientes detectado - Toca para consejos';
+
+  @override
+  String macroExcessProtein(int amount) => 'Proteína: +${amount}g';
+
+  @override
+  String macroExcessCarbs(int amount) => 'Carbohidratos: +${amount}g';
+
+  @override
+  String macroExcessFats(int amount) => 'Grasas: +${amount}g';
+
+  @override
+  String get adviceTitle => 'Consejos Personalizados';
+
+  @override
+  String get adviceSubtitle => 'Basado en tus selecciones actuales:';
+
+  @override
+  String get adviceTip =>
+      'Tip: Puedes deseleccionar opciones tocándolas nuevamente.';
+
+  @override
+  String recChangeToChicken(String meal, String option) =>
+      'En $meal: Cambia "$option" por pollo (menos grasas)';
+
+  @override
+  String recChangeToBreast(String meal, String option) =>
+      'En $meal: Cambia "$option" por pechuga de pollo';
+
+  @override
+  String recReducePortion(String meal, String option) =>
+      'En $meal: Reduce porción de "$option" o cámbiala';
+
+  @override
+  String recSalmonFat(String meal, String option) =>
+      'En $meal: "$option" tiene muchas grasas, prueba atún';
+
+  @override
+  String recReduceOil(String meal, String option) =>
+      'En $meal: Reduce "$option" a 1 cucharada';
+
+  @override
+  String recReduceAlmonds(String meal, String option) =>
+      'En $meal: Reduce porción de "$option" a la mitad';
+
+  @override
+  String recAvocado(String meal) =>
+      'En $meal: Usa 1/4 de aguacate en lugar de la porción actual';
+
+  @override
+  String recReduceCarbs(String meal, String option) =>
+      'En $meal: Reduce "$option" o omite carbohidratos en esta comida';
+
+  @override
+  String recReduceFruits(String meal, String option) =>
+      'En $meal: Reduce porción de "$option" por el exceso de carbohidratos';
+
+  @override
+  String get autoAdjustError =>
+      'No se puede calcular ajuste automático para esta porción';
+
+  @override
+  String get autoAdjustNoExcess => 'No hay exceso significativo para ajustar';
+
+  @override
+  String get autoAdjustTooAggressive =>
+      'La reducción necesaria es demasiado grande. Te sugerimos cambiar de alimento.';
+
+  @override
+  String get pdfHowToUseStep1 => 'Seleccionar tus alimentos cada día';
+
+  @override
+  String get pdfHowToUseStep2 =>
+      'Ver en tiempo real tus macronutrientes acumulados';
+
+  @override
+  String get pdfHowToUseStep3 => 'Advertirte ANTES de exceder tus límites';
+
+  @override
+  String get pdfHowToUseStep4 =>
+      'Ajustar tu plan según tus preferencias diarias';
+
+  @override
+  String get pdfHowToUseTip =>
+      'TIP: No todos los alimentos tienen el mismo aporte calórico. Por eso es crucial que uses la app para ir seleccionando lo que consumes.';
+
+  @override
+  String get pdfLearnToManipulateTitle => 'APRENDE A MANIPULAR TU DIETA';
+
+  @override
+  String get pdfLearnToManipulateDesc => 'Tu plan es FLEXIBLE. Puedes:';
+
+  @override
+  String get pdfLearnToManipulatePoint1 =>
+      'Comer más en el desayuno y menos en la cena';
+
+  @override
+  String get pdfLearnToManipulatePoint2 =>
+      'Distribuir tus macros como prefieras';
+
+  @override
+  String get pdfLearnToManipulatePoint3 =>
+      'Variar tus alimentos cada día para no aburrirte';
+
+  @override
+  String get pdfLearnToManipulatePoint4 =>
+      'Ajustar porciones según tu hambre (sin exceder macros)';
+
+  @override
+  String get pdfLearnToManipulateObjective =>
+      'OBJETIVO: Que aprendas a medir tu plan y evitar excesos. La variedad de alimentos te ayudará a no saturarte.';
+
+  @override
+  String get pdfMealGroupsTitle => 'En cada comida encontrarás 3 grupos:';
+
+  @override
+  String get pdfImportantSelection =>
+      'IMPORTANTE: NO selecciones todas las opciones. Solo UNA de cada grupo por comida.';
+
+  @override
+  String get pdfCookingTip =>
+      'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad';
+
+  @override
+  String get errorNoActivePlan => 'No tienes un plan activo.';
+
+  @override
+  String get pdfWelcomeProtein => 'Proteínas: Elige UNA opción';
+
+  @override
+  String get pdfWelcomeCarbs => 'Carbohidratos: Elige UNA opción';
+
+  @override
+  String get pdfWelcomeFats => 'Grasas: Elige UNA opción';
+
+  @override
+  String get pdfSelectOneOptionTitle => 'SELECCIONA SOLO UNA OPCIÓN POR GRUPO';
+
+  @override
+  String adviceExceedMacrosNoMeals(String option) =>
+      'Seleccionar "$option" excedería tus macros diarios. Como aún no has comido nada, considera redistribuir tus porciones en las próximas comidas.';
+
+  @override
+  String adviceExceedMacrosConsumed(
+          int consumed, String option, int optionCal, int remaining) =>
+      'Ya consumiste $consumed kcal hoy. "$option" ($optionCal kcal) excede tus $remaining kcal restantes. Deberías reducir otras comidas o elegir una opción más ligera.';
+
+  @override
+  String adviceExceedMacrosAllMeals(String option) =>
+      'Has completado todas tus comidas del día y "$option" te haría exceder tu objetivo. Considera dejarlo para mañana o reduce la porción significativamente.';
+
+  @override
+  String adviceExceedMacrosRemaining(int consumed, String option, int optionCal,
+          int remaining, int mealsLeft) =>
+      'Llevas $consumed kcal consumidas. Si comes "$option" completo (${optionCal} kcal), te quedarán ${remaining - optionCal} kcal para $mealsLeft comida(s) más. Ajusta tus porciones en consecuencia.';
+
+  @override
+  String get mealBreakfast => 'Desayuno'; // ✅ CON MAYÚSCULA
+
+  @override
+  String get mealLunch => 'Almuerzo';
+
+  @override
+  String get mealDinner => 'Cena';
+
+  @override
+  String get mealSnackAm => 'Snack AM';
+
+  @override
+  String get mealSnackPm => 'Snack PM';
+
+  @override
+  String get mealShake => 'Shake';
+
+  @override
+  String get mealSnackFruit =>
+      'Snack de frutas'; // ✅ Minúscula en "frutas" es correcto
+
+  @override
+  String get pdfHowToUsePlanTitle => 'CÓMO USAR TU PLAN';
+
+  @override
+  String get pdfYourObjectiveIs => 'Tu objetivo es:';
+
+  @override
+  String get modificationsSubtitle =>
+      'Ajusta tu plan de alimentación y registra tu progreso.';
+
+  @override
+  String get editMyPlanTitle => 'Editar mi Plan';
+
+  @override
+  String get editMyPlanDescription =>
+      'Aquí puedes ajustar tus preferencias de alimentación, objetivos, hábitos y más. Esto generará un plan nuevo basado en tus cambios.';
+
+  @override
+  String get editPlanButton => 'Editar Plan';
+
+  @override
+  String get updateProfileTitle => 'Actualizar Perfil';
+
+  @override
+  String get updateProfileDescription =>
+      'Aquí puedes actualizar tu peso corporal y medir tu % de grasa. Esto ayudará a medir tu progreso.';
+
+  @override
+  String get updateProfileButton => 'Actualizar Perfil';
+
+  @override
+  String errorLoadingProfileWithMsg(String error) =>
+      'Error al cargar tu perfil: $error';
+
+  @override
+  String get noImageSelected => 'No se seleccionó ninguna imagen.';
+
+  @override
+  String errorAnalyzingImageWithMsg(String error) =>
+      'Error al analizar la imagen: $error';
+
+  @override
+  String get galleryPermissionDenied =>
+      'Permiso a la galería denegado. Habilítalo en la configuración.';
+
+  @override
+  String get galleryPermissionRequired =>
+      'El permiso a la galería es necesario para seleccionar una foto.';
+
+  @override
+  String get weightUpdatedSuccess => 'Peso actualizado correctamente.';
+
+  @override
+  String errorSavingWeightWithMsg(String error) =>
+      'Error al guardar el peso: $error';
+
+  @override
+  String get congratsProgressTitle => '¡Felicidades por tu Progreso!';
+
+  @override
+  String get weightChangeDetected =>
+      'Hemos notado un cambio significativo en tu peso.';
+
+  @override
+  String get recommendRecalculatePlan =>
+      'Para asegurar que tu plan de alimentación siga siendo efectivo, te recomendamos recalcularlo.';
+
+  @override
+  String get later => 'Más tarde';
+
+  @override
+  String get bodyAnalysisTitle => 'Análisis Corporal';
+
+  @override
+  String get bodyAnalysisSubtitle =>
+      'Sube una foto para una estimación de tu % de grasa corporal.';
+
+  @override
+  String get bodyAnalysisTip =>
+      'Para un mejor resultado: Foto de cuerpo completo, en ropa interior o traje de baño, luz natural o buena iluminación';
+
+  @override
+  String get uploadPhoto => 'Subir Foto';
+
+  @override
+  String get uploadPhotoInstruction =>
+      'Sube una imagen para ver tu resultado aquí.';
+
+  @override
+  String get progressRegistryTitle => 'Registro de Progreso';
+
+  @override
+  String get progressRegistrySubtitle =>
+      'Actualiza tu peso para mantener tus métricas al día.';
+
+  @override
+  String get updatePlanNow => 'Actualizar Plan';
+
+  @override
+  String get notAvailable => 'No disponible';
+
+  @override
+  String get language => 'Idioma';
+
+  @override
+  String get selectLanguage => 'Seleccionar Idioma';
+
+  @override
+  String get personalizedTipsTitle => 'Consejos Personalizados';
+
+  @override
+  String get anthropometricGuidanceTitle => 'Guía Antropométrica';
+
+  @override
+  String get difficultySupportTitle => 'Apoyo para Dificultades';
+
+  @override
+  String get eatingOutGuidanceTitle => 'Comer Fuera de Casa';
+
+  @override
+  String get motivationTitle => 'Motivación';
+
+  @override
+  String get ageSpecificAdviceTitle => 'Consejo por Edad';
+
+  @override
+  String get dailyMacrosTitle => 'Tus Macros Diarios';
+
+  @override
+  String get caloriesLabel => 'Calorías';
+
+  @override
+  String get proteinLabel => 'Proteínas';
+
+  @override
+  String get carbsLabel => 'Carbs';
+
+  @override
+  String get fatsLabel => 'Grasas';
+
+  @override
+  String get recommendationsTitle => 'Recomendaciones';
+
+  @override
+  String errorLoadingRecipes(String e) => 'Error al cargar recetas: $e';
+
+  @override
+  String get premiumRequiredTitle => 'Necesitas ser PREMIUM';
+
+  @override
+  String get premiumRequiredSubtitle =>
+      'Las recetas personalizadas están disponibles con la suscripción completa.';
+
+  @override
+  String get premiumUpgradeMessage =>
+      'Activa tu suscripción para acceder a recetas paso a paso creadas específicamente para tu perfil.';
+
+  @override
+  String get upgradeButton => 'Actualizar';
+
+  @override
+  String get myRecipesTitle => 'Mis Recetas';
+
+  @override
+  String get inspirationTab => 'Inspiración';
+
+  @override
+  String get noRecipesAvailable => 'No hay recetas disponibles';
+
+  @override
+  String get upgradePlanButton => 'Actualizar Plan';
+
+  @override
+  String get searchRecipesHint => 'Buscar recetas...';
+
+  @override
+  String get allFilter => 'Todos';
+
+  @override
+  String get loadingImage => 'Cargando imagen...';
+
+  @override
+  String get noFormulasAvailable => 'No hay fórmulas disponibles.';
+
+  @override
+  String viewIdeasFor(String meal) => 'Ver Ideas para $meal';
+
+  @override
+  String get ingredientsTitle => 'Ingredientes';
+
+  @override
+  String get defaultIngredientName => 'Ingrediente';
+
+  @override
+  String get preparationTitle => 'Preparación';
+
+  @override
+  String servingsCount(int count) => '$count porciones';
+
+  @override
+  String get shoppingListTitle => 'Lista de compras';
+
+  @override
+  String get errorLoadingIngredients => 'Error al cargar ingredientes';
+
+  @override
+  String get retryButton => 'Reintentar';
+
+  @override
+  String get emptyShoppingList => 'Tu lista de compras está vacía.';
+
+  @override
+  String get generatePlanToSeeList =>
+      'Genera un plan de alimentación para obtener tu lista.';
+
+  @override
+  String get noActivePlanError =>
+      'No se encontró un plan de alimentación activo.';
+
+  @override
+  String get pdfRecsKitchenBody =>
+      'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad';
+
+  @override
+  String get understoodButton => 'Entendido';
+
+  @override
+  String helloUser(String name) => '¡Hola, $name! 👋';
+
+  @override
+  String get suggestionsTitle => 'Sugerencias';
+
+  @override
+  String get vegetables => 'Vegetales';
+
+  @override
+  String get fruits => 'Frutas';
+
+  @override
+  String get kcal => 'kcal';
+
+  @override
+  String get proteinLabelShort => 'Proteína';
+
+  @override
+  String get carbsLabelShort => 'Carbohidrato';
+
+  @override
+  String get fatsLabelShort => 'Grasas';
+
+  @override
+  String get languageMismatchTitle => 'Preferencia de idioma';
+
+  @override
+  String get languageMismatchContent =>
+      'El idioma de la aplicación es diferente al de tu dispositivo. ¿En qué idioma quieres tu plan?';
+
+  @override
+  String get useSpanish => 'Usar Español';
+
+  @override
+  String get snackAM => 'Snack AM';
+
+  @override
+  String get snackPM => 'Snack PM';
+
+  @override
+  String get completeMixedSalad => 'Ensalada completa mixta';
+
+  @override
+  String get steamedVegetablesBowl => 'Bowl de vegetales al vapor';
+
+  @override
+  String get mediterraneanSalad => 'Ensalada mediterránea';
+
+  @override
+  String get sauteedVegetables => 'Vegetales salteados';
+
+  @override
+  String get largeMixedGreenSalad => 'Ensalada verde mixta grande';
+
+  @override
+  String get cruciferousVegetablesSalad => 'Ensalada de vegetales crucíferos';
+
+  @override
+  String get lowCarbVegetablesMix => 'Mix de vegetales bajos en carbos';
+
+  @override
+  String get planReadyGoalReach =>
+      '¡Tu plan está listo para que alcances tus metas!';
 }

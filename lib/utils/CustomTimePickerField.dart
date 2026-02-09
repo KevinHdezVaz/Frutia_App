@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +19,7 @@ class TimeSelectorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
     return InkWell(
       onTap: () async {
         final TimeOfDay? pickedTime = await showTimePicker(
@@ -74,7 +76,7 @@ class TimeSelectorCard extends StatelessWidget {
         ),
         child: Text(
           // Usamos .format(context) para mostrar la hora y el minuto de forma localizada
-          selectedTime?.format(context) ?? 'Seleccionar hora',
+          selectedTime?.format(context) ?? l10n.selectTime,
           style: GoogleFonts.lato(
             color:
                 selectedTime != null ? FrutiaColors.primaryText : Colors.grey,

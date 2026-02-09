@@ -20,7 +20,7 @@ class ChatServiceApi {
     if (token == null) throw Exception('No autenticado');
 
     final languageCode =
-        LocaleHelper.getDeviceLanguageCode(); // ⭐ DETECTAR IDIOMA
+        await LocaleHelper.getAppLanguageCode(); // ⭐ USAR IDIOMA DE LA APP
 
     return {
       'Authorization': 'Bearer $token',
@@ -237,7 +237,7 @@ class ChatServiceApi {
     if (token == null) throw Exception('No autenticado');
 
     final languageCode =
-        LocaleHelper.getDeviceLanguageCode(); // ⭐ OBTENER IDIOMA
+        await LocaleHelper.getAppLanguageCode(); // ⭐ USAR IDIOMA DE LA APP
 
     debugPrint('Token enviado: $token');
     debugPrint('Enviando audio: ${audioFile.path}');
@@ -358,7 +358,7 @@ class ChatServiceApi {
     if (token == null) throw Exception('No autenticado');
 
     final languageCode =
-        LocaleHelper.getDeviceLanguageCode(); // ⭐ OBTENER IDIOMA
+        await LocaleHelper.getAppLanguageCode(); // ⭐ USAR IDIOMA DE LA APP
 
     final uri = Uri.parse('$baseUrl/chat/upload-image');
     final request = http.MultipartRequest('POST', uri);

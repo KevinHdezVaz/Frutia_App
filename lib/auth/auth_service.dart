@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/LocaleHelper.dart';
 import 'package:Frutia/utils/constantes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart'; // Importa si no lo tienes
@@ -40,12 +41,16 @@ class AuthService {
     required String password,
     String? affiliateCode, // <-- CAMBIO: Nuevo parámetro opcional
   }) async {
+    final String deviceLanguage =
+        await LocaleHelper.getAppLanguageCode(); // ⭐ USAR IDIOMA DE LA APP
+
     // ▼▼▼ INICIO DEL CAMBIO ▼▼▼
     final body = {
       'name': name,
       'email': email,
       'phone': phone,
       'password': password,
+      'locale': deviceLanguage, // ⭐ AGREGAR LOCALE
     };
 
     // Si el código de afiliado no está vacío, lo añadimos al cuerpo de la petición
@@ -58,7 +63,8 @@ class AuthService {
       Uri.parse('$baseUrl/register'),
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Accept-Language': deviceLanguage, // ⭐ HEADER ADICIONAL
       },
       body: json.encode(body), // Usamos el nuevo cuerpo
     );

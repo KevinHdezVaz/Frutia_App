@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:confetti/confetti.dart'; // ⭐ IMPORTAR
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/utils/colors.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -135,7 +136,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                     ],
                   ),
                   Text(
-                    '¡Tu plan alimenticio ha sido creado! 🎉',
+                    AppLocalizations.of(context)!.planCreatedTitle,
                     style: GoogleFonts.lato(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -145,7 +146,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Estás listo para empezar tu viaje hacia una vida más saludable.',
+                    AppLocalizations.of(context)!.planCreatedSubtitle,
                     style: GoogleFonts.lato(
                       fontSize: 18,
                       color: FrutiaColors.secondaryText,
@@ -171,7 +172,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                       elevation: 5,
                     ),
                     child: Text(
-                      'Comenzar ahora',
+                      AppLocalizations.of(context)!.startNowButton,
                       style: GoogleFonts.lato(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

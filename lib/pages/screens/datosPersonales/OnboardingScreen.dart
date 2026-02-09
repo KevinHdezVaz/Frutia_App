@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:Frutia/auth/auth_check.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
+import 'package:Frutia/l10n/food_translations.dart';
 import 'package:Frutia/pages/screens/datosPersonales/PlanSummaryScreen.dart';
 import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/services/profile_service.dart';
@@ -12,6 +15,7 @@ import 'package:Frutia/utils/PlanGenerationDialog.dart';
 import 'package:Frutia/utils/SelectionCard.dart';
 import 'package:Frutia/utils/SportSelection.dart';
 import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/utils/normalizers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -21,6 +25,8 @@ import 'package:provider/provider.dart';
 
 // Importa tu QuestionnaireProvider (asegúrate de que la ruta sea correcta)
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
+import 'package:Frutia/providers/locale_provider.dart'; // ⭐ NUEVO: Importar LocaleProvider
+import 'package:Frutia/utils/LocaleHelper.dart'; // ⭐ NUEVO: Importar LocaleHelper
 
 /// Widget que gestiona el flujo del cuestionario para crear o editar un plan personalizado.
 class QuestionnaireFlow extends StatefulWidget {
@@ -89,6 +95,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
       final profile = await ProfileService().getProfile();
       if (profile != null && mounted) {
         final provider = context.read<QuestionnaireProvider>();
+        final locale =
+            Localizations.localeOf(context).languageCode; // ⭐ OBTENER LOCALE
 
         // --- Define ALL your maps in a consistent UI_KEY:DB_VALUE format ---
         final Map<String, String> goalMap = {
@@ -184,14 +192,22 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
         }
 
         provider.update(() {
-          provider.favoriteProteins =
-              Set<String>.from(profile['favorite_proteins'] ?? []);
-          provider.favoriteCarbs =
-              Set<String>.from(profile['favorite_carbs'] ?? []);
-          provider.favoriteFats =
-              Set<String>.from(profile['favorite_fats'] ?? []);
-          provider.favoriteFruits =
-              Set<String>.from(profile['favorite_fruits'] ?? []);
+          provider.favoriteProteins = Set<String>.from(
+              FoodTranslations.listToDisplayNames(
+                  List<String>.from(profile['favorite_proteins'] ?? []),
+                  locale));
+
+          provider.favoriteCarbs = Set<String>.from(
+              FoodTranslations.listToDisplayNames(
+                  List<String>.from(profile['favorite_carbs'] ?? []), locale));
+
+          provider.favoriteFats = Set<String>.from(
+              FoodTranslations.listToDisplayNames(
+                  List<String>.from(profile['favorite_fats'] ?? []), locale));
+
+          provider.favoriteFruits = Set<String>.from(
+              FoodTranslations.listToDisplayNames(
+                  List<String>.from(profile['favorite_fruits'] ?? []), locale));
           provider.name = profile['name'] ?? '';
           provider.mainGoal =
               findUiKeyByCleanedDbValue(profile['goal'], goalMap);
@@ -286,6 +302,8 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     final provider = context.read<QuestionnaireProvider>();
     final currentPage =
         _pageController.hasClients ? (_pageController.page?.round() ?? 0) : 0;
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     setState(() => _validationErrors = {});
     bool isValid = true;
     List<String> errorMessages = [];
@@ -293,74 +311,77 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     switch (currentPage) {
       case 1:
         if (provider.mainGoal == null) {
-          errorMessages.add('Selecciona un objetivo principal.');
+          errorMessages.add(l10n.selectMainGoal); // ⭐ TRADUCIDO
           isValid = false;
         }
         if (provider.hasMedicalCondition &&
             provider.medicalConditionDetails.isEmpty) {
           _validationErrors['medicalCondition'] =
-              'Específica tu condición médica.';
+              l10n.specifyMedicalCondition; // ⭐ TRADUCIDO
           isValid = false;
         }
         break;
       case 2:
-        if (provider.sport.isEmpty)
-          errorMessages.add('Selecciona al menos un deporte.');
-
+        if (provider.sport.isEmpty) {
+          errorMessages.add(l10n.selectAtLeastOneSport); // ⭐ TRADUCIDO
+        }
         isValid = errorMessages.isEmpty;
         break;
 
       case 3:
         if (provider.preferredSnackTime == null) {
-          errorMessages.add('Selecciona cuándo prefieres tu snack.');
+          errorMessages.add(l10n.selectWhenPreferSnack); // ⭐ TRADUCIDO
           isValid = false;
         }
-        if (provider.eatsOut == null)
-          errorMessages
-              .add('Selecciona con qué frecuencia comes fuera de casa.');
+        if (provider.eatsOut == null) {
+          errorMessages.add(l10n.selectHowOftenEatOut); // ⭐ TRADUCIDO
+        }
         isValid = errorMessages.isEmpty;
         break;
       case 4:
         if (provider.dietStyle == null || provider.dietStyle!.isEmpty) {
-          errorMessages.add('Selecciona un estilo de alimentación.');
+          errorMessages.add(l10n.selectDietaryStyle); // ⭐ TRADUCIDO
         }
         if (provider.hasAllergies && provider.allergyDetails.isEmpty) {
           _validationErrors['allergyDetails'] =
-              'Específica tus alergias alimentarias.';
+              l10n.specifyFoodAllergies; // ⭐ TRADUCIDO
           isValid = false;
         }
-        if (provider.weeklyBudget == null)
-          errorMessages.add('Selecciona tu presupuesto semanal.');
+        if (provider.weeklyBudget == null) {
+          errorMessages.add(l10n.selectWeeklyBudget); // ⭐ TRADUCIDO
+        }
         isValid = errorMessages.isEmpty && _validationErrors.isEmpty;
         break;
 
       case 5:
-        if (provider.favoriteFruits.isEmpty)
-          errorMessages.add('Selecciona al menos un fruta favorita.');
-
+        if (provider.favoriteFruits.isEmpty) {
+          errorMessages.add(l10n.selectAtLeastOneFavoriteFruit); // ⭐ TRADUCIDO
+        }
         isValid = errorMessages.isEmpty;
         break;
 
       case 6:
-        if (provider.communicationTone == null)
-          errorMessages.add('Selecciona un estilo de comunicación.');
+        if (provider.communicationTone == null) {
+          errorMessages.add(l10n.selectCommunicationStyle); // ⭐ TRADUCIDO
+        }
         isValid = errorMessages.isEmpty;
         break;
       case 7:
-        if (provider.dietDifficulties.isEmpty)
-          errorMessages.add('Selecciona al menos una dificultad en la dieta.');
+        if (provider.dietDifficulties.isEmpty) {
+          errorMessages.add(l10n.selectAtLeastOneDifficulty); // ⭐ TRADUCIDO
+        }
         if (provider.dietDifficulties.contains('Otra ✍️')) {
           bool otraEspecificada = provider.dietDifficulties.any((item) =>
               item.startsWith('Otra: ') && item.length > 'Otra: '.length);
           if (!otraEspecificada) {
             _validationErrors['otraDificultad'] =
-                'Por favor, especifica tu otra dificultad alimentaria.';
+                l10n.specifyOtherDifficulty; // ⭐ TRADUCIDO
             isValid = false;
           }
         }
-        if (provider.dietMotivations.isEmpty)
-          errorMessages
-              .add('Selecciona al menos una motivación para tu dieta.');
+        if (provider.dietMotivations.isEmpty) {
+          errorMessages.add(l10n.selectAtLeastOneMotivation); // ⭐ TRADUCIDO
+        }
         isValid = errorMessages.isEmpty && _validationErrors.isEmpty;
         break;
     }
@@ -376,22 +397,20 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     return isValid;
   }
 
-  /// Maneja el avance a la siguiente página o el guardado final del cuestionario.
   void _handleNextOrFinish() async {
     if (!_validateCurrentPage()) {
       return;
     }
-
+    final l10n = AppLocalizations.of(context)!;
     if (_pageController.page!.round() == _numPages - 1) {
+      final locale = Localizations.localeOf(context).languageCode;
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => PlanGenerationDialog(isEditing: widget.isEditing),
       );
-
       try {
         final questionnaireProvider = context.read<QuestionnaireProvider>();
-
         final List<String> cleanDietDifficulties =
             questionnaireProvider.dietDifficulties.map((item) {
           if (item.startsWith('Otra: ')) {
@@ -399,174 +418,161 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
           }
           return removeEmojis(item);
         }).toList();
-
         final List<String> cleanDietMotivations = questionnaireProvider
             .dietMotivations
             .map((item) => removeEmojis(item))
             .toList();
-
+        final List<String> normalizedDifficulties =
+            cleanDietDifficulties.map((item) {
+          if (item.startsWith('Otra: ')) return item;
+          return normalizeToSpanish(item, 'diet_difficulties');
+        }).toList();
+        final List<String> normalizedMotivations =
+            cleanDietMotivations.map((item) {
+          return normalizeToSpanish(item, 'diet_motivations');
+        }).toList();
+        final List<String> normalizedProteins =
+            questionnaireProvider.favoriteProteins.map((item) {
+          return normalizeToSpanish(item, 'favorite_proteins');
+        }).toList();
+        final List<String> normalizedCarbs =
+            questionnaireProvider.favoriteCarbs.map((item) {
+          return normalizeToSpanish(item, 'favorite_carbs');
+        }).toList();
+        final List<String> normalizedFats =
+            questionnaireProvider.favoriteFats.map((item) {
+          return normalizeToSpanish(item, 'favorite_fats');
+        }).toList();
+        final List<String> normalizedFruits =
+            questionnaireProvider.favoriteFruits.map((item) {
+          return normalizeToSpanish(item, 'favorite_fruits');
+        }).toList();
+        final String? normalizedDisliked = questionnaireProvider
+                .dislikedFoods.isNotEmpty
+            ? normalizeToSpanish(
+                questionnaireProvider.dislikedFoods.trim(), 'disliked_foods')
+            : null;
         final profileData = {
-          'name': questionnaireProvider.name.isNotEmpty
-              ? questionnaireProvider.name
+          'name': (questionnaireProvider.name ?? '').trim().isNotEmpty
+              ? (questionnaireProvider.name ?? '').trim()
               : null,
-          'goal': questionnaireProvider.mainGoal != null
-              ? removeEmojis(questionnaireProvider.mainGoal!)
-              : null,
-          // 'activity_level': questionnaireProvider.dailyActivityLevel != null
-          //    ? removeEmojis(questionnaireProvider.dailyActivityLevel!)
-          //   : null,
-          'favorite_proteins': questionnaireProvider.favoriteProteins.isNotEmpty
-              ? questionnaireProvider.favoriteProteins
-                  .map((item) => removeEmojis(item))
-                  .toList()
-              : null,
-          'favorite_carbs': questionnaireProvider.favoriteCarbs.isNotEmpty
-              ? questionnaireProvider.favoriteCarbs
-                  .map((item) => removeEmojis(item))
-                  .toList()
-              : null,
-          'favorite_fats': questionnaireProvider.favoriteFats.isNotEmpty
-              ? questionnaireProvider.favoriteFats
-                  .map((item) => removeEmojis(item))
-                  .toList()
-              : null,
-          'favorite_fruits': questionnaireProvider.favoriteFruits.isNotEmpty
-              ? questionnaireProvider.favoriteFruits
-                  .map((item) => removeEmojis(item))
-                  .toList()
-              : null,
-
-          'weekly_activity': questionnaireProvider.weeklyActivity != null
-              ? removeEmojis(questionnaireProvider.weeklyActivity!)
-              : null,
-          'dietary_style': questionnaireProvider.dietStyle != null
-              ? removeEmojis(questionnaireProvider.dietStyle!)
-              : null,
-          'budget': questionnaireProvider.weeklyBudget != null
-              ? removeEmojis(questionnaireProvider.weeklyBudget!)
-              : null,
-          'eats_out': questionnaireProvider.eatsOut != null
-              ? removeEmojis(questionnaireProvider.eatsOut!)
-              : null,
-          'disliked_foods': questionnaireProvider.dislikedFoods.isNotEmpty
-              ? questionnaireProvider.dislikedFoods
-              : null,
+          'goal': normalizeToSpanish(questionnaireProvider.mainGoal, 'goal'),
+          'weekly_activity': normalizeToSpanish(
+              questionnaireProvider.weeklyActivity, 'weekly_activity'),
+          'dietary_style': normalizeToSpanish(
+              questionnaireProvider.dietStyle, 'dietary_style'),
+          'budget':
+              normalizeToSpanish(questionnaireProvider.weeklyBudget, 'budget'),
+          'eats_out':
+              normalizeToSpanish(questionnaireProvider.eatsOut, 'eats_out'),
+          'communication_style': normalizeToSpanish(
+              questionnaireProvider.communicationTone, 'communication_style'),
+          'sex': normalizeToSpanish(
+              questionnaireProvider.sex ?? 'masculino', 'sex'),
+          'favorite_proteins':
+              normalizedProteins.isNotEmpty ? normalizedProteins : null,
+          'favorite_carbs': normalizedCarbs.isNotEmpty ? normalizedCarbs : null,
+          'favorite_fats': normalizedFats.isNotEmpty ? normalizedFats : null,
+          'favorite_fruits':
+              normalizedFruits.isNotEmpty ? normalizedFruits : null,
+          'diet_difficulties':
+              normalizedDifficulties.isNotEmpty ? normalizedDifficulties : null,
+          'diet_motivations':
+              normalizedMotivations.isNotEmpty ? normalizedMotivations : null,
+          'disliked_foods': normalizedDisliked,
           'has_allergies': questionnaireProvider.hasAllergies,
           'allergies': questionnaireProvider.allergyDetails.isNotEmpty
-              ? questionnaireProvider.allergyDetails
+              ? questionnaireProvider.allergyDetails.trim()
               : null,
           'has_medical_condition': questionnaireProvider.hasMedicalCondition,
           'medical_condition':
               questionnaireProvider.medicalConditionDetails.isNotEmpty
-                  ? questionnaireProvider.medicalConditionDetails
+                  ? questionnaireProvider.medicalConditionDetails.trim()
                   : null,
-          'communication_style': questionnaireProvider.communicationTone != null
-              ? removeEmojis(questionnaireProvider.communicationTone!)
-              : null,
           'preferred_name':
-              questionnaireProvider.preferredName?.isNotEmpty ?? false
-                  ? questionnaireProvider.preferredName
+              questionnaireProvider.preferredName?.trim().isNotEmpty == true
+                  ? questionnaireProvider.preferredName!.trim()
                   : null,
           'sport': questionnaireProvider.sport.isNotEmpty
               ? questionnaireProvider.sport
+                  .map((s) => normalizeToSpanish(s, 'sport'))
+                  .toList()
               : null,
-          //   'training_frequency': questionnaireProvider.trainingFrequency != null
-          //      ? removeEmojis(questionnaireProvider.trainingFrequency!)
-          //     : null,
           'preferred_snack_time': questionnaireProvider.preferredSnackTime,
-
           'breakfast_time':
               formatTimeOfDay(questionnaireProvider.breakfastTime),
           'lunch_time': formatTimeOfDay(questionnaireProvider.lunchTime),
           'dinner_time': formatTimeOfDay(questionnaireProvider.dinnerTime),
-          'diet_difficulties':
-              cleanDietDifficulties.isNotEmpty ? cleanDietDifficulties : null,
-          'diet_motivations':
-              cleanDietMotivations.isNotEmpty ? cleanDietMotivations : null,
           'plan_setup_complete': true,
         };
-
+        debugPrint(
+            '📤 Enviando al backend (normalizado): ${jsonEncode(profileData)}');
         await ProfileService().saveProfile(profileData);
-
-        // 2. Guardamos el momento exacto en que pedimos el plan.
-        //    Este timestamp se enviará al backend para saber si el plan es nuevo.
         final requestTime = DateTime.now();
-        await PlanService().generatePlan();
-
+        await PlanService().generatePlan(languageCode: locale);
         bool isPlanReady = false;
-        // 3. Definimos un tiempo máximo de espera (ej. 3 minutos) para no dejar al usuario esperando indefinidamente.
         const maxWaitTime = Duration(minutes: 10);
         final stopwatch = Stopwatch()..start();
-
-        // 4. Bucle de sondeo (Polling): se ejecuta mientras el plan no esté listo y no se haya superado el tiempo de espera.
         do {
-          // Esperamos 5 segundos antes de volver a preguntar al servidor.
           await Future.delayed(const Duration(seconds: 3));
-
-          // Verificamos el estado del plan en el backend.
           final status = await PlanService().checkPlanStatus(requestTime);
-
           debugPrint(
               '[Polling] Chequeando estado del plan... Respuesta: $status');
-
           if (status == 'ready') {
             isPlanReady = true;
-            break; // Salimos del bucle si el plan está listo.
+            break;
           }
-
-          // Si excedimos el tiempo de espera, también salimos.
           if (stopwatch.elapsed > maxWaitTime) {
             debugPrint(
                 '[Polling] Timeout: Se superó el tiempo máximo de espera.');
             break;
           }
         } while (!isPlanReady);
-
         stopwatch.stop();
-
-        // --- FIN CORRECCIÓN ---
-
         if (mounted) {
           Navigator.of(context).pop();
         }
-
         if (!mounted) return;
-
         if (isPlanReady) {
-          // CASO 1: Éxito. El plan está listo.
+          final String userDisplayName =
+              questionnaireProvider.preferredName?.isNotEmpty == true
+                  ? questionnaireProvider.preferredName!
+                  : questionnaireProvider.name.isNotEmpty
+                      ? questionnaireProvider.name
+                      : 'Usuario';
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const PlanSummaryScreen()),
+            MaterialPageRoute(
+              builder: (_) => PlanSummaryScreen(userName: userDisplayName),
+            ),
             (route) => false,
           );
         } else {
-          // CASO 2: Timeout. El plan no se generó a tiempo.
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Tu plan está tardando más de lo esperado. Revisa en unos minutos desde la pantalla principal.'),
+            SnackBar(
+              content: Text(l10n.planTakingLonger),
               backgroundColor: Colors.orange,
-              duration: Duration(seconds: 5),
+              duration: const Duration(seconds: 5),
             ),
           );
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-                builder: (_) => const AuthCheckMain()), // O tu HomePage
+            MaterialPageRoute(builder: (_) => const AuthCheckMain()),
             (route) => false,
           );
         }
-        // ▲▲▲ FIN DE LA CORRECCIÓN ▲▲▲
       } catch (e, stackTrace) {
         debugPrint(
             '--- ¡ERROR ATRAPADO DURANTE LA ${widget.isEditing ? "ACTUALIZACIÓN" : "GENERACIÓN"} DEL PLAN! ---');
         debugPrint('Error: $e');
         debugPrint('Stack trace: $stackTrace');
-
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Error al ${widget.isEditing ? "actualizar" : "generar"} tu plan: ${e.toString().replaceFirst("Exception: ", "")}'),
+              content: Text(widget.isEditing
+                  ? l10n.errorUpdatingPlan(
+                      e.toString().replaceFirst("Exception: ", ""))
+                  : l10n.errorGeneratingPlan(
+                      e.toString().replaceFirst("Exception: ", ""))),
               backgroundColor: Colors.red,
             ),
           );
@@ -575,6 +581,23 @@ class _QuestionnaireFlowState extends State<QuestionnaireFlow> {
     } else {
       _pageController.nextPage(duration: 400.ms, curve: Curves.easeOut);
     }
+  }
+
+  String normalizeSexForBackend(String? sex) {
+    if (sex == null || sex.isEmpty) return 'masculino'; // default
+
+    final s = sex.toLowerCase().trim();
+
+    if (['masculino', 'male', 'hombre', 'm', 'man'].any((v) => s.contains(v))) {
+      return 'masculino';
+    }
+
+    if (['femenino', 'female', 'mujer', 'f', 'woman']
+        .any((v) => s.contains(v))) {
+      return 'femenino';
+    }
+
+    return 'masculino'; // default seguro
   }
 
   // --- SE ELIMINA LA FUNCIÓN _hasSignificantChanges ---
@@ -653,6 +676,9 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+    final locale =
+        Localizations.localeOf(context).languageCode; // ⭐ OBTENER LOCALE
 
     final budget = provider.weeklyBudget;
     final dietStyle = provider.dietStyle;
@@ -662,8 +688,9 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const QuestionnaireTitleARRIBA(
-                title: 'Alimentos que más te gustan 🍴'),
+            QuestionnaireTitleARRIBA(
+                title: l10n.foodsYouLikemost), // ⭐ TRADUCIDO
+
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -698,8 +725,8 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(
-              title: 'Alimentos que más te gustan 🍴'),
+          QuestionnaireTitleARRIBA(title: l10n.foodsYouLikemost), // ⭐ TRADUCIDO
+
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -714,7 +741,7 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Selecciona tus favoritos para que aparezcan más en tu plan',
+                    l10n.selectFavoritesToAppearMore, // ⭐ TRADUCIDO
                     style: GoogleFonts.lato(
                       fontSize: 13,
                       color: Colors.blue.shade700,
@@ -727,11 +754,12 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
           ),
           const SizedBox(height: 24),
           _buildCategorySection(
-            title: 'Proteínas',
-            subtitle: 'Elige al menos 3',
+            title: l10n.proteins, // ⭐ TRADUCIDO
+            subtitle: l10n.chooseAtLeastThree, // ⭐ TRADUCIDO
             emoji: '🥩',
             selectedItems: provider.favoriteProteins,
-            items: _getProteinOptions(budget, dietStyle),
+            items:
+                _getProteinOptions(budget, dietStyle, locale), // ⭐ PASAR LOCALE
             onToggle: (item) => setState(() {
               if (provider.favoriteProteins.contains(item)) {
                 provider.update(() => provider.favoriteProteins.remove(item));
@@ -741,16 +769,16 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             }),
             selectAll: () => setState(() {
               provider.update(() => provider.favoriteProteins
-                  .addAll(_getProteinOptions(budget, dietStyle)));
+                  .addAll(_getProteinOptions(budget, dietStyle, locale)));
             }),
           ),
           const SizedBox(height: 24),
           _buildCategorySection(
-            title: 'Carbohidratos',
-            subtitle: 'Elige al menos 3',
+            title: l10n.carbohydrates, // ⭐ TRADUCIDO
+            subtitle: l10n.chooseAtLeastThree, // ⭐ TRADUCIDO
             emoji: '🍚',
             selectedItems: provider.favoriteCarbs,
-            items: _getCarbOptions(budget, dietStyle),
+            items: _getCarbOptions(budget, dietStyle, locale), // ⭐ PASAR LOCALE
             onToggle: (item) => setState(() {
               if (provider.favoriteCarbs.contains(item)) {
                 provider.update(() => provider.favoriteCarbs.remove(item));
@@ -760,16 +788,16 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             }),
             selectAll: () => setState(() {
               provider.update(() => provider.favoriteCarbs
-                  .addAll(_getCarbOptions(budget, dietStyle)));
+                  .addAll(_getCarbOptions(budget, dietStyle, locale)));
             }),
           ),
           const SizedBox(height: 24),
           _buildCategorySection(
-            title: 'Grasas',
-            subtitle: 'Elige al menos 2',
+            title: l10n.fats, // ⭐ TRADUCIDO
+            subtitle: l10n.chooseAtLeastTwo, // ⭐ TRADUCIDO
             emoji: '🥑',
             selectedItems: provider.favoriteFats,
-            items: _getFatOptions(budget, dietStyle),
+            items: _getFatOptions(budget, dietStyle, locale), // ⭐ PASAR LOCALE
             onToggle: (item) => setState(() {
               if (provider.favoriteFats.contains(item)) {
                 provider.update(() => provider.favoriteFats.remove(item));
@@ -779,25 +807,16 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             }),
             selectAll: () => setState(() {
               provider.update(() => provider.favoriteFats
-                  .addAll(_getFatOptions(budget, dietStyle)));
+                  .addAll(_getFatOptions(budget, dietStyle, locale)));
             }),
           ),
           const SizedBox(height: 24),
           _buildCategorySection(
-            title: 'Frutas (para Snacks)',
-            subtitle: 'Opcional',
+            title: l10n.fruitsForSnacks, // ⭐ TRADUCIDO
+            subtitle: l10n.optional, // ⭐ TRADUCIDO
             emoji: '🍓',
             selectedItems: provider.favoriteFruits,
-            items: const [
-              'Fresas',
-              'Arándanos',
-              'Moras',
-              'Plátano',
-              'Manzana',
-              'Mango',
-              'Sandía',
-              'Pera',
-            ],
+            items: _getFruitOptions(locale), // ⭐ NUEVO MÉTODO
             onToggle: (item) => setState(() {
               if (provider.favoriteFruits.contains(item)) {
                 provider.update(() => provider.favoriteFruits.remove(item));
@@ -833,6 +852,8 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
     required Function(String) onToggle,
     required VoidCallback selectAll,
   }) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -868,7 +889,8 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
             TextButton(
               onPressed: selectAll,
               child: Text(
-                'Seleccionar todo',
+                l10n.selectAll, // ⭐ TRADUCIDO
+
                 style: GoogleFonts.lato(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -932,193 +954,208 @@ class _PreferredFoodsScreenState extends State<PreferredFoodsScreen> {
     );
   }
 
-  List<String> _getProteinOptions(String budget, String dietStyle) {
-    final isLowBudget = budget.toLowerCase().contains('bajo');
+  List<String> _getProteinOptions(
+      String budget, String dietStyle, String locale) {
+    final l10n = AppLocalizations.of(context)!;
+    final isLowBudget = budget.toLowerCase().contains('bajo') ||
+        budget.toLowerCase().contains('low');
     final dietLower = dietStyle.toLowerCase();
 
-    if (dietLower.contains('vegano')) {
-      return const [
-        'Tofu',
-        'Tempeh',
-        'Seitán',
-        'Lentejas',
-        'Garbanzos',
-        'Frijoles',
-        'Proteína Vegetal En Polvo',
+    if (dietLower.contains('vegano') || dietLower.contains('vegan')) {
+      return [
+        l10n.tofu,
+        l10n.tempeh,
+        l10n.seitan,
+        l10n.lentils,
+        l10n.chickpeas,
+        l10n.beans,
+        l10n.plantProteinPowder,
       ];
-    }
-
-    if (dietLower.contains('vegetariano')) {
+    } else if (dietLower.contains('vegetariano') ||
+        dietLower.contains('vegetarian')) {
       if (isLowBudget) {
-        return const [
-          'Huevo Entero',
-          'Yogurt Natural',
-          'Queso Fresco',
-          'Lentejas',
-          'Garbanzos',
-          'Frijoles',
+        return [
+          l10n.wholeEgg,
+          l10n.naturalYogurt,
+          l10n.freshCheese,
+          l10n.lentils,
+          l10n.chickpeas,
+          l10n.beans,
         ];
       } else {
-        return const [
-          'Huevo Entero',
-          'Yogurt Griego',
-          'Queso Cottage',
-          'Queso Panela',
-          'Ricotta',
-          'Tempeh',
-          'Tofu',
-          'Proteína Vegetal En Polvo',
+        return [
+          l10n.wholeEgg,
+          l10n.greekYogurt,
+          l10n.cottageCheese,
+          l10n.panelaCheese,
+          l10n.ricotta,
+          l10n.tempeh,
+          l10n.tofu,
+          l10n.plantProteinPowder,
+        ];
+      }
+    } else if (dietLower.contains('keto')) {
+      if (isLowBudget) {
+        return [
+          l10n.wholeEgg,
+          l10n.chickenThighWithSkin,
+          l10n.groundBeef8020,
+        ];
+      } else {
+        return [
+          l10n.salmon,
+          l10n.ribeye,
+          l10n.duckBreast,
+          l10n.wholeEgg,
+          l10n.agedCheese,
+        ];
+      }
+    } else {
+      // Omnívoro
+      if (isLowBudget) {
+        return [
+          l10n.wholeEgg,
+          l10n.chickenBreastOrThigh,
+          l10n.cannedTuna,
+          l10n.leanBeef,
+          l10n.whiteFish,
+        ];
+      } else {
+        return [
+          l10n.eggWhitesWholeEgg,
+          l10n.chickenBreast,
+          l10n.turkeyBreast,
+          l10n.freshSalmon,
+          l10n.whiteFish,
+          l10n.leanBeef,
+          l10n.greekYogurt,
+          l10n.wheyProtein,
+          l10n.casein,
         ];
       }
     }
+  }
+
+  List<String> _getCarbOptions(String budget, String dietStyle, String locale) {
+    final l10n = AppLocalizations.of(context)!;
+    final isLowBudget = budget.toLowerCase().contains('bajo') ||
+        budget.toLowerCase().contains('low');
+    final dietLower = dietStyle.toLowerCase();
 
     if (dietLower.contains('keto')) {
-      if (isLowBudget) {
-        return const [
-          'Huevo Entero',
-          'Pollo Muslo Con Piel',
-          'Carne Molida 80/20',
-        ];
-      } else {
-        return const [
-          'Salmón',
-          'Ribeye',
-          'Pechuga De Pato',
-          'Huevo Entero',
-          'Queso Madurado',
-        ];
-      }
-    }
-
-    if (isLowBudget) {
-      return const [
-        'Huevo Entero',
-        'Pollo Pechuga O Muslo',
-        'Atún En Lata',
-        'Carne Magra De Res',
-        'Pescado Blanco',
+      return [
+        l10n.broccoli,
+        l10n.cauliflower,
+        l10n.spinach,
+        l10n.lettuce,
+        l10n.zucchini,
+      ];
+    } else if (isLowBudget) {
+      return [
+        l10n.whiteRice,
+        l10n.potato,
+        l10n.traditionalOats,
+        l10n.cornTortillas,
+        l10n.basicNoodlesPasta,
+        l10n.beans,
+        l10n.sweetPotato,
+        l10n.riceCrackers,
+        l10n.creamOfRice,
       ];
     } else {
-      return const [
-        'Claras + Huevo Entero',
-        'Pechuga De Pollo',
-        'Filete Pavita',
-        'Salmón Fresco',
-        'Pescado Blanco',
-        'Carne De Res Magra / Lomo Fino',
-        'Yogurt Griego',
-        'Proteína Whey',
-        'Caseína',
+      return [
+        l10n.quinoa,
+        l10n.whiteRice,
+        l10n.organicOats,
+        l10n.artisanWholeWheatBread,
+        l10n.sweetPotato,
+        l10n.potato,
+        l10n.cornTortillas,
+        l10n.riceCrackers,
+        l10n.creamOfRice,
       ];
     }
   }
 
-  List<String> _getCarbOptions(String budget, String dietStyle) {
-    final isLowBudget = budget.toLowerCase().contains('bajo');
+  List<String> _getFatOptions(String budget, String dietStyle, String locale) {
+    final l10n = AppLocalizations.of(context)!;
+    final isLowBudget = budget.toLowerCase().contains('bajo') ||
+        budget.toLowerCase().contains('low');
     final dietLower = dietStyle.toLowerCase();
 
-    if (dietLower.contains('keto')) {
-      return const [
-        'Brócoli',
-        'Coliflor',
-        'Espinacas',
-        'Lechuga',
-        'Calabacín',
-      ];
-    }
-
-    if (isLowBudget) {
-      return const [
-        'Arroz Blanco',
-        'Papa',
-        'Avena Tradicional',
-        'Tortillas De Maíz',
-        'Fideos/Pasta Básica',
-        'Frijoles',
-        'Camote',
-        'Galleta De Arroz',
-        'Crema De Arroz',
-      ];
+    if (dietLower.contains('vegano') || dietLower.contains('vegan')) {
+      if (isLowBudget) {
+        return [
+          l10n.oliveOil,
+          l10n.peanutsPeanutButter,
+          l10n.smallAvocado,
+          l10n.sesameSeeds,
+        ];
+      } else {
+        return [
+          l10n.extraVirginOliveOil,
+          l10n.avocadoOil,
+          l10n.almonds,
+          l10n.walnuts,
+          l10n.hassAvocado,
+          l10n.organicChiaFlax,
+          l10n.premiumNuts,
+        ];
+      }
+    } else if (dietLower.contains('keto')) {
+      if (isLowBudget) {
+        return [
+          l10n.lard,
+          l10n.butter,
+          l10n.avocado,
+          l10n.oliveOil,
+        ];
+      } else {
+        return [
+          l10n.mctOil,
+          l10n.gheeButter,
+          l10n.hassAvocado,
+          l10n.extraVirginOliveOil,
+          l10n.agedCheese,
+        ];
+      }
     } else {
-      return const [
-        'Quinua',
-        'Arroz Blanco',
-        'Avena Orgánica',
-        'Pan Integral Artesanal',
-        'Camote',
-        'Papa',
-        'Tortilla De Maíz',
-        'Galleta De Arroz',
-        'Crema De Arroz',
-      ];
+      if (isLowBudget) {
+        return [
+          l10n.oliveOil,
+          l10n.peanutsPeanutButter,
+          l10n.smallAvocado,
+          l10n.sesameSeeds,
+          l10n.olives,
+        ];
+      } else {
+        return [
+          l10n.extraVirginOliveOil,
+          l10n.avocadoHassAvocado,
+          l10n.almonds,
+          l10n.walnuts,
+          l10n.organicChiaFlax,
+          l10n.premiumNuts,
+          l10n.honey,
+          l10n.darkChocolate70,
+        ];
+      }
     }
   }
 
-  List<String> _getFatOptions(String budget, String dietStyle) {
-    final isLowBudget = budget.toLowerCase().contains('bajo');
-    final dietLower = dietStyle.toLowerCase();
-
-    if (dietLower.contains('vegano')) {
-      if (isLowBudget) {
-        return const [
-          'Aceite De Oliva',
-          'Maní / Mantequilla De Maní',
-          'Aguacate Pequeño',
-          'Semillas De Ajonjolí',
-        ];
-      } else {
-        return const [
-          'Aceite De Oliva Extra Virgen',
-          'Aceite De Aguacate',
-          'Almendras',
-          'Nueces',
-          'Aguacate Hass',
-          'Chía/Linaza Orgánicas',
-          'Frutos Secos Premium',
-        ];
-      }
-    }
-
-    if (dietLower.contains('keto')) {
-      if (isLowBudget) {
-        return const [
-          'Manteca De Cerdo',
-          'Mantequilla',
-          'Aguacate',
-          'Aceite De Oliva',
-        ];
-      } else {
-        return const [
-          'Aceite MCT',
-          'Mantequilla Ghee',
-          'Aguacate Hass',
-          'Aceite De Oliva Extra Virgen',
-          'Queso Madurado',
-        ];
-      }
-    }
-
-    if (isLowBudget) {
-      return const [
-        'Aceite De Oliva',
-        'Maní / Mantequilla De Maní',
-        'Aguacate Pequeño',
-        'Semillas De Ajonjolí',
-        'Aceitunas',
-      ];
-    } else {
-      return const [
-        'Aceite De Oliva Extra Virgen',
-        'Aceite De Palta/Aguacate',
-        'Almendras',
-        'Nueces',
-        'Aguacate Hass / Palta Hass',
-        'Chía/Linaza Orgánicas',
-        'Frutos Secos Premium',
-        'Miel',
-        'Chocolate 70%',
-      ];
-    }
+  // ⭐ NUEVO MÉTODO: Frutas traducidas
+  List<String> _getFruitOptions(String locale) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.strawberries,
+      l10n.blueberries,
+      l10n.blackberries,
+      l10n.banana,
+      l10n.apple,
+      l10n.mango,
+      l10n.watermelon,
+      l10n.pear,
+    ];
   }
 }
 
@@ -1143,6 +1180,8 @@ class NavigationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final currentPage =
         pageController.hasClients ? (pageController.page?.round() ?? 0) : 0;
     return Container(
@@ -1160,7 +1199,7 @@ class NavigationControls extends StatelessWidget {
           TextButton(
             onPressed: onPreviousPressed,
             child: Text(
-              'Atrás',
+              l10n.back, // ⭐ TRADUCIDO
               style: TextStyle(
                   color: currentPage > 0
                       ? FrutiaColors.secondaryText
@@ -1177,10 +1216,11 @@ class NavigationControls extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
             child: Text(currentPage < totalPages - 1
-                ? 'Continuar'
-                : isEditing
-                    ? 'Guardar Cambios'
-                    : 'Finalizar'),
+                    ? l10n.continue_ // ⭐ TRADUCIDO
+                    : isEditing
+                        ? l10n.saveChanges // ⭐ TRADUCIDO
+                        : l10n.finish // ⭐ TRADUCIDO
+                ),
           ),
         ],
       ),
@@ -1194,6 +1234,8 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     return QuestionnaireScreen(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1202,8 +1244,8 @@ class WelcomeScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             isEditing
-                ? '¡Modifica tu plan personalizado! 🌟'
-                : '¡Listo para un plan hecho solo para ti! 🌟',
+                ? l10n.modifyYourPersonalizedPlan // ⭐ TRADUCIDO
+                : l10n.readyForPersonalizedPlan,
             style: GoogleFonts.lato(
                 fontSize: 34,
                 fontWeight: FontWeight.bold,
@@ -1212,8 +1254,8 @@ class WelcomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             isEditing
-                ? 'Actualiza tus respuestas para ajustar tu plan a tus nuevas necesidades. 📋'
-                : 'Responde estas preguntas para armar tu plan ideal según tu vida real. 📋',
+                ? l10n.updateAnswersToAdjust // ⭐ TRADUCIDO
+                : l10n.answerQuestionsForIdealPlan,
             style: GoogleFonts.lato(
                 fontSize: 18, color: FrutiaColors.secondaryText, height: 1.5),
           ),
@@ -1229,7 +1271,7 @@ class WelcomeScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Center(
             child: Text(
-              "Desliza o presiona 'Continuar' ➡️",
+              l10n.swipeOrPressContinue, // ⭐ TRADUCIDO
               style: GoogleFonts.lato(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1255,6 +1297,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final validationErrors = context
             .findAncestorStateOfType<_QuestionnaireFlowState>()
             ?._validationErrors ??
@@ -1263,11 +1307,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(title: 'Sobre ti 👤'),
+          QuestionnaireTitleARRIBA(title: l10n.aboutYou), // ⭐ TRADUCIDO
           const SizedBox(height: 16),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
-            title: const Text('¿Tienes alguna condición médica? 🩺'),
+            title: Text(l10n.doYouHaveMedicalCondition), // ⭐ TRADUCIDO
             value: provider.hasMedicalCondition,
             onChanged: (val) => setState(() =>
                 provider.update(() => provider.hasMedicalCondition = val)),
@@ -1276,14 +1320,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           ),
           if (provider.hasMedicalCondition)
             CustomTextField(
-              label: 'Específica (ej. diabetes)',
+              label: l10n.specifySuchAs, // ⭐ TRADUCIDO
               initialValue: provider.medicalConditionDetails,
               onChanged: (val) =>
                   provider.update(() => provider.medicalConditionDetails = val),
               errorText: validationErrors['medicalCondition'],
             ).animate().fadeIn(),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(title: 'Objetivo Principal', isSub: true),
+          QuestionnaireTitle(title: l10n.mainGoal, isSub: true), // ⭐ TRADUCIDO
           ..._buildGoalOptions(provider),
         ].animate(interval: 50.ms).fadeIn(duration: 300.ms),
       ),
@@ -1291,12 +1335,15 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   }
 
   List<Widget> _buildGoalOptions(QuestionnaireProvider provider) {
-    const goals = {
-      '🔥 Bajar grasa',
-      '💪 Aumentar músculo',
-      '🥗 Comer más saludable',
-      '📈 Mejorar rendimiento',
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
+    final goals = {
+      l10n.loseBodyFat, // ⭐ TRADUCIDO
+      l10n.gainMuscle, // ⭐ TRADUCIDO
+      l10n.eatHealthier, // ⭐ TRADUCIDO
+      l10n.improvePerformance, // ⭐ TRADUCIDO
     };
+
     return goals
         .map((goal) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
@@ -1321,14 +1368,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(title: 'Tu Rutina 🏃‍♂️'),
+          QuestionnaireTitleARRIBA(title: l10n.yourRoutine), // ⭐ TRADUCIDO
           const SizedBox(height: 16),
           Text(
-            '¿Qué deporte practicas? (puedes seleccionar varios) 🏀',
+            l10n.whatSportsDoYouPractice, // ⭐ TRADUCIDO
             style: GoogleFonts.lato(
               fontSize: 18,
               fontWeight: FontWeight.w600, // Consistente con QuestionnaireTitle
@@ -1344,8 +1393,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
             },
           ).animate().fadeIn(duration: 300.ms),
           const SizedBox(height: 24), // Consistente con otras pantallas
-          const QuestionnaireTitle(
-            title: '¿Cuál se parece más a tu semana?',
+          QuestionnaireTitle(
+            title: l10n.whichMostLikeYourWeek, // ⭐ TRADUCIDO
             isSub: true,
           ),
           const SizedBox(height: 12), // Consistente con otras pantallas
@@ -1356,15 +1405,17 @@ class _RoutineScreenState extends State<RoutineScreen> {
   }
 
   List<Widget> _buildWeeklyActivityOptions(QuestionnaireProvider provider) {
-    const options = [
-      'No me muevo y no entreno (Ej: oficina + sofá)',
-      'Oficina + entreno 1-2 veces (Ej: gym lunes y jueves)',
-      'Oficina + entreno 3-4 veces (Ej: gym lunes a jueves)',
-      'Oficina + entreno 5-6 veces (Ej: gym casi todos los días)',
-      'Trabajo activo + entreno 1-2 veces (Ej: mozo + gym 2 días)',
-      'Trabajo activo + entreno 3-4 veces (Ej: mozo + gym 4 días)',
-      'Trabajo muy físico + entreno 5-6 veces (Ej: construcción + gym diario)',
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+    final options = [
+      l10n.noMoveNoTrain, // ⭐ TRADUCIDO
+      l10n.officeTrainOneTwoTimes, // ⭐ TRADUCIDO
+      l10n.officeTrainThreeFourTimes, // ⭐ TRADUCIDO
+      l10n.officeTrainFiveSixTimes, // ⭐ TRADUCIDO
+      l10n.activeWorkTrainOneTwoTimes, // ⭐ TRADUCIDO
+      l10n.activeWorkTrainThreeFourTimes, // ⭐ TRADUCIDO
+      l10n.veryPhysicalWorkTrainFiveSixTimes, // ⭐ TRADUCIDO
     ];
+
     return options
         .map((opt) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
@@ -1439,19 +1490,23 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     return QuestionnaireScreen(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(title: 'Tu Estructura de Comidas 🍽️'),
+          QuestionnaireTitleARRIBA(
+              title: l10n.yourMealStructure), // ⭐ TRADUCIDO
           const SizedBox(height: 16),
-          const QuestionnaireTitle(
-            title: '¿Cuándo prefieres tu snack? 🍎',
+          QuestionnaireTitle(
+            title: l10n.whenPreferSnack, // ⭐ TRADUCIDO
             isSub: true,
           ),
           const SizedBox(height: 8),
           Text(
-            'Tu plan incluirá SOLO UN snack. Elige cuándo lo prefieres:',
+            l10n.planIncludesOneSnack, // ⭐ TRADUCIDO
+
             style: GoogleFonts.lato(
               fontSize: 14,
               color: FrutiaColors.secondaryText,
@@ -1461,10 +1516,12 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
           const SizedBox(height: 12),
           ..._buildSnackTimeOptions(provider),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿A qué hora sueles comer? (opcional)', isSub: true),
+          QuestionnaireTitle(
+            title: l10n.whatTimeDoYouUsuallyEat, // ⭐ TRADUCIDO
+            isSub: true,
+          ),
           TimeSelectorCard(
-            label: 'Desayuno',
+            label: l10n.breakfast, // ⭐ TRADUCIDO
             icon: Icons.light_mode_rounded,
             selectedTime: provider.breakfastTime,
             onTimeSelected: (time) =>
@@ -1472,7 +1529,7 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
           ),
           const SizedBox(height: 16),
           TimeSelectorCard(
-            label: 'Almuerzo',
+            label: l10n.lunch, // ⭐ TRADUCIDO
             icon: Icons.wb_sunny_rounded,
             selectedTime: provider.lunchTime,
             onTimeSelected: (time) =>
@@ -1480,16 +1537,17 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
           ),
           const SizedBox(height: 16),
           TimeSelectorCard(
-            label: 'Cena',
+            label: l10n.dinner, // ⭐ TRADUCIDO
             icon: Icons.dark_mode_rounded,
             selectedTime: provider.dinnerTime,
             onTimeSelected: (time) =>
                 provider.update(() => provider.dinnerTime = time),
           ),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿Con qué frecuencia comes fuera de casa? 🍔',
-              isSub: true),
+          QuestionnaireTitle(
+            title: l10n.howOftenEatOut, // ⭐ TRADUCIDO
+            isSub: true,
+          ),
           ..._buildEatOutOptions(provider),
         ],
       ),
@@ -1497,16 +1555,18 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
   }
 
   List<Widget> _buildSnackTimeOptions(QuestionnaireProvider provider) {
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final options = [
       {
         'value': 'Snack AM',
-        'title': 'Media mañana (Snack AM)',
-        'subtitle': 'Entre desayuno y almuerzo',
+        'title': l10n.midMorningSnackAM, // ⭐ TRADUCIDO
+        'subtitle': l10n.betweenBreakfastLunch, // ⭐ TRADUCIDO
       },
       {
         'value': 'Snack PM',
-        'title': 'Media tarde (Snack PM)',
-        'subtitle': 'Entre almuerzo y cena',
+        'title': l10n.midAfternoonSnackPM, // ⭐ TRADUCIDO
+        'subtitle': l10n.betweenLunchDinner, // ⭐ TRADUCIDO
       },
     ];
 
@@ -1582,12 +1642,15 @@ class _AlimentacionScreenState extends State<AlimentacionScreen> {
   }
 
   List<Widget> _buildEatOutOptions(QuestionnaireProvider provider) {
-    const options = {
-      '🍔 Casi todos los días',
-      '🍎 A veces (2 a 4 veces por semana)',
-      '🥗 Rara vez (1 vez por semana o menos)',
-      '🚫 Nunca',
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
+    final options = {
+      l10n.almostEveryDay, // ⭐ TRADUCIDO
+      l10n.sometimesTwoToFourTimesWeek, // ⭐ TRADUCIDO
+      l10n.rarelyOnceWeekOrLess, // ⭐ TRADUCIDO
+      l10n.never, // ⭐ TRADUCIDO
     };
+
     return options
         .map((opt) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
@@ -1613,6 +1676,8 @@ class _GustosScreenState extends State<GustosScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final validationErrors = context
             .findAncestorStateOfType<_QuestionnaireFlowState>()
             ?._validationErrors ??
@@ -1621,24 +1686,27 @@ class _GustosScreenState extends State<GustosScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(
-              title: 'Gustos, alergias y estilo alimentario 🥗'),
-          const QuestionnaireTitle(
-              title: '¿Qué alimentos NO te gusta?', isSub: true),
+          QuestionnaireTitleARRIBA(
+              title: l10n.tasteAllergiesDietaryStyle), // ⭐ TRADUCIDO
+          QuestionnaireTitle(
+              title: l10n.whatFoodsDontYouLike, isSub: true), // ⭐ TRADUCIDO
+
           CustomTextField(
-            label: 'Ej: brócoli, hígado, etc.',
+            label: l10n.exampleBroccoliLiver, // ⭐ TRADUCIDO
             initialValue: provider.dislikedFoods,
             onChanged: (val) =>
                 provider.update(() => provider.dislikedFoods = val),
             emoji: "🚫",
           ),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿Tienes alguna alergia alimentaria? 🚨', isSub: true),
+          QuestionnaireTitle(
+              title: l10n.doYouHaveFoodAllergies, // ⭐ TRADUCIDO
+              isSub: true), // ⭐ TRADUCIDO
           SwitchListTile.adaptive(
             title: Text(provider.hasAllergies
-                ? 'Sí, tengo alergias 😷'
-                : 'No, ninguna ✅'),
+                    ? l10n.yesIHaveAllergies // ⭐ TRADUCIDO
+                    : l10n.noNone // ⭐ TRADUCIDO
+                ),
             value: provider.hasAllergies,
             onChanged: (val) {
               setState(() {
@@ -1656,7 +1724,7 @@ class _GustosScreenState extends State<GustosScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: CustomTextField(
-                label: 'Especifícalas aquí',
+                label: l10n.specifyHere, // ⭐ TRADUCIDO
                 initialValue: provider.allergyDetails,
                 onChanged: (val) =>
                     provider.update(() => provider.allergyDetails = val),
@@ -1664,13 +1732,13 @@ class _GustosScreenState extends State<GustosScreen> {
               ),
             ).animate().fadeIn(),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿Sigues algún estilo de alimentación?', isSub: true),
+          QuestionnaireTitle(
+              title: l10n.doYouFollowDietaryStyle, // ⭐ TRADUCIDO
+              isSub: true), // ⭐ TRADUCIDO
           _DietaryStyleSelection(),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title:
-                  '¿Con qué tipo de presupuesto cuentas para tu alimentación semanal? 💰',
+          QuestionnaireTitle(
+              title: l10n.whatBudgetForWeeklyFood, // ⭐ TRADUCIDO
               isSub: true),
           ..._buildBudgetOptions(provider),
         ],
@@ -1679,10 +1747,13 @@ class _GustosScreenState extends State<GustosScreen> {
   }
 
   List<Widget> _buildBudgetOptions(QuestionnaireProvider provider) {
-    const options = [
-      '💸 Bajo - Solo lo básico (Ej: arroz, huevo, lentejas)',
-      '💳 Alto - Sin restricciones (Ej: salmón, proteína, superfoods)',
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
+    final options = [
+      l10n.lowOnlyBasics, // ⭐ TRADUCIDO
+      l10n.highNoRestrictions, // ⭐ TRADUCIDO
     ];
+
     return options
         .map((option) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
@@ -1702,14 +1773,18 @@ class _DietaryStyleSelection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final _flowState =
         context.findAncestorStateOfType<_QuestionnaireFlowState>();
-    const predefinedStyles = {
-      '🍖 Omnívoro': 'Omnívoro',
-      '🥕 Vegetariano': 'Vegetariano',
-      '🌱 Vegano': 'Vegano',
-      '🥚 Keto': 'Keto',
+
+    final predefinedStyles = {
+      l10n.omnivore: 'Omnivore', // ⭐ TRADUCIDO
+      l10n.vegetarian: 'Vegetarian', // ⭐ TRADUCIDO
+      l10n.vegan: 'Vegan', // ⭐ TRADUCIDO
+      l10n.keto: 'Keto', // ⭐ TRADUCIDO
     };
+
     bool isOtherSelected = provider.dietStyle != null &&
         !predefinedStyles.keys.contains(provider.dietStyle!);
     String? customDietStyleText = isOtherSelected ? provider.dietStyle : null;
@@ -1730,7 +1805,7 @@ class _DietaryStyleSelection extends StatelessWidget {
               );
             }).toList(),
             ChoiceChipCard(
-              label: '✍️ Otro',
+              label: l10n.other, // ⭐ TRADUCIDO
               isSelected: isOtherSelected,
               onTap: () => provider.update(() => provider.dietStyle = ''),
             ),
@@ -1740,7 +1815,7 @@ class _DietaryStyleSelection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 16.0),
             child: CustomTextField(
-              label: '✏️ Especifica tu estilo',
+              label: l10n.specifyYourStyle, // ⭐ TRADUCIDO
               initialValue: customDietStyleText,
               onChanged: (newValue) =>
                   provider.update(() => provider.dietStyle = newValue),
@@ -1762,6 +1837,8 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final validationErrors = context
             .findAncestorStateOfType<_QuestionnaireFlowState>()
             ?._validationErrors ??
@@ -1776,31 +1853,31 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(
-              title: 'Personalización emocional (opcional) 🌟'),
-          const QuestionnaireTitle(
-              title:
-                  '¿Qué es lo que más te cuesta mantener en un plan de alimentación?',
+          QuestionnaireTitleARRIBA(
+              title: l10n.emotionalPersonalization), // ⭐ TRADUCIDO
+
+          QuestionnaireTitle(
+              title: l10n.whatHardestMaintainInPlan, // ⭐ TRADUCIDO
+
               isSub: true),
           ..._buildCheckboxOptions(
             provider.dietDifficulties,
             {
-              'Mantenerme constante 🔄': 'Mantenerme constante',
-              'Saber qué comer cuando no tengo lo del plan 🤔':
-                  'Saber qué comer cuando no tengo lo del plan',
-              'Comer saludable fuera de casa 🍽️':
-                  'Comer saludable fuera de casa',
-              'Controlar los antojos 🍫': 'Controlar los antojos',
-              'Preparar la comida 🧑‍🍳': 'Preparar la comida',
-              'Otra ✍️': 'Otra',
+              l10n.stayConsistent: 'Stay consistent', // ⭐ TRADUCIDO
+              l10n.knowWhatToEatWhenDontHavePlan:
+                  'Know what to eat', // ⭐ TRADUCIDO
+              l10n.eatHealthyOutsideHome: 'Eat healthy outside', // ⭐ TRADUCIDO
+              l10n.controlCravings: 'Control cravings', // ⭐ TRADUCIDO
+              l10n.prepareMeals: 'Prepare meals', // ⭐ TRADUCIDO
+              l10n.other: 'Other', // ⭐ TRADUCIDO
             },
             validationErrors['otraDificultad'],
           ),
-          if (provider.dietDifficulties.contains('Otra ✍️'))
+          if (provider.dietDifficulties.contains(l10n.other)) // ⭐ TRADUCIDO
             Padding(
               padding: const EdgeInsets.only(left: 28.0, top: 8.0),
               child: CustomTextField(
-                label: 'Especifica',
+                label: l10n.specify, // ⭐ TRADUCIDO
                 initialValue: cleanedOtraDificultad,
                 onChanged: (val) => provider.update(() {
                   provider.dietDifficulties
@@ -1813,21 +1890,19 @@ class _PersonalizacionScreenState extends State<PersonalizacionScreen> {
               ),
             ).animate().fadeIn(),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title:
-                  '¿Qué es lo que más te motiva a seguir un plan de alimentación?',
+          QuestionnaireTitle(
+              title: l10n.whatMotivatesYouMostToFollowPlan, // ⭐ TRADUCIDO
               isSub: true),
           ..._buildCheckboxOptions(
             provider.dietMotivations,
             {
-              'Ver resultados rápidos ⚡': 'Ver resultados rápidos',
-              'Sentirme mejor físicamente (energía, digestión, menos pesadez) 💪':
-                  'Sentirme mejor físicamente (energía, digestión, menos pesadez)',
-              'Demostrarme que puedo lograrlo 💯':
-                  'Demostrarme que puedo lograrlo',
-              'Mejorar mi salud a largo plazo 🏥':
-                  'Mejorar mi salud a largo plazo',
-              'Aún no lo tengo claro ❓': 'Aún no lo tengo claro',
+              l10n.seeQuickResults: 'See quick results', // ⭐ TRADUCIDO
+              l10n.feelBetterPhysically:
+                  'Feel better physically', // ⭐ TRADUCIDO
+              l10n.proveToMyselfICanDoIt: 'Prove to myself', // ⭐ TRADUCIDO
+              l10n.improveHealthLongTerm:
+                  'Improve health long term', // ⭐ TRADUCIDO
+              l10n.notClearYet: 'Not clear yet', // ⭐ TRADUCIDO
             },
             null,
           ),
@@ -1878,6 +1953,8 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<QuestionnaireProvider>();
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
     final validationErrors = context
             .findAncestorStateOfType<_QuestionnaireFlowState>()
             ?._validationErrors ??
@@ -1886,16 +1963,18 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const QuestionnaireTitleARRIBA(title: 'Tus Preferencias 🌟'),
-          const QuestionnaireTitle(
-              title: '¿Cómo prefieres que me comunique contigo?', isSub: true),
+          QuestionnaireTitleARRIBA(title: l10n.yourPreferences), // ⭐ TRADUCIDO
+          QuestionnaireTitle(
+              title: l10n.howPreferICommunicateWithYou, // ⭐ TRADUCIDO
+              isSub: true),
           ..._buildSelectionCards(provider.communicationTone,
               (val) => provider.update(() => provider.communicationTone = val)),
           const SizedBox(height: 24),
-          const QuestionnaireTitle(
-              title: '¿Cómo te gustaría que te llame?', isSub: true),
+          QuestionnaireTitle(
+              title: l10n.whatWouldYouLikeToCallYou, // ⭐ TRADUCIDO
+              isSub: true),
           CustomTextField(
-            label: 'Tu nombre o apodo',
+            label: l10n.yourNameOrNickname, // ⭐ TRADUCIDO
             initialValue: provider.preferredName,
             onChanged: (val) =>
                 provider.update(() => provider.preferredName = val),
@@ -1908,15 +1987,15 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
 
   List<Widget> _buildSelectionCards(
       String? groupValue, Function(String?) updateFn) {
-    const optionMap = {
-      'Motivadora (que te empuje a dar más cuando lo necesites) 🏋️':
-          'Motivadora (que te empuje a dar más cuando lo necesites)',
-      'Cercana (como un amigo que te acompaña sin presión) 😊':
-          'Cercana (como un amigo que te acompaña sin presión)',
-      'Directa (clara, sin vueltas ni frases suaves) 🤗':
-          'Directa (clara, sin vueltas ni frases suaves)',
-      'Como te salga a ti, yo me adapto 🔄': 'Como te salga a ti, yo me adapto',
+    final l10n = AppLocalizations.of(context)!; // ⭐ OBTENER TRADUCCIONES
+
+    final optionMap = {
+      l10n.motivational: 'Motivational', // ⭐ TRADUCIDO
+      l10n.close: 'Close', // ⭐ TRADUCIDO
+      l10n.direct: 'Direct', // ⭐ TRADUCIDO
+      l10n.whateverWorksForYou: 'Adaptive', // ⭐ TRADUCIDO
     };
+
     return optionMap.entries
         .map((entry) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),

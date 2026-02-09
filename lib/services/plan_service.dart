@@ -4,6 +4,7 @@ import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/model/Recipe.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/services/storage_service.dart';
+import 'package:Frutia/utils/LocaleHelper.dart'; // ⭐ IMPORTAR
 import 'package:Frutia/utils/constantes.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -12,13 +13,27 @@ import 'package:intl/intl.dart';
 class PlanService {
   final StorageService _storage = StorageService();
 
+  // ⭐ NUEVO: Método para obtener headers con idioma
+  Future<Map<String, String>> _getHeaders({String? languageCode}) async {
+    final token = await _storage.getToken();
+    final code = languageCode ??
+        await LocaleHelper.getAppLanguageCode(); // ⭐ USAR IDIOMA DE LA APP
+
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+      'Accept-Language': code, // ⭐ AGREGAR HEADER DE IDIOMA
+    };
+  }
+
   Future<List<Recipe>> getRecipes(
       {String? mealType, List<String>? tags}) async {
     try {
-      final token = await _storage.getToken();
+      final headers = await _getHeaders(); // ⭐ USAR HEADERS
       final response = await http.get(
         Uri.parse('https://tuapi.com/api/recipes'),
-        headers: {'Authorization': 'Bearer $token'},
+        headers: headers, // ⭐ CAMBIAR
       );
 
       if (response.statusCode == 200) {
@@ -31,46 +46,35 @@ class PlanService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getTodayHistory() async {
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
 
-// services/plan_service.dart
+    final response = await http.get(
+      Uri.parse('$baseUrl/history/today'),
+      headers: headers, // ⭐ CAMBIAR
+    );
 
-Future<List<Map<String, dynamic>>> getTodayHistory() async {
-  final token = await _storage.getToken();
-  if (token == null) throw AuthException('No autenticado.');
+    _log('--- Respuesta getTodayHistory ---');
+    _log('Status Code: ${response.statusCode}');
+    _log('Response Body: ${response.body}');
+    _log('-----------------------------------');
 
-  final response = await http.get(
-    Uri.parse('$baseUrl/history/today'),
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-  );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      final List<dynamic> historyList = responseData['data'] ?? [];
 
-  _log('--- Respuesta getTodayHistory ---');
-  _log('Status Code: ${response.statusCode}');
-  _log('Response Body: ${response.body}');
-  _log('-----------------------------------');
-
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> responseData = json.decode(response.body);
-    final List<dynamic> historyList = responseData['data'] ?? [];
-    
-    return historyList.cast<Map<String, dynamic>>();
-  } else {
-    throw Exception('Error al cargar historial del día');
+      return historyList.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Error al cargar historial del día');
+    }
   }
-}
-
 
   Future<String> getUserName() async {
     try {
-      final token = await _storage.getToken();
+      final headers = await _getHeaders(); // ⭐ USAR HEADERS
       final response = await http.get(
         Uri.parse('$baseUrl/user/name'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
+        headers: headers, // ⭐ CAMBIAR
       );
 
       if (response.statusCode == 200) {
@@ -90,64 +94,49 @@ Future<List<Map<String, dynamic>>> getTodayHistory() async {
     }
   }
 
+  Future<Map<String, dynamic>> validateMealSelection({
+    required List<MealOption> selections,
+    required String mealType,
+    required TargetMacros targetMacros,
+  }) async {
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
 
-  // En plan_service.dart, agregar:
+    final url = Uri.parse('$baseUrl/meal-plans/validate-selection');
 
-Future<Map<String, dynamic>> validateMealSelection({
-  required List<MealOption> selections,
-  required String mealType,
-  required TargetMacros targetMacros,
-}) async {
-  final token = await _storage.getToken();
-  if (token == null) throw AuthException('No autenticado.');
+    final response = await http.post(
+      url,
+      headers: headers, // ⭐ CAMBIAR
+      body: json.encode({
+        'selections': selections.map((s) => s.toJson()).toList(),
+        'meal_type': mealType,
+        'target_macros': {
+          'protein': targetMacros.protein,
+          'carbs': targetMacros.carbs,
+          'fats': targetMacros.fats,
+          'calories': targetMacros.calories,
+        }
+      }),
+    );
 
-  final url = Uri.parse('$baseUrl/meal-plans/validate-selection');
-  
-  final response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-    body: json.encode({
-      'selections': selections.map((s) => s.toJson()).toList(),
-      'meal_type': mealType,
-      'target_macros': {
-        'protein': targetMacros.protein,
-        'carbs': targetMacros.carbs,
-        'fats': targetMacros.fats,
-        'calories': targetMacros.calories,
-      }
-    }),
-  );
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else {
-    throw Exception('Error al validar selección');
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Error al validar selección');
+    }
   }
-}
-
 
   Future<List<String>> getShoppingListIngredients() async {
-    // Nuevo método
-    final token = await _storage.getToken();
-    if (token == null) throw AuthException('No autenticado.');
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
 
     final response = await http.get(
-      Uri.parse('$baseUrl/plan/ingredients'), // Nueva URL
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      Uri.parse('$baseUrl/plan/ingredients'),
+      headers: headers, // ⭐ CAMBIAR
     );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       if (responseData.containsKey('data')) {
-        return List<String>.from(responseData[
-            'data']); // La data es directamente la lista de strings
+        return List<String>.from(responseData['data']);
       } else {
         throw Exception(
             'Respuesta inesperada: campo "data" no encontrado en ingredientes.');
@@ -161,108 +150,96 @@ Future<Map<String, dynamic>> validateMealSelection({
     }
   }
 
-  Future<void> generatePlan() async {
-    final token = await _storage.getToken();
-    if (token == null) throw AuthException('No autenticado.');
+// ⭐ CRÍTICO: Este es el método que genera el plan
+  Future<void> generatePlan({String? languageCode}) async {
+    final headers = await _getHeaders(
+        languageCode: languageCode); // ⭐ USAR HEADERS CON IDIOMA
+
+    // ⭐ LOGS DETALLADOS
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    debugPrint('🌐 GENERANDO PLAN');
+    debugPrint('   Accept-Language: ${headers['Accept-Language']}');
+    debugPrint('   Headers completos:');
+    headers.forEach((key, value) {
+      debugPrint('      $key: $value');
+    });
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     final response = await http.post(
       Uri.parse('$baseUrl/plan/generate'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: headers,
     );
 
-    // El backend ahora devuelve 202 (Accepted) para indicar que el job ha empezado.
     if (response.statusCode == 202) {
-      debugPrint("Solicitud para generar plan aceptada por el servidor.");
-      // No hacemos nada más, la función termina exitosamente.
+      debugPrint("✅ Solicitud para generar plan aceptada por el servidor.");
+      debugPrint("📋 Respuesta del servidor:");
+      debugPrint(response.body);
       return;
     } else {
-      // Si algo sale mal al iniciar el job, lanzamos un error.
       throw Exception(
           'Error al iniciar la generación del plan. Código: ${response.statusCode}. Cuerpo: ${response.body}');
     }
   }
 
   Future<String> checkPlanStatus(DateTime requestTime) async {
-    final token = await _storage.getToken();
-    if (token == null) throw AuthException('No autenticado.');
-
-    // Convertimos la fecha a segundos desde la época (formato timestamp UNIX)
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
     final timestamp = requestTime.millisecondsSinceEpoch ~/ 1000;
 
     final response = await http.get(
       Uri.parse('$baseUrl/plan/status?generation_request_time=$timestamp'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: headers, // ⭐ CAMBIAR
     );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      // Devuelve "ready" o "pending"
       return data['status'] as String? ?? 'pending';
     } else {
-      // Si hay un error, asumimos que sigue pendiente para no romper el bucle de polling
       debugPrint("Error al chequear estado del plan, se reintentará.");
       return 'pending';
     }
   }
 
   Future<Uint8List> getIngredientImage(String ingredientName) async {
-    final token = await _storage.getToken();
-    if (token == null) {
-      throw AuthException('No autenticado.');
-    }
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
 
-    // Construimos la URL al endpoint del IngredientController
     final url = Uri.parse(
         '$baseUrl/ingredient-image/${Uri.encodeComponent(ingredientName)}');
 
     final response = await http.get(
       url,
       headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'image/png,image/jpeg', // Indicamos que esperamos una imagen
+        ...headers,
+        'Accept': 'image/png,image/jpeg', // ⭐ OVERRIDE para imágenes
       },
     );
 
     if (response.statusCode == 200) {
-      // Si la respuesta es exitosa, devolvemos los bytes de la imagen
       return response.bodyBytes;
     } else {
-      // Si el servidor devuelve un error (ej. 404), lanzamos una excepción
       throw Exception(
           'No se pudo cargar la imagen del ingrediente. Status: ${response.statusCode}');
     }
   }
-// services/plan_service.dart
-// En tu archivo services/plan_service.dart
 
+  // ⭐ CRÍTICO: Este método obtiene el plan generado
   Future<MealPlanData?> getCurrentPlan() async {
-    // --- Código para obtener el token y la URL ...
-    final token = await _storage.getToken();
-    if (token == null) throw Exception('No autenticado');
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
     final url = Uri.parse('$baseUrl/plan/current');
 
-    final response = await http.get(url, headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    });
+    debugPrint(
+        '🌐 Obteniendo plan con locale: ${headers['Accept-Language']}'); // ⭐ LOG
 
-    // ▼▼▼ INICIO DE LA CORRECCIÓN CON DEBUGGING ▼▼▼
+    final response = await http.get(
+      url,
+      headers: headers, // ⭐ CAMBIAR
+    );
 
-    // 1. Imprimimos la respuesta CRUDA que llega del servidor
     debugPrint("--- PASO 1: RESPUESTA COMPLETA DEL SERVIDOR ---");
     debugPrint(response.body);
     debugPrint("-------------------------------------------");
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
-
-      // 2. Extraemos el objeto 'active_plan' que está anidado
       final activePlanJson = responseData['data']['active_plan'];
 
       if (activePlanJson == null) {
@@ -271,16 +248,13 @@ Future<Map<String, dynamic>> validateMealSelection({
         return null;
       }
 
-      // 3. Imprimimos SÓLO la parte del JSON que vamos a parsear
       debugPrint(
           "--- PASO 2: JSON DEL PLAN EXTRAÍDO (Lo que se va a parsear) ---");
-      // Usamos un encoder para imprimirlo bonito
       JsonEncoder encoder = const JsonEncoder.withIndent('  ');
       debugPrint(encoder.convert(activePlanJson));
       debugPrint("----------------------------------------------------------");
 
       try {
-        // 4. Pasamos el JSON correcto al constructor del modelo
         final mealPlan =
             MealPlanData.fromJson(activePlanJson as Map<String, dynamic>);
         debugPrint(
@@ -305,22 +279,15 @@ Future<Map<String, dynamic>> validateMealSelection({
     required List<MealOption> selections,
   }) async {
     _log('Iniciando logMeal para: $mealType');
-    final token = await _storage.getToken();
-    if (token == null) throw AuthException('No autenticado.');
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
 
-    // Convertimos la lista de objetos MealOption a un JSON que el backend espera
     final selectionsJson = selections.map((opt) => opt.toJson()).toList();
-
     final url = Uri.parse('$baseUrl/history/log');
     _log('Llamando a URL: $url');
 
     final response = await http.post(
       url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: headers, // ⭐ CAMBIAR
       body: json.encode({
         'date': DateFormat('yyyy-MM-dd').format(date),
         'meal_type': mealType,
@@ -341,18 +308,14 @@ Future<Map<String, dynamic>> validateMealSelection({
 
   Future<List<MealLog>> getHistory() async {
     _log('Iniciando getHistory...');
-    final token = await _storage.getToken();
-    if (token == null) throw AuthException('No autenticado.');
+    final headers = await _getHeaders(); // ⭐ USAR HEADERS
 
     final url = Uri.parse('$baseUrl/history');
     _log('Llamando a URL: $url');
 
     final response = await http.get(
       url,
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: headers, // ⭐ CAMBIAR
     );
 
     _log('--- Respuesta del Servidor (getHistory) ---');
@@ -370,18 +333,14 @@ Future<Map<String, dynamic>> validateMealSelection({
   }
 
   void _log(String message) {
-    // debugPrint solo imprime en modo debug, no en producción
     debugPrint('[PlanService] $message');
   }
 }
-
-// Añade esta clase a tu archivo de modelos si no existe, o reemplázala.
 
 class MealLog {
   final int id;
   final String date;
   final String mealType;
-  // La clave está aquí: 'selections' es una lista de objetos MealOption
   final List<MealOption> selections;
 
   MealLog({
@@ -392,7 +351,6 @@ class MealLog {
   });
 
   factory MealLog.fromJson(Map<String, dynamic> json) {
-    // Se parsea la lista de selecciones usando el modelo MealOption que ya tienes
     var selectionsList = json['selections'] as List? ?? [];
 
     return MealLog(

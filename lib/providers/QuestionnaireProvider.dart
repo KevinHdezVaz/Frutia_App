@@ -6,44 +6,40 @@ class QuestionnaireProvider extends ChangeNotifier {
   bool hasMedicalCondition = false;
   String medicalConditionDetails = '';
   String? mainGoal;
+  String? sex; // ⭐ AGREGADO: variable para sexo (masculino/femenino)
 
   // --- Pantalla 2: Tu Rutina ---
   List<String> sport = [];
+  String? weeklyActivity; // ya la tenías
 
-  // --- LÍNEAS ELIMINADAS ---
-  // String? trainingFrequency;
-  // String? dailyActivityLevel;
-
-  // --- NUEVA LÍNEA ---
-  String? weeklyActivity; // <--- AQUÍ SE AGREGA LA NUEVA VARIABLE
+  // --- Favoritos ---
   Set<String> favoriteProteins = {};
   Set<String> favoriteCarbs = {};
   Set<String> favoriteFats = {};
-  Set<String> favoriteFruits = {}; // ✅ AGREGAR ESTA LÍNEA
+  Set<String> favoriteFruits = {};
 
-  // --- Moviendo estas variables a la sección de alimentación para mejor orden ---
+  // --- Horarios de comidas ---
   TimeOfDay? breakfastTime;
   TimeOfDay? lunchTime;
   TimeOfDay? dinnerTime;
-  String? eatsOut;
-  String? _preferredSnackTime; // ✅ NUEVO
 
-  // --- Pantalla 3: Tu Alimentación ---
+  // --- Alimentación ---
+  String? eatsOut;
   String dislikedFoods = '';
   bool hasAllergies = false;
   String allergyDetails = '';
   String? dietStyle;
   String? weeklyBudget;
+  String? _preferredSnackTime; // ya lo tenías
 
-  // --- Pantalla 4: Tus Preferencias ---
+  // --- Preferencias ---
   String? communicationTone;
   String? preferredName;
   Set<String> dietDifficulties = {};
   Set<String> dietMotivations = {};
 
+  // Getter y setter para preferredSnackTime
   String? get preferredSnackTime => _preferredSnackTime;
-
-  // Setter
   set preferredSnackTime(String? value) {
     _preferredSnackTime = value;
     notifyListeners();
@@ -60,60 +56,61 @@ class QuestionnaireProvider extends ChangeNotifier {
     hasMedicalCondition = false;
     medicalConditionDetails = '';
     mainGoal = null;
+    sex = null; // ⭐ AGREGADO: limpiar sexo
+
     sport = [];
-    _preferredSnackTime = null; // ✅ AGREGAR
+    weeklyActivity = null;
 
     favoriteProteins = {};
     favoriteCarbs = {};
     favoriteFats = {};
     favoriteFruits = {};
-    // --- CAMBIO EN RESET ---
-    // Se eliminan las variables viejas
-    // trainingFrequency = null;
-    // dailyActivityLevel = null;
-    // Se añade la nueva variable a limpiar
-    weeklyActivity = null;
 
     breakfastTime = null;
     lunchTime = null;
     dinnerTime = null;
+
     eatsOut = null;
     dislikedFoods = '';
     hasAllergies = false;
     allergyDetails = '';
     dietStyle = null;
     weeklyBudget = null;
+
     communicationTone = null;
     preferredName = null;
     dietDifficulties = {};
     dietMotivations = {};
+
+    _preferredSnackTime = null;
+
     notifyListeners();
   }
 
-  // Para debugging
+  // Para debugging (muy útil)
   void printSummary() {
     debugPrint('----- RESUMEN COMPLETO DEL CUESTIONARIO -----');
     debugPrint('Nombre: $name');
+    debugPrint('Sexo: $sex'); // ⭐ AGREGADO
     debugPrint(
         'Condición Médica: $hasMedicalCondition, Detalles: $medicalConditionDetails');
     debugPrint('Objetivo Principal: $mainGoal');
-    debugPrint('---');
-
-    // --- CAMBIO EN EL RESUMEN ---
     debugPrint('Deporte: $sport');
-    debugPrint(
-        'Actividad Semanal: $weeklyActivity'); // Se muestra la nueva variable
-
+    debugPrint('Actividad Semanal: $weeklyActivity');
     debugPrint('Horarios: D: $breakfastTime, A: $lunchTime, C: $dinnerTime');
     debugPrint('Come fuera: $eatsOut');
-    debugPrint('---');
     debugPrint('No le gusta: $dislikedFoods');
     debugPrint('Alergias: $hasAllergies, Detalles: $allergyDetails');
     debugPrint('Estilo Dieta: $dietStyle, Presupuesto: $weeklyBudget');
-    debugPrint('---');
     debugPrint('Tono: $communicationTone, Nombre preferido: $preferredName');
     debugPrint('Dificultades: $dietDifficulties');
     debugPrint('Motivaciones: $dietMotivations');
+    debugPrint('Snack preferido: $preferredSnackTime');
+    debugPrint('Favoritos:');
+    debugPrint('  Proteínas: $favoriteProteins');
+    debugPrint('  Carbos: $favoriteCarbs');
+    debugPrint('  Grasas: $favoriteFats');
+    debugPrint('  Frutas: $favoriteFruits');
     debugPrint('------------------------------------------');
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 
 class ModificationsScreen extends StatefulWidget {
   const ModificationsScreen({Key? key}) : super(key: key);
@@ -33,11 +34,12 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'Modificaciones',
+          l10n.modifications,
           style: GoogleFonts.lato(
             fontSize: 26,
             fontWeight: FontWeight.w700,
@@ -59,7 +61,7 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ajusta tu plan de alimentación y registra tu progreso.',
+                  l10n.modificationsSubtitle,
                   style: GoogleFonts.lato(
                     fontSize: 16,
                     color: FrutiaColors.secondaryText,
@@ -75,10 +77,9 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                 // --- Tarjeta para Editar Plan ---
                 _buildInfoCard(
                   icon: Icons.restaurant_menu,
-                  title: 'Editar mi Plan',
-                  description:
-                      'Aquí puedes ajustar tus preferencias de alimentación, objetivos, hábitos y más. Esto generará un plan nuevo basado en tus cambios.',
-                  buttonText: 'Editar Plan',
+                  title: l10n.editMyPlanTitle,
+                  description: l10n.editMyPlanDescription,
+                  buttonText: l10n.editPlanButton,
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -100,10 +101,9 @@ class _ModificationsScreenState extends State<ModificationsScreen> {
                 // --- NUEVA Tarjeta para Actualizar Perfil ---
                 _buildInfoCard(
                   icon: Icons.trending_up, // Icono relevante para progreso
-                  title: 'Actualizar Perfil',
-                  description:
-                      'Aquí puedes actualizar tu peso corporal y medir tu % de grasa. Esto ayudará a medir tu progreso.',
-                  buttonText: 'Actualizar Perfil',
+                  title: l10n.updateProfileTitle,
+                  description: l10n.updateProfileDescription,
+                  buttonText: l10n.updateProfileButton,
                   onPressed: () {
                     Navigator.push(
                       context,

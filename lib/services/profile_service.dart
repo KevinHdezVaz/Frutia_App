@@ -11,7 +11,7 @@ class ProfileService {
   Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.getToken();
     final languageCode =
-        LocaleHelper.getDeviceLanguageCode(); // ⭐ DETECTAR IDIOMA
+        await LocaleHelper.getAppLanguageCode(); // ⭐ USAR IDIOMA DE LA APP
 
     return {
       'Content-Type': 'application/json',

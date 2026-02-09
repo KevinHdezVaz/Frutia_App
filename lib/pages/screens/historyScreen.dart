@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:Frutia/services/plan_service.dart';
@@ -40,7 +41,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      return DateFormat('d \'de\' MMMM \'de\' yyyy', 'es_ES').format(date);
+      final locale = Localizations.localeOf(context).toString();
+      return DateFormat('d \'de\' MMMM \'de\' yyyy', locale).format(date);
     } catch (e) {
       return dateStr; // Devuelve la fecha original si hay error de formato
     }
@@ -51,7 +53,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
-        title: Text('Historial de Comidas',
+        title: Text(AppLocalizations.of(context)!.historyScreenTitle,
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         backgroundColor: FrutiaColors.accent,
         foregroundColor: Colors.white,
@@ -68,7 +70,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           // --- ESTADO DE ERROR ---
           if (snapshot.hasError) {
             return Center(
-                child: Text("Error al cargar el historial: ${snapshot.error}",
+                child: Text(
+                    "${AppLocalizations.of(context)!.historyErrorLoading}${snapshot.error}",
                     style: TextStyle(color: Colors.red)));
           }
 
@@ -82,7 +85,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Icon(Icons.history_toggle_off,
                       size: 80, color: Colors.grey[400]),
                   const SizedBox(height: 16),
-                  Text("Aún no tienes registros",
+                  Text(AppLocalizations.of(context)!.historyNoRecords,
                       style: GoogleFonts.lato(
                           fontSize: 18, color: Colors.grey[600])),
                 ],
@@ -157,8 +160,34 @@ class _MealLogCard extends StatelessWidget {
     }
   }
 
+  // ⭐ AGREGAR ESTE MÉTODO
+  String _translateMealType(String mealType, AppLocalizations l10n) {
+    switch (mealType.toLowerCase()) {
+      case 'desayuno':
+        return l10n.mealBreakfast;
+      case 'almuerzo':
+        return l10n.mealLunch;
+      case 'cena':
+        return l10n.mealDinner;
+      case 'snack am':
+        return l10n.mealSnackAm;
+      case 'snack pm':
+        return l10n.mealSnackPm;
+      case 'snack de frutas':
+        return l10n.mealSnackFruit;
+      case 'shake':
+        return l10n.mealShake;
+      default:
+        return mealType;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ⭐ AGREGAR ESTA LÍNEA
+    final localizedMealType =
+        _translateMealType(log.mealType, l10n); // ⭐ TRADUCIR
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -174,7 +203,7 @@ class _MealLogCard extends StatelessWidget {
                 Icon(_getIconForMeal(log.mealType), color: FrutiaColors.accent),
                 const SizedBox(width: 8),
                 Text(
-                  log.mealType,
+                  localizedMealType, // ⭐ USAR EL TRADUCIDO
                   style: GoogleFonts.poppins(
                       fontSize: 16, fontWeight: FontWeight.w600),
                 ),
@@ -183,7 +212,7 @@ class _MealLogCard extends StatelessWidget {
             const Divider(height: 20),
             // Lista de ingredientes seleccionados
             Text(
-              "Seleccionaste:",
+              l10n.historyYouSelected, // ⭐ Ya estaba traducido, perfecto
               style: GoogleFonts.lato(
                   color: Colors.grey[600], fontStyle: FontStyle.italic),
             ),

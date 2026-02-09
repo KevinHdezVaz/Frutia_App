@@ -117,8 +117,6 @@ class _OnboardingScreenOneState extends State<OnboardingScreenOne> {
                         children: [
                           _buildBulletPoint(l10n.plansAdaptedToYou),
                           const SizedBox(height: 12),
-                          _buildBulletPoint(l10n.aiCoachPersonalTracking),
-                          const SizedBox(height: 12),
                           _buildBulletPoint(l10n.adaptableToYourStyle),
                           const SizedBox(height: 12),
                           _buildBulletPoint(l10n.fastAndMadeForYou),

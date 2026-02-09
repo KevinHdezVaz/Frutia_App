@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:Frutia/services/plan_service.dart';
+import 'package:Frutia/l10n/app_localizations.dart';
 
 class PremiumRecetasScreen extends StatefulWidget {
   const PremiumRecetasScreen({Key? key}) : super(key: key);
@@ -24,8 +25,8 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
   List<InspirationRecipe> _allRecipes = [];
   List<MealFormula> _allFormulas = [];
   List<InspirationRecipe> _filteredRecipes = [];
-  String _activeFilter = 'Todos';
-  List<String> _mealFilters = ['Todos'];
+  String _activeFilter = '__all__';
+  List<String> _mealFilters = ['__all__'];
 
   @override
   void initState() {
@@ -43,45 +44,45 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
 
       List<InspirationRecipe> foundRecipes = [];
       List<String> mealNames = [];
-          bool hasTrialMessages = false; // NUEVO
+      bool hasTrialMessages = false; // NUEVO
 
+      if (planData?.nutritionPlan.meals != null) {
+        for (var entry in planData!.nutritionPlan.meals.entries) {
+          final String mealName = entry.key;
+          final Meal meal = entry.value;
 
-       if (planData?.nutritionPlan.meals != null) {
-      for (var entry in planData!.nutritionPlan.meals.entries) {
-        final String mealName = entry.key;
-        final Meal meal = entry.value;
+          mealNames.add(mealName);
 
-        mealNames.add(mealName);
-
-        // NUEVO: Verificar si hay mensajes de trial
-        if (meal.trialMessage != null) {
-          hasTrialMessages = true;
-        }
-
-        if (meal.suggestedRecipes.isNotEmpty) {
-          for (var recipe in meal.suggestedRecipes) {
-            recipe.mealType = mealName;
+          // NUEVO: Verificar si hay mensajes de trial
+          if (meal.trialMessage != null) {
+            hasTrialMessages = true;
           }
-          foundRecipes.addAll(meal.suggestedRecipes);
+
+          if (meal.suggestedRecipes.isNotEmpty) {
+            for (var recipe in meal.suggestedRecipes) {
+              recipe.mealType = mealName;
+            }
+            foundRecipes.addAll(meal.suggestedRecipes);
+          }
         }
       }
-    }
 
-    setState(() {
-      _allRecipes = foundRecipes;
-      _filteredRecipes = _allRecipes;
-      _mealFilters = ['Todos', ...mealNames.toSet().toList()];
-      _isLoading = false;
-      
-      // NUEVO: Si es usuario de prueba, mostrar mensaje
-      if (hasTrialMessages && foundRecipes.isEmpty) {
-        _showTrialUpgradeDialog();
-      }
-    });
-  } catch (e) {
+      setState(() {
+        _allRecipes = foundRecipes;
+        _filteredRecipes = _allRecipes;
+        _mealFilters = ['__all__', ...mealNames.toSet().toList()];
+        _isLoading = false;
+
+        // NUEVO: Si es usuario de prueba, mostrar mensaje
+        if (hasTrialMessages && foundRecipes.isEmpty) {
+          _showTrialUpgradeDialog();
+        }
+      });
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = "Error al cargar recetas: ${e.toString()}";
+        final l10n = AppLocalizations.of(context)!;
+        _errorMessage = l10n.errorLoadingRecipes(e.toString());
         _isLoading = false;
       });
     }
@@ -92,9 +93,8 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
     setState(() {
       _filteredRecipes = _allRecipes.where((recipe) {
         final titleMatch = recipe.title.toLowerCase().contains(query);
-        // Esta línea ahora funciona gracias al cambio en _fetchPlanData
         final categoryMatch =
-            _activeFilter == 'Todos' || recipe.mealType == _activeFilter;
+            _activeFilter == '__all__' || recipe.mealType == _activeFilter;
         return titleMatch && categoryMatch;
       }).toList();
     });
@@ -127,73 +127,77 @@ class _PremiumRecetasScreenState extends State<PremiumRecetasScreen>
     );
   }
 
-void _showTrialUpgradeDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.restaurant_menu, color: FrutiaColors.accent),
-            SizedBox(width: 8),
-            Text(
-              'Necesitas ser PREMIUM',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView( // ✅ Solución aquí
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+  void _showTrialUpgradeDialog() {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
             children: [
+              Icon(Icons.restaurant_menu, color: FrutiaColors.accent),
+              SizedBox(width: 8),
               Text(
-                'Las recetas personalizadas están disponibles con la suscripción completa.',
-                style: GoogleFonts.lato(fontSize: 15),
-              ),
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: FrutiaColors.accent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Activa tu suscripción para acceder a recetas paso a paso creadas específicamente para tu perfil.',
-                  style: GoogleFonts.lato(
-                    fontSize: 14,
-                    color: FrutiaColors.accent,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                l10n.premiumRequiredTitle,
+                style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Más tarde'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PremiumScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: FrutiaColors.accent,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.premiumRequiredSubtitle,
+                  style: GoogleFonts.lato(fontSize: 15),
+                ),
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: FrutiaColors.accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    l10n.premiumUpgradeMessage,
+                    style: GoogleFonts.lato(
+                      fontSize: 14,
+                      color: FrutiaColors.accent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Text('Actualizar', style: TextStyle(color: Colors.white)),
           ),
-        ],
-      );
-    },
-  );
-}
-
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.later),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PremiumScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FrutiaColors.accent,
+              ),
+              child: Text(l10n.upgradeButton,
+                  style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildBody() {
     if (_isLoading) {
@@ -212,6 +216,7 @@ void _showTrialUpgradeDialog() {
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
       length: 1,
       child: NestedScrollView(
@@ -228,7 +233,7 @@ void _showTrialUpgradeDialog() {
                 ),
               ),
               title: Text(
-                'Mis Recetas',
+                l10n.myRecipesTitle,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w700,
                   fontSize: 24,
@@ -252,8 +257,8 @@ void _showTrialUpgradeDialog() {
                 unselectedLabelStyle: GoogleFonts.lato(
                   fontSize: 14,
                 ),
-                tabs: const [
-                  Tab(text: 'Inspiración'),
+                tabs: [
+                  Tab(text: l10n.inspirationTab),
                 ],
               ),
             ),
@@ -276,52 +281,52 @@ void _showTrialUpgradeDialog() {
   }
 }
 
-
-
 // NUEVO MÉTODO
 Widget _buildEmptyState(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   return Center(
     child: Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.restaurant_menu_outlined,
             size: 64,
             color: FrutiaColors.secondaryText,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'No hay recetas disponibles',
+            l10n.noRecipesAvailable,
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: FrutiaColors.primaryText,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Las recetas personalizadas están disponibles con la suscripción completa.',
+            l10n.premiumRequiredSubtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.lato(
               fontSize: 14,
               color: FrutiaColors.secondaryText,
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
- Navigator.push(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const PremiumScreen()),
-              );            },
-            icon: Icon(Icons.upgrade, size: 20),
-            label: Text('Actualizar Plan'),
+              );
+            },
+            icon: const Icon(Icons.upgrade, size: 20),
+            label: Text(l10n.upgradePlanButton),
             style: ElevatedButton.styleFrom(
               backgroundColor: FrutiaColors.accent,
               foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -332,7 +337,6 @@ Widget _buildEmptyState(BuildContext context) {
     ),
   );
 }
-
 
 class _InspiracionTab extends StatelessWidget {
   final List<InspirationRecipe> recipes;
@@ -351,6 +355,7 @@ class _InspiracionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Padding(
@@ -358,7 +363,7 @@ class _InspiracionTab extends StatelessWidget {
           child: TextField(
             controller: searchController,
             decoration: InputDecoration(
-              hintText: 'Buscar recetas...',
+              hintText: l10n.searchRecipesHint,
               hintStyle: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText,
               ),
@@ -380,18 +385,20 @@ class _InspiracionTab extends StatelessWidget {
             itemCount: filters.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
+              final String filterKey = filters[index];
+              final String label = _getLocalizedMealLabel(context, filterKey);
               return ChoiceChip(
                 label: Text(
-                  filters[index],
+                  label,
                   style: GoogleFonts.poppins(
-                    color: activeFilter == filters[index]
+                    color: activeFilter == filterKey
                         ? Colors.white
                         : FrutiaColors.primaryText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                selected: activeFilter == filters[index],
-                onSelected: (_) => onFilterChanged(filters[index]),
+                selected: activeFilter == filterKey,
+                onSelected: (_) => onFilterChanged(filterKey),
                 selectedColor: FrutiaColors.accent,
                 backgroundColor: FrutiaColors.secondaryBackground,
                 shape: RoundedRectangleBorder(
@@ -402,7 +409,7 @@ class _InspiracionTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const _GradientTitle(title: 'Tus recetas de hoy'),
+        _GradientTitle(title: l10n.yourRecipesToday),
         const SizedBox(height: 16),
         Expanded(
           child: recipes.isEmpty
@@ -426,47 +433,49 @@ class _InspiracionTab extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.restaurant_menu_outlined,
               size: 64,
               color: FrutiaColors.secondaryText,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'No hay recetas disponibles',
+              l10n.noRecipesAvailable,
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: FrutiaColors.primaryText,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Las recetas personalizadas están disponibles con la suscripción completa.',
+              l10n.premiumRequiredSubtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.lato(
                 fontSize: 14,
                 color: FrutiaColors.secondaryText,
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                // TODO: Navegar a pantalla de suscripción
-                print('Navegar a suscripción');
+                // TODO: Navigate to subscription screen
+                print('Navigate to subscription');
               },
-              icon: Icon(Icons.upgrade, size: 20),
-              label: Text('Actualizar Plan'),
+              icon: const Icon(Icons.upgrade, size: 20),
+              label: Text(l10n.upgradePlanButton),
               style: ElevatedButton.styleFrom(
                 backgroundColor: FrutiaColors.accent,
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -477,8 +486,36 @@ class _InspiracionTab extends StatelessWidget {
       ),
     );
   }
-}
 
+  String _getLocalizedMealLabel(BuildContext context, String key) {
+    final l10n = AppLocalizations.of(context)!;
+    if (key == '__all__') return l10n.allFilter;
+
+    final lowerKey = key.toLowerCase();
+    if (lowerKey.contains('desayuno') || lowerKey.contains('breakfast')) {
+      return l10n.breakfast;
+    }
+    if (lowerKey.contains('almuerzo') ||
+        lowerKey.contains('lunch') ||
+        lowerKey.contains('comida')) {
+      return l10n.lunch;
+    }
+    if (lowerKey.contains('cena') || lowerKey.contains('dinner')) {
+      return l10n.dinner;
+    }
+    if (lowerKey.contains('snack') || lowerKey.contains('merienda')) {
+      if (lowerKey.contains('mañana') || lowerKey.contains('am')) {
+        return l10n.morningSnack;
+      }
+      if (lowerKey.contains('tarde') || lowerKey.contains('pm')) {
+        return l10n.afternoonSnack;
+      }
+      return 'Snack';
+    }
+
+    return key;
+  }
+}
 
 // --- WIDGET NUEVO PARA EL PLACEHOLDER ---
 class _GeneratingImagePlaceholder extends StatelessWidget {
@@ -488,6 +525,7 @@ class _GeneratingImagePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -517,7 +555,7 @@ class _GeneratingImagePlaceholder extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
                 Text(
-                  isError ? 'Error al cargar' : 'Cargando imagen...',
+                  isError ? l10n.errorLoadingImage : l10n.loadingImage,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     color: Colors.white,
@@ -581,10 +619,11 @@ class _MisFormulasTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return formulas.isEmpty
         ? Center(
             child: Text(
-              'No hay fórmulas disponibles.',
+              l10n.noFormulasAvailable,
               style: GoogleFonts.lato(
                 color: FrutiaColors.secondaryText,
                 fontSize: 16,
@@ -620,6 +659,7 @@ class __FormulaCardState extends State<_FormulaCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -701,7 +741,7 @@ class __FormulaCardState extends State<_FormulaCard> {
                       onPressed: widget.onShowInspiration,
                       icon: const Icon(Icons.lightbulb_outline, size: 18),
                       label: Text(
-                        'Ver Ideas para ${widget.formula.mealType}',
+                        l10n.viewIdeasFor(widget.formula.mealType),
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -895,6 +935,7 @@ class RecipeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final List<String> steps = recipe.instructions
         .split(RegExp(r'Paso \d+: '))
         .where((s) => s.trim().isNotEmpty)
@@ -1001,24 +1042,25 @@ class RecipeDetailScreen extends StatelessWidget {
                           text: '~${recipe.calories} kcal'),
                       _InfoChip(
                           icon: Icons.groups_outlined,
-                          text: '${recipe.servings} porciones'),
+                          text: l10n.servingsCount(recipe.servings)),
                     ],
                   ),
                   const Divider(height: 40),
                   _DetailSection(
-                    title: 'Ingredientes',
+                    title: l10n.ingredientsTitle,
                     icon: Icons.add_shopping_cart_outlined,
                     content: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: recipe.extendedIngredients.map((item) {
-                        final name = item['name'] as String? ?? 'Ingrediente';
+                        final name = item['name'] as String? ??
+                            l10n.defaultIngredientName;
                         final quantity = item['original'] as String? ?? '';
                         return _ChecklistItem(text: name, quantity: quantity);
                       }).toList(),
                     ),
                   ),
                   _DetailSection(
-                    title: 'Preparación',
+                    title: l10n.preparationTitle,
                     icon: Icons.soup_kitchen_outlined,
                     content: Column(
                       children: steps.asMap().entries.map((entry) {

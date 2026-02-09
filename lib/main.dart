@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:Frutia/providers/QuestionnaireProvider.dart';
 import 'package:Frutia/providers/ShoppingProvider.dart';
+import 'package:Frutia/providers/daily_consumption_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:showcaseview/showcaseview.dart';
 
+import 'package:Frutia/providers/locale_provider.dart';
 import 'l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -55,6 +57,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ShoppingProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => QuestionnaireProvider()),
+        ChangeNotifierProvider(create: (context) => LocaleProvider()),
+        ChangeNotifierProvider(create: (context) => DailyConsumptionProvider()),
       ],
       child: ShowCaseWidget(
         builder: (context) => MyApp(isviewed: isviewed),
@@ -72,12 +76,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+    return Consumer2<ThemeProvider, LocaleProvider>(
+      builder: (context, themeProvider, localeProvider, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
           scaffoldMessengerKey: scaffoldMessengerKey,
+          locale: localeProvider.locale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

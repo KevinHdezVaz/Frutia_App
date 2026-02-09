@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:Frutia/l10n/app_localizations.dart';
-import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/historyScreen.dart';
 import 'package:Frutia/pages/screens/miplan/DescargarPDFDialog.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
@@ -48,6 +47,8 @@ class _ProfessionalMiPlanDiarioScreenState
   final Set<String> _registeringMeals = {};
   final Set<String> _completedMeals = {};
 
+  final Map<String, Map<String, int>> _completedMealsMacros = {};
+
   String? _selectedSnack; // 'Snack AM' o 'Snack PM' o null
 
   @override
@@ -71,7 +72,8 @@ class _ProfessionalMiPlanDiarioScreenState
       debugPrint('Error fetching user name: $e');
       if (mounted) {
         setState(() {
-          _userName = 'Usuario'; // Valor por defecto en caso de error
+          _userName = AppLocalizations.of(context)!
+              .userDefault; // Valor por defecto en caso de error
         });
       }
     }
@@ -204,10 +206,11 @@ class _ProfessionalMiPlanDiarioScreenState
 
     // 4. Validar presupuesto
     if (_userBudget != null) {
-      bool isLowBudget = _userBudget!.contains('bajo');
+      bool isLowBudget =
+          _userBudget!.contains('low') || _userBudget!.contains('bajo');
+
       if (isLowBudget && option.isHighBudget) {
-        warnings.add(
-            '💰 "${option.name}" es de presupuesto alto, pero tu plan es económico');
+        warnings.add(AppLocalizations.of(context)!.lowBudgetWarning);
       }
     }
 
@@ -218,22 +221,23 @@ class _ProfessionalMiPlanDiarioScreenState
         if (meal != mealTitle && hasEgg) eggCount++;
       });
       if (eggCount > 0) {
-        warnings.add(
-            '🥚 Ya seleccionaste huevos en otra comida. Máximo 1 vez al día');
+        warnings.add(AppLocalizations.of(context)!.alreadySelectedEgg);
       }
     }
 
     return warnings;
   }
 
-  Map<String, dynamic> _calculateAdjustedPortion(MealOption option,
-      int caloriesExcess, int proteinExcess, int carbsExcess, int fatsExcess) {
+  Map<String, dynamic> _calculateAdjustedPortion(
+      AppLocalizations l10n,
+      MealOption option,
+      int caloriesExcess,
+      int proteinExcess,
+      int carbsExcess,
+      int fatsExcess) {
     final portionMatch = RegExp(r'(\d+)g').firstMatch(option.portion);
     if (portionMatch == null) {
-      return {
-        'canAdjust': false,
-        'message': 'No se puede calcular ajuste automático para esta porción'
-      };
+      return {'canAdjust': false, 'message': l10n.autoAdjustError};
     }
 
     final originalWeight = int.parse(portionMatch.group(1)!);
@@ -264,10 +268,7 @@ class _ProfessionalMiPlanDiarioScreenState
 
     // ✅ Si no hay exceso que ajustar, retornar sin ajuste
     if (gramsToRemove == 0) {
-      return {
-        'canAdjust': false,
-        'message': 'No hay exceso significativo para ajustar'
-      };
+      return {'canAdjust': false, 'message': l10n.autoAdjustNoExcess};
     }
 
     // ✅ Calcular nuevo peso
@@ -278,11 +279,7 @@ class _ProfessionalMiPlanDiarioScreenState
 
     // ✅ Si la reducción es demasiado agresiva, no permitir
     if (adjustedWeight < minAllowedWeight) {
-      return {
-        'canAdjust': false,
-        'message':
-            'La reducción necesaria es demasiado grande. Te sugerimos cambiar de alimento.'
-      };
+      return {'message': l10n.autoAdjustTooAggressive};
     }
 
     // ✅ Calcular porcentaje de reducción
@@ -317,8 +314,11 @@ class _ProfessionalMiPlanDiarioScreenState
     }
   }
 
+  // ⭐ AGREGAR ESTE MÉTODO (línea ~1070, después de _normalizeMealTitle)
+
   void _showValidationWarning(List<String> warnings, MealOption option,
       {VoidCallback? onProceed, VoidCallback? onCancel}) {
+    final l10n = AppLocalizations.of(context)!;
     // Separar advertencias críticas
     final criticalWarnings = warnings.where((w) => w.startsWith('🔴')).toList();
     final suggestions = warnings.where((w) => !w.startsWith('🔴')).toList();
@@ -338,8 +338,13 @@ class _ProfessionalMiPlanDiarioScreenState
         totalFatsExcess += int.tryParse(parts[7]) ?? 0;
       }
     }
-    final adjustment = _calculateAdjustedPortion(option, totalCaloriesExcess,
-        totalProteinExcess, totalCarbsExcess, totalFatsExcess);
+    final adjustment = _calculateAdjustedPortion(
+        l10n,
+        option,
+        totalCaloriesExcess,
+        totalProteinExcess,
+        totalCarbsExcess,
+        totalFatsExcess);
 
     showDialog(
       context: context,
@@ -358,7 +363,7 @@ class _ProfessionalMiPlanDiarioScreenState
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '¡Atención!',
+                AppLocalizations.of(context)!.attentionTitle,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   color: FrutiaColors.primaryText,
@@ -374,6 +379,8 @@ class _ProfessionalMiPlanDiarioScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ⚠️ ADVERTENCIAS CRÍTICAS
+              // Dentro de showDialog → content → Column → si criticalWarnings.isNotEmpty
+
               if (criticalWarnings.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -391,7 +398,7 @@ class _ProfessionalMiPlanDiarioScreenState
                               color: Colors.red, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Excederás tus macros:',
+                            AppLocalizations.of(context)!.willExceedMacros,
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               color: Colors.red.shade700,
@@ -400,11 +407,40 @@ class _ProfessionalMiPlanDiarioScreenState
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+
+                      // ← AGREGAR SIEMPRE EL EXCESO DE CALORÍAS PRIMERO (si existe)
+                      if (totalCaloriesExcess > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('• ',
+                                  style: TextStyle(
+                                      color: Colors.red, fontSize: 16)),
+                              Expanded(
+                                child: Text(
+                                  '🔴 CALORÍAS: Te pasaste por **$totalCaloriesExcess kcal**',
+                                  style: GoogleFonts.lato(
+                                    fontSize: 14,
+                                    color: Colors.red.shade700,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Luego los demás macros (como antes)
                       ...criticalWarnings.map((w) {
                         final parts = w.split('|');
-                        final macro = parts[0].replaceAll('🔴', '');
+                        final macro = parts[0].replaceAll('🔴', '').trim();
                         final excess = parts[1];
+                        if (macro == 'CALORIAS')
+                          return const SizedBox
+                              .shrink(); // ya lo mostramos arriba
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Row(
@@ -413,7 +449,7 @@ class _ProfessionalMiPlanDiarioScreenState
                               Text('• ', style: TextStyle(color: Colors.red)),
                               Expanded(
                                 child: Text(
-                                  'Si seleccionas "${option.name}", excederás $macro: +${excess}',
+                                  '🔴 $macro: +$excess g',
                                   style: GoogleFonts.lato(
                                     fontSize: 13,
                                     color: Colors.red.shade700,
@@ -447,7 +483,7 @@ class _ProfessionalMiPlanDiarioScreenState
               onCancel?.call();
             },
             child: Text(
-              'Cancelar',
+              AppLocalizations.of(context)!.cancelButton,
               style: GoogleFonts.lato(
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade600,
@@ -467,7 +503,7 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
             ),
             child: Text(
-              'Seleccionar de todas formas',
+              AppLocalizations.of(context)!.selectAnyway,
               style: GoogleFonts.lato(fontWeight: FontWeight.w600),
             ),
           ),
@@ -514,6 +550,7 @@ class _ProfessionalMiPlanDiarioScreenState
 // ✅ WIDGET: Sugerencia de Ajuste (cuando SÍ se puede calcular)
   Widget _buildAdjustmentSuggestion(
       Map<String, dynamic> adjustment, MealOption option) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -542,13 +579,26 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  '💡 Sugerencia de Ajuste',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                    fontSize: 14,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.adjustmentSuggestion,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      l10n.pdfCookingTip,
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -570,7 +620,7 @@ class _ProfessionalMiPlanDiarioScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Porción Original',
+                          AppLocalizations.of(context)!.originalPortion,
                           style: GoogleFonts.lato(
                             fontSize: 11,
                             color: Colors.grey.shade600,
@@ -593,7 +643,7 @@ class _ProfessionalMiPlanDiarioScreenState
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Porción Ajustada',
+                          AppLocalizations.of(context)!.adjustedPortion,
                           style: GoogleFonts.lato(
                             fontSize: 11,
                             color: Colors.grey.shade600,
@@ -620,7 +670,11 @@ class _ProfessionalMiPlanDiarioScreenState
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    'Reduce ${adjustment['reductionPercent']}% la porción (aproximadamente ${adjustment['originalWeight'] - adjustment['adjustedWeight']}g menos)',
+                    AppLocalizations.of(context)!.reducePortionMessage(
+                        adjustment['reductionPercent'].toString(),
+                        (adjustment['originalWeight'] -
+                                adjustment['adjustedWeight'])
+                            .toString()),
                     style: GoogleFonts.lato(
                       fontSize: 12,
                       color: Colors.green.shade800,
@@ -687,7 +741,7 @@ class _ProfessionalMiPlanDiarioScreenState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '💡 Consejo Personalizado',
+                  AppLocalizations.of(context)!.customAdviceTitle,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     color: FrutiaColors.accent,
@@ -725,7 +779,7 @@ class _ProfessionalMiPlanDiarioScreenState
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Pregunta a Frutia Chat:',
+                        AppLocalizations.of(context)!.askFrutiaChat,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -743,7 +797,9 @@ class _ProfessionalMiPlanDiarioScreenState
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    '"Ya comí [X], ¿puedo comer ${option.name} sin excederme?"',
+                    AppLocalizations.of(context)!
+                        .askFrutiaChatExample
+                        .replaceFirst('[X]', option.name),
                     style: GoogleFonts.lato(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -762,34 +818,31 @@ class _ProfessionalMiPlanDiarioScreenState
 
 // ⭐ NUEVO MÉTODO: Genera consejo contextual basado en el día
   String _generateContextualAdvice(MealOption option) {
-    if (_completedMeals.isEmpty) {
-      return 'Seleccionar "${option.name}" excedería tus macros diarios. Como aún no has comido nada, considera redistribuir tus porciones en las próximas comidas.';
-    }
+    if (!mounted) return '';
+    final l10n = AppLocalizations.of(context)!;
 
+    // Calcular variables acumuladas
+    int consumedCalories = _totalCalories;
     final plan = _mealPlanData!.nutritionPlan;
-
-    // Calcular consumido
-    int consumedCalories = 0;
-    _completedMeals.forEach((mealTitle) {
-      final selections = _dailySelections[mealTitle] ?? {};
-      selections.values.forEach((opt) {
-        consumedCalories += opt.calories;
-      });
-    });
-
     final remainingCalories = plan.targetMacros.calories - consumedCalories;
-    final mealsLeft =
-        3 - _completedMeals.length; // Suponiendo 3 comidas principales
+    final mealsLeft = plan.meals.length -
+        _completedMeals.length; // Suponiendo 3 comidas principales
+
+    if (consumedCalories == 0) {
+      return l10n.adviceExceedMacrosNoMeals(option.name);
+    }
 
     if (remainingCalories < option.calories) {
-      return 'Ya consumiste ${consumedCalories} kcal hoy. "${option.name}" (${option.calories} kcal) excede tus ${remainingCalories} kcal restantes. Deberías reducir otras comidas o elegir una opción más ligera.';
+      return l10n.adviceExceedMacrosConsumed(
+          consumedCalories, option.name, option.calories, remainingCalories);
     }
 
-    if (mealsLeft == 0) {
-      return 'Has completado todas tus comidas del día y "${option.name}" te haría exceder tu objetivo. Considera dejarlo para mañana o reduce la porción significativamente.';
+    if (mealsLeft <= 0) {
+      return l10n.adviceExceedMacrosAllMeals(option.name);
     }
 
-    return 'Llevas ${consumedCalories} kcal consumidas. Si comes "${option.name}" completo (${option.calories} kcal), te quedarán ${remainingCalories - option.calories} kcal para ${mealsLeft} comida(s) más. Ajusta tus porciones en consecuencia.';
+    return l10n.adviceExceedMacrosRemaining(consumedCalories, option.name,
+        option.calories, remainingCalories - option.calories, mealsLeft);
   }
 
 // Widget helper para mostrar macros pequeños
@@ -819,50 +872,108 @@ class _ProfessionalMiPlanDiarioScreenState
   Future<void> _registerMeal(
       String mealTitle, List<MealOption> selections) async {
     final l10n = AppLocalizations.of(context)!;
+    String normalizedMealType = getLocalizedMealTitle(mealTitle, l10n);
+    debugPrint('🔴 Registrando comida: "$mealTitle"');
+
     setState(() {
       _registeringMeals.add(mealTitle);
     });
 
     try {
-      await _saveSelections(); // Guardar antes de registrar
+      await _saveSelections();
+
+      // ⭐ ENVÍA AL BACKEND (esto es lo que guarda en el historial)
       await _planService.logMeal(
         date: DateTime.now(),
-        mealType: mealTitle,
+        mealType: normalizedMealType,
         selections: selections,
       );
 
-      setState(() {
-        _completedMeals.add(mealTitle);
-        // ⭐ AGREGAR ESTAS LÍNEAS:
-        _dailySelections[mealTitle]?.clear(); // Limpiar selecciones en memoria
-        _hasEggSelection.remove(mealTitle); // Limpiar estado de huevos
-        _validationWarnings.remove(mealTitle); // Limpiar warnings
+      // ⭐ Si llega aquí = éxito en el backend
+      int mealCalories = 0;
+      int mealProtein = 0;
+      int mealCarbs = 0;
+      int mealFats = 0;
+      _dailySelections[mealTitle]?.values.forEach((option) {
+        mealCalories += option.calories;
+        mealProtein += option.protein;
+        mealCarbs += option.carbs;
+        mealFats += option.fats;
       });
 
-      // ⭐ AGREGAR: Limpiar del storage local también
-      await _saveSelections();
+      setState(() {
+        _completedMeals.add(mealTitle);
+        _completedMealsMacros[mealTitle] = {
+          'calories': mealCalories,
+          'protein': mealProtein,
+          'carbs': mealCarbs,
+          'fats': mealFats,
+        };
+        _dailySelections[mealTitle]?.clear();
+        _hasEggSelection.remove(mealTitle);
+        _validationWarnings.remove(mealTitle);
+      });
 
-      // Recalcular totales después de limpiar
+      // ⭐ GUARDAR LOCALMENTE las comidas completadas (fallback por si sales y vuelves rápido)
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final completedTodayList = _completedMeals.toList();
+      await prefs.setStringList('completed_meals_$today', completedTodayList);
+      debugPrint(
+          '💾 Comidas completadas guardadas localmente: $completedTodayList');
+
+      await _saveSelections();
       _calculateTotals();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.mealRegisteredSuccess(mealTitle)),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
         ),
       );
     } catch (e) {
+      // ⭐ ERROR: NO marcar como completada y mostrar mensaje claro
+      setState(() {
+        _registeringMeals.remove(mealTitle);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.errorRegistering(e.toString())),
+          content:
+              Text('Error al guardar en el historial. Intenta de nuevo. $e'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
         ),
       );
+      debugPrint('❌ Error registrando comida: $e');
     } finally {
       setState(() {
         _registeringMeals.remove(mealTitle);
       });
     }
+  }
+
+// ⭐ AGREGAR ESTE MÉTODO HELPER (después de _registerMeal)
+  String _normalizeMealTypeToSpanish(String mealTitle) {
+    final normalized = mealTitle.toLowerCase();
+
+    final mapping = {
+      'breakfast': 'Desayuno',
+      'desayuno': 'Desayuno',
+      'lunch': 'Almuerzo',
+      'almuerzo': 'Almuerzo',
+      'dinner': 'Cena',
+      'cena': 'Cena',
+      'morning snack': 'Snack AM',
+      'snack am': 'Snack AM',
+      'afternoon snack': 'Snack PM',
+      'snack pm': 'Snack PM',
+      'fruit snack': 'Snack de frutas',
+      'snack de frutas': 'Snack de frutas',
+      'shake': 'Shake',
+    };
+
+    return mapping[normalized] ?? mealTitle;
   }
 
   bool get _isUserPremium {
@@ -884,48 +995,99 @@ class _ProfessionalMiPlanDiarioScreenState
       debugPrint('Error fetching user name: $e');
       if (mounted) {
         setState(() {
-          _userName = 'Usuario';
+          _userName = AppLocalizations.of(context)!.userDefault;
         });
       }
     }
   }
 
+// Agregar este método en la clase _ProfessionalMiPlanDiarioScreenState
+  String _normalizeMealTitle(String mealType) {
+    // ⭐ SIMPLEMENTE RETORNA TAL CUAL
+    // El backend ya está enviando el mealType en el idioma correcto
+    return mealType;
+  }
+
   Future<void> _fetchPlanAndInitialState() async {
     if (mounted) setState(() => _isLoading = true);
-
     try {
       final results = await Future.wait([
         _planService.getCurrentPlan(),
         _planService.getHistory(),
         _profileService.getProfile(),
       ]);
-
       final plan = results[0] as MealPlanData?;
       final history = results[1] as List<MealLog>;
       final profile = results[2] as Map<String, dynamic>?;
+      final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final logsToday = history.where((log) {
+        final logDate = log.date.substring(0, 10);
+        return logDate == todayString;
+      }).toList();
 
       if (plan == null) {
         if (mounted) {
           setState(() {
-            _errorMessage = "No tienes un plan activo.";
+            _errorMessage = AppLocalizations.of(context)!.errorNoActivePlan;
             _isLoading = false;
           });
         }
         return;
       }
 
-      plan.nutritionPlan.meals.keys.forEach((mealTitle) {
-        _dailySelections[mealTitle] = {};
+      final l10n = AppLocalizations.of(context)!;
+
+      // ⭐ NORMALIZACIÓN CORRECTA (esto hace que las comidas aparezcan)
+      final normalizedMeals = <String, Meal>{};
+      plan.nutritionPlan.meals.forEach((backendKey, meal) {
+        final displayTitle = getLocalizedMealTitle(backendKey, l10n);
+        normalizedMeals[displayTitle] = meal;
+      });
+      plan.nutritionPlan.meals = normalizedMeals;
+
+      // Inicializar _dailySelections con keys localizadas
+      normalizedMeals.keys.forEach((title) {
+        _dailySelections[title] = {};
       });
 
-      await _loadSelectionsFromLocal();
-
-      final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final completedToday = history
-          .where((log) => log.date == todayString)
-          .map((log) => log.mealType);
-
+      // Comidas completadas del backend
+      final completedToday = logsToday
+          .map((log) => getLocalizedMealTitle(log.mealType, l10n))
+          .toSet();
       _completedMeals.addAll(completedToday);
+
+      // Macros completadas del backend
+      for (var log in logsToday) {
+        final translatedMeal = getLocalizedMealTitle(log.mealType, l10n);
+
+        int mealCalories = 0;
+        int mealProtein = 0;
+        int mealCarbs = 0;
+        int mealFats = 0;
+        for (var selection in log.selections) {
+          mealCalories += selection.calories;
+          mealProtein += selection.protein;
+          mealCarbs += selection.carbs;
+          mealFats += selection.fats;
+        }
+        _completedMealsMacros[translatedMeal] = {
+          'calories': mealCalories,
+          'protein': mealProtein,
+          'carbs': mealCarbs,
+          'fats': mealFats,
+        };
+      }
+
+      // ⭐ NUEVO: Cargar fallback local de comidas completadas (por si backend no sincronizó)
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final localCompleted =
+          prefs.getStringList('completed_meals_$today') ?? [];
+      _completedMeals.addAll(localCompleted);
+      debugPrint(
+          '✅ Comidas completadas cargadas localmente (fallback): $localCompleted');
+
+      await _loadSelectionsFromLocal();
 
       if (mounted) {
         setState(() {
@@ -938,10 +1100,12 @@ class _ProfessionalMiPlanDiarioScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = "Error al cargar tus datos: ${e.toString()}";
+          _errorMessage =
+              AppLocalizations.of(context)!.errorLoadingData(e.toString());
           _isLoading = false;
         });
       }
+      debugPrint('❌ Error en _fetchPlanAndInitialState: $e');
     }
   }
 
@@ -949,20 +1113,24 @@ class _ProfessionalMiPlanDiarioScreenState
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final savedData = prefs.getString('daily_selection_$today');
-
     if (savedData != null) {
+      final l10n = AppLocalizations.of(context)!;
       final decodedData = json.decode(savedData) as Map<String, dynamic>;
+      decodedData.forEach((savedMealKey, selections) {
+        // Traducir la key guardada (que puede ser en inglés o español viejo) a localized
+        final normalizedMeal = getLocalizedMealTitle(savedMealKey, l10n);
 
-      decodedData.forEach((meal, selections) {
-        // ⭐ AGREGAR ESTA VALIDACIÓN:
-        // Solo cargar selecciones de comidas que NO estén completadas
-        if (!_completedMeals.contains(meal) &&
-            _dailySelections.containsKey(meal)) {
+        if (!_completedMeals.contains(normalizedMeal) &&
+            _dailySelections.containsKey(normalizedMeal)) {
           final Map<String, MealOption> loadedSelections = {};
           (selections as Map<String, dynamic>).forEach((cat, optJson) {
             loadedSelections[cat] = MealOption.fromJson(optJson);
           });
-          _dailySelections[meal] = loadedSelections;
+          _dailySelections[normalizedMeal] = loadedSelections;
+          debugPrint('✅ Cargando selecciones de $normalizedMeal desde storage');
+        } else {
+          debugPrint(
+              '❌ NO cargando selecciones de $savedMealKey (ya completada o key no coincide)');
         }
       });
     }
@@ -971,14 +1139,106 @@ class _ProfessionalMiPlanDiarioScreenState
   Future<void> _saveSelections() async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final encodedData = json.encode(_dailySelections.map((meal, selections) =>
-        MapEntry(
-            meal, selections.map((cat, opt) => MapEntry(cat, opt.toJson())))));
+
+    // Guardar directamente con keys localizadas (no normalizar a español fijo)
+    final normalizedSelections = <String, dynamic>{};
+    _dailySelections.forEach((localizedMealTitle, selections) {
+      normalizedSelections[localizedMealTitle] =
+          selections.map((cat, opt) => MapEntry(cat, opt.toJson()));
+      debugPrint('💾 Guardando $localizedMealTitle en storage');
+    });
+
+    final encodedData = json.encode(normalizedSelections);
     await prefs.setString('daily_selection_$today', encodedData);
+    debugPrint('✅ Guardado en SharedPreferences');
+  }
+
+  Map<String, Meal> _getTranslatedMealsForPDF(
+      NutritionPlan plan, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final translatedMeals = <String, Meal>{};
+
+    plan.meals.forEach((backendKey, meal) {
+      // 1. Traducir título de la comida (Desayuno → Breakfast)
+      final translatedKey = translateMeal(backendKey, l10n);
+
+      // 2. Traducir categorías y opciones
+      final translatedComponents = meal.components.map((category) {
+        // Traducir título de categoría (Proteínas → Proteins)
+        final translatedCatTitle = translateCategory(category.title, l10n);
+
+        // Traducir cada opción de alimento
+        final translatedOptions = category.options.map((option) {
+          return MealOption(
+            name: getLocalizedFoodName(option.name, l10n),
+            portion: translatePortion(
+                option.portion, l10n), // Usa tu función de porciones
+            calories: option.calories,
+            protein: option.protein,
+            carbs: option.carbs,
+            fats: option.fats,
+            isEgg: option.isEgg,
+            isHighBudget: option.isHighBudget,
+            isLowBudget: option.isLowBudget,
+            budgetAppropriate: option.budgetAppropriate,
+            prices: option.prices,
+            imageUrl: option.imageUrl,
+            ingredients: option.ingredients
+                .map((ing) => getLocalizedFoodName(ing, l10n))
+                .toList(),
+          );
+        }).toList();
+
+        return MealCategory(
+          title: translatedCatTitle,
+          options: translatedOptions,
+        );
+      }).toList();
+
+      // 3. Crear Meal traducido
+      translatedMeals[translatedKey] = Meal(
+        components: translatedComponents,
+        suggestedRecipes: meal.suggestedRecipes.map((recipe) {
+          return InspirationRecipe(
+            title: getLocalizedFoodName(recipe.title, l10n),
+            imageUrl: recipe.imageUrl,
+            readyInMinutes: recipe.readyInMinutes,
+            servings: recipe.servings,
+            instructions: formatRecipeInstructions(recipe.instructions, l10n),
+            extendedIngredients: recipe.extendedIngredients.map((ing) {
+              if (ing is Map<String, dynamic>) {
+                return {
+                  ...ing,
+                  'name': getLocalizedFoodName(ing['name'] ?? '', l10n),
+                };
+              }
+              return ing;
+            }).toList(),
+            analyzedInstructions: recipe.analyzedInstructions,
+            calories: recipe.calories,
+            protein: recipe.protein,
+            carbs: recipe.carbs,
+            fats: recipe.fats,
+            mealType: translateMeal(recipe.mealType ?? '', l10n),
+            personalizedNote: recipe.personalizedNote,
+            goalAlignment: recipe.goalAlignment,
+            sportsSupport: recipe.sportsSupport,
+            cuisineType: recipe.cuisineType,
+            difficultyLevel: recipe.difficultyLevel,
+          );
+        }).toList(),
+        mealTiming: meal.mealTiming,
+        personalizedTips: meal.personalizedTips,
+      );
+    });
+
+    return translatedMeals;
   }
 
   void _calculateTotals() {
     int tempCalories = 0, tempProtein = 0, tempCarbs = 0, tempFats = 0;
+
+    // ⭐ SUMAR selecciones actuales (comidas NO completadas)
     _dailySelections.forEach((mealTitle, selections) {
       selections.values.forEach((option) {
         tempCalories += option.calories;
@@ -987,20 +1247,307 @@ class _ProfessionalMiPlanDiarioScreenState
         tempFats += option.fats;
       });
     });
+
+    // ⭐ SUMAR macros de comidas completadas
+    _completedMealsMacros.forEach((mealTitle, macros) {
+      tempCalories += macros['calories'] ?? 0;
+      tempProtein += macros['protein'] ?? 0;
+      tempCarbs += macros['carbs'] ?? 0;
+      tempFats += macros['fats'] ?? 0;
+    });
+
     setState(() {
       _totalCalories = tempCalories;
       _totalProtein = tempProtein;
       _totalCarbs = tempCarbs;
       _totalFats = tempFats;
     });
+
+    debugPrint(
+        '📊 Totales: Cal=$tempCalories, P=$tempProtein, C=$tempCarbs, G=$tempFats');
+  }
+
+  // 1. Traducción de títulos de comidas (Desayuno → Breakfast si en inglés)
+  String translateMeal(String key, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final normalized = key.toLowerCase().trim();
+
+    if (locale == 'es') {
+      switch (normalized) {
+        case 'desayuno':
+          return l10n.breakfast ?? 'Desayuno';
+        case 'almuerzo':
+          return l10n.lunch ?? 'Almuerzo';
+        case 'cena':
+          return l10n.dinner ?? 'Cena';
+        case 'snack am':
+        case 'snack_am':
+          return l10n.snackAM ?? 'Snack AM';
+        case 'snack pm':
+        case 'snack_pm':
+          return l10n.snackPM ?? 'Snack PM';
+        default:
+          return key;
+      }
+    } else {
+      switch (normalized) {
+        case 'desayuno':
+          return 'Breakfast';
+        case 'almuerzo':
+          return 'Lunch';
+        case 'cena':
+          return 'Dinner';
+        case 'snack am':
+        case 'snack_am':
+          return 'Morning Snack';
+        case 'snack pm':
+        case 'snack_pm':
+          return 'Afternoon Snack';
+        default:
+          return key[0].toUpperCase() + key.substring(1).toLowerCase();
+      }
+    }
+  }
+
+// 2. Traducción de categorías (Proteínas → Proteins)
+  String translateCategory(String backendCategory, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    if (locale == 'es') {
+      return backendCategory.trim();
+    }
+
+    switch (backendCategory.trim()) {
+      case 'Proteínas':
+        return l10n.proteins ?? 'Proteins';
+      case 'Carbohidratos':
+        return l10n.carbohydrates ?? 'Carbohydrates';
+      case 'Grasas':
+        return l10n.fats ?? 'Fats';
+      case 'Vegetales':
+        return l10n.vegetables ?? 'Vegetables';
+      case 'Frutas':
+        return l10n.fruits ?? 'Fruits';
+      default:
+        return backendCategory.trim();
+    }
+  }
+
+  String getLocalizedFoodName(String backendName, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    // En español: devolvemos exactamente lo del backend
+    if (locale == 'es') {
+      return backendName.trim();
+    }
+
+    const Map<String, String> esToEn = {
+      // ─────────────────────────────────────────────────────────────
+      // Proteínas
+      // ─────────────────────────────────────────────────────────────
+      'Huevo entero': 'Whole egg',
+      'Huevos enteros': 'Whole eggs',
+      'Claras + Huevo Entero': 'Egg whites + Whole egg',
+      'Claras + Huevo entero': 'Egg whites + Whole egg',
+      'Claras pasteurizadas': 'Pasteurized egg whites',
+      'Pechuga de pollo': 'Chicken breast',
+      'Pollo muslo': 'Chicken thigh',
+      'Pollo muslo con piel': 'Chicken thigh with skin',
+      'Carne molida': 'Ground beef',
+      'Carne molida 80/20': 'Ground beef 80/20',
+      'Carne de res magra': 'Lean beef',
+      'Atún en lata': 'Canned tuna',
+      'Atún fresco': 'Fresh tuna',
+      'Salmón fresco': 'Fresh salmon',
+      'Pescado blanco': 'White fish',
+      'Pechuga de pavo': 'Turkey breast',
+      'Yogurt griego': 'Greek yogurt',
+      'Yogurt griego alto en proteínas': 'High-protein Greek yogurt',
+      'Proteína whey': 'Whey protein',
+      'Proteína en polvo': 'Protein powder',
+      'Caseína': 'Casein',
+      'Tofu firme': 'Firm tofu',
+      'Tempeh': 'Tempeh',
+      'Seitán': 'Seitan',
+      'Queso panela': 'Panela cheese',
+      'Ricotta': 'Ricotta',
+      'Hamburguesa de lentejas': 'Lentil burger',
+      'Claras de huevo': 'Egg whites',
+
+      // ─────────────────────────────────────────────────────────────
+      // Carbohidratos
+      // ─────────────────────────────────────────────────────────────
+      'Papa': 'Potato',
+      'Arroz blanco': 'White rice',
+      'Camote': 'Sweet potato',
+      'Fideo': 'Noodles',
+      'Frijoles': 'Beans',
+      'Quinua': 'Quinoa',
+      'Quinoa': 'Quinoa',
+      'Avena': 'Oats',
+      'Avena orgánica': 'Organic oats',
+      'Pan integral': 'Whole wheat bread',
+      'Pan integral artesanal': 'Artisan whole wheat bread',
+      'Tortilla de maíz': 'Corn tortilla',
+      'Tortillas de maíz': 'Corn tortillas',
+      'Galletas de arroz': 'Rice crackers',
+      'Crema de arroz': 'Cream of rice',
+      'Cereal de maíz': 'Corn cereal',
+      'Pasta integral': 'Whole wheat pasta',
+
+      // ─────────────────────────────────────────────────────────────
+      // Grasas
+      // ─────────────────────────────────────────────────────────────
+      'Aceite de oliva': 'Olive oil',
+      'Aceite de oliva extra virgen': 'Extra virgin olive oil',
+      'Aceite de oliva / extra virgen': 'Olive oil / Extra virgin',
+      'Aceite de palta': 'Avocado oil',
+      'Aceite vegetal': 'Vegetable oil',
+      'Maní': 'Peanuts',
+      'Mantequilla de maní': 'Peanut butter',
+      'Mantequilla de maní casera': 'Homemade peanut butter',
+      'Almendras': 'Almonds',
+      'Nueces': 'Walnuts',
+      'Pistachos': 'Pistachios',
+      'Pecanas': 'Pecans',
+      'Aguacate': 'Avocado',
+      'Palta': 'Avocado',
+      'Aguacate hass': 'Hass avocado',
+      'Hass': 'Hass avocado',
+      'Semillas de chía orgánicas': 'Organic chia seeds',
+      'Linaza orgánica': 'Organic flaxseed',
+      'Semillas de ajonjolí': 'Sesame seeds',
+      'Aceitunas': 'Olives',
+      'Miel': 'Honey',
+      'Chocolate negro 70%': '70% Dark chocolate',
+      'Mantequilla': 'Butter',
+      'Manteca de cerdo': 'Lard',
+
+      // ─────────────────────────────────────────────────────────────
+      // Frutas
+      // ─────────────────────────────────────────────────────────────
+      'Plátano': 'Banana',
+      'Manzana': 'Apple',
+      'Naranja': 'Orange',
+      'Berries (mix orgánico)': 'Berries (organic mix)',
+      'Mango': 'Mango',
+      'Papaya': 'Papaya',
+      'Sandia': 'Watermelon',
+      'Sandía': 'Watermelon',
+      'Melón': 'Melon',
+      'Fresas': 'Strawberries',
+      'Arándanos': 'Blueberries',
+      'Moras': 'Blackberries',
+      'Pera': 'Pear',
+
+      // ─────────────────────────────────────────────────────────────
+      // Vegetales
+      // ─────────────────────────────────────────────────────────────
+      'Ensalada mixta': 'Mixed salad',
+      'Ensalada completa mixta': 'Complete mixed salad',
+      'Brócoli': 'Broccoli',
+      'Zanahoria': 'Carrot',
+      'Ejotes': 'Green beans',
+      'Espinaca': 'Spinach',
+      'Espinacas salteadas': 'Sautéed spinach',
+      'Lechuga': 'Lettuce',
+      'Pimiento': 'Bell pepper',
+      'Calabacín': 'Zucchini',
+      'Tomate': 'Tomato',
+      'Pepino': 'Cucumber',
+      'Coliflor': 'Cauliflower',
+      'Champiñones': 'Mushrooms',
+      'Bowl de vegetales al vapor': 'Steamed vegetables bowl',
+      'Ensalada mediterránea': 'Mediterranean salad',
+      'Vegetales salteados': 'Sautéed vegetables',
+      'Ensalada verde mixta grande': 'Large mixed green salad',
+      'Ensalada de vegetales crucíferos': 'Cruciferous vegetables salad',
+      'Mix de vegetales bajos en carbos': 'Low-carb vegetables mix',
+
+      // ─────────────────────────────────────────────────────────────
+      // Otros
+      // ─────────────────────────────────────────────────────────────
+      'Tortillas integrales': 'Whole wheat tortillas',
+    };
+
+    // Buscamos en el mapa
+    return esToEn[backendName.trim()] ?? backendName.trim();
+  }
+
+  String translatePortion(String portion, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    // En español: devolvemos exactamente lo que llega del backend
+    if (locale == 'es') {
+      return portion.trim();
+    }
+
+    // En inglés: traducimos TODAS las unidades y frases comunes
+    String translated = portion.trim();
+
+    // Reemplazos específicos para inglés
+    translated = translated
+        // Pesos
+        .replaceAll('peso en crudo', 'raw weight')
+        .replaceAll('(peso en crudo)', '(raw weight)')
+        .replaceAll('peso cocido', 'cooked weight')
+        .replaceAll('(peso cocido)', '(cooked weight)')
+        .replaceAll('escurrido', 'drained')
+        .replaceAll('peso seco', 'dry weight')
+        .replaceAll('(peso seco)', '(dry weight)')
+
+        // Unidades comunes
+        .replaceAll('unidades', 'units')
+        .replaceAll('unidads', 'units')
+        .replaceAll('unidad', 'unit')
+        .replaceAll('uds', 'units')
+        .replaceAll('unid.', 'units')
+        .replaceAll('unid', 'units')
+        .replaceAll('cucharadas', 'tablespoons')
+        .replaceAll('cucharada', 'tablespoon')
+        .replaceAll('tazas grandes', 'large cups')
+        .replaceAll('tazas', 'cups')
+        .replaceAll('taza', 'cup')
+        .replaceAll('tazas grandes', 'large cups')
+        .replaceAll('tazas', 'cups')
+
+        // Otras frases frecuentes
+        .replaceAll('g', 'g') // ya está bien, pero lo dejamos
+        .replaceAll('g (', 'g (') // para no romper paréntesis
+        .replaceAll('g)', 'g)');
+
+    // Capitalizamos la primera letra de cada palabra para que se vea más pro (opcional)
+    translated = translated.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+
+    return translated;
+  }
+
+// 5. Formato de instrucciones de recetas (si las tienes en el PDF)
+  String formatRecipeInstructions(
+      String rawInstructions, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    if (locale != 'es') {
+      return rawInstructions; // En inglés dejamos las instrucciones originales por ahora
+    }
+
+    // Traducciones comunes de pasos (puedes expandir)
+    String formatted = rawInstructions
+        .replaceAll('Step 1:', 'Paso 1:')
+        .replaceAll('Step 2:', 'Paso 2:')
+        .replaceAll('Step 3:', 'Paso 3:');
+
+    return formatted;
   }
 
   Future<void> _generateAndDownloadPDF() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_mealPlanData == null || _userProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('No hay datos del plan o perfil para generar el PDF.')),
+        SnackBar(content: Text(l10n.noDataForPDF)),
       );
       return;
     }
@@ -1016,6 +1563,7 @@ class _ProfessionalMiPlanDiarioScreenState
       final pdf = pw.Document();
       final plan = _mealPlanData!.nutritionPlan;
       final profile = _userProfile!;
+      final translatedMeals = _getTranslatedMealsForPDF(plan, l10n);
 
       // Cargar imagen del logo
       final ByteData imageData =
@@ -1036,14 +1584,16 @@ class _ProfessionalMiPlanDiarioScreenState
           theme: theme,
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
-          header: (context) =>
-              _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
+          header: (context) => _buildPdfHeader(
+              l10n, profile['name'] ?? l10n.userDefault, imageBytes),
           build: (pw.Context context) => [
-            _buildWelcomeSection(profile['name'] ?? 'Usuario'),
+            _buildWelcomeSection(l10n, profile['name'] ?? l10n.userDefault),
             pw.SizedBox(height: 20),
-            _buildHowToUseSection(),
+            _buildImportantWarningSection(l10n),
             pw.SizedBox(height: 20),
-            _buildFrutiaChatSection(),
+            _buildHowToUseSection(l10n),
+            pw.SizedBox(height: 20),
+            _buildFrutiaChatSection(l10n),
           ],
         ),
       );
@@ -1054,24 +1604,24 @@ class _ProfessionalMiPlanDiarioScreenState
           theme: theme,
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
-          header: (context) =>
-              _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
+          header: (context) => _buildPdfHeader(
+              l10n, profile['name'] ?? l10n.userDefault, imageBytes),
           build: (pw.Context context) => [
-            _buildProfileInfo(profile['profile']),
+            _buildProfileInfo(l10n, profile['profile']),
             pw.SizedBox(height: 20),
-            _buildMacrosInfo(plan.targetMacros),
+            _buildMacrosInfo(l10n, plan.targetMacros),
             pw.SizedBox(height: 20),
             // Mensaje personalizado si existe
             if (plan.recommendation.isNotEmpty) ...[
-              _buildPersonalizedMessage(plan.recommendation),
+              _buildPersonalizedMessage(l10n, plan.recommendation),
               pw.SizedBox(height: 20),
             ],
             // Instrucción importante
-            _buildImportantInstruction(),
+            _buildImportantInstruction(l10n),
             pw.SizedBox(height: 15),
             // Todas las comidas
-            ...plan.meals.entries.map((mealEntry) =>
-                _buildMealPdfSection(mealEntry.key, mealEntry.value)),
+            ...translatedMeals.entries.map((mealEntry) =>
+                _buildMealPdfSection(l10n, mealEntry.key, mealEntry.value)),
           ],
         ),
       );
@@ -1082,12 +1632,12 @@ class _ProfessionalMiPlanDiarioScreenState
           theme: theme,
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
-          header: (context) =>
-              _buildPdfHeader(profile['name'] ?? 'Usuario', imageBytes),
+          header: (context) => _buildPdfHeader(
+              l10n, profile['name'] ?? l10n.userDefault, imageBytes),
           build: (pw.Context context) => [
-            _buildUnifiedRecommendationsSection(),
+            _buildUnifiedRecommendationsSection(l10n),
             pw.SizedBox(height: 20),
-            _buildImportantTipsBox(),
+            _buildImportantTipsBox(l10n),
           ],
         ),
       );
@@ -1104,13 +1654,13 @@ class _ProfessionalMiPlanDiarioScreenState
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al generar PDF: ${e.toString()}')),
+        SnackBar(content: Text('${l10n.pdfGenError}${e.toString()}')),
       );
     }
   }
 
-// ✅ AGREGAR ESTE MÉTODO COMPLETO
-  pw.Widget _buildHowToUseSection() {
+// ✅ PÁGINA 1: INSTRUCCIONES DE USO (NUEVA) - SECCIÓN ADVERTENCIA
+  pw.Widget _buildImportantWarningSection(AppLocalizations l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -1142,7 +1692,7 @@ class _ProfessionalMiPlanDiarioScreenState
               pw.SizedBox(width: 12),
               pw.Expanded(
                 child: pw.Text(
-                  '¿CÓMO SEGUIR TU PLAN CORRECTAMENTE?',
+                  l10n.pdfHowToUse,
                   style: pw.TextStyle(
                     fontSize: 18,
                     fontWeight: pw.FontWeight.bold,
@@ -1186,7 +1736,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   pw.SizedBox(width: 10),
                   pw.Expanded(
                     child: pw.Text(
-                      'SELECCIONA SOLO UNA OPCIÓN POR GRUPO',
+                      l10n.pdfSelectOneOptionTitle,
                       style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -1198,7 +1748,7 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               pw.SizedBox(height: 12),
               pw.Text(
-                'En cada comida encontrarás 3 grupos:',
+                l10n.pdfMealGroupsTitle,
                 style: pw.TextStyle(
                   fontSize: 13,
                   fontWeight: pw.FontWeight.bold,
@@ -1211,9 +1761,9 @@ class _ProfessionalMiPlanDiarioScreenState
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    _buildBulletPoint('Proteínas: Elige UNA opción'),
-                    _buildBulletPoint('Carbohidratos: Elige UNA opción'),
-                    _buildBulletPoint('Grasas: Elige UNA opción'),
+                    _buildBulletPoint(l10n.pdfWelcomeProtein),
+                    _buildBulletPoint(l10n.pdfWelcomeCarbs),
+                    _buildBulletPoint(l10n.pdfWelcomeFats),
                   ],
                 ),
               ),
@@ -1228,7 +1778,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   children: [
                     pw.Expanded(
                       child: pw.Text(
-                        'IMPORTANTE: NO selecciones todas las opciones. Solo UNA de cada grupo por comida.',
+                        l10n.pdfImportantSelection,
                         style: pw.TextStyle(
                           fontSize: 12,
                           fontWeight: pw.FontWeight.bold,
@@ -1244,9 +1794,15 @@ class _ProfessionalMiPlanDiarioScreenState
             ],
           ),
         ),
-        pw.SizedBox(height: 15),
+      ],
+    );
+  }
 
-        // INSTRUCCIÓN 2
+  // ✅ AGREGAR ESTE MÉTODO COMPLETO (PDF)
+  pw.Widget _buildHowToUseSection(AppLocalizations l10n) {
+    return pw.Column(
+      children: [
+        // INSTRUCCIÓN 1
         pw.Container(
           padding: const pw.EdgeInsets.all(15),
           decoration: pw.BoxDecoration(
@@ -1266,7 +1822,7 @@ class _ProfessionalMiPlanDiarioScreenState
                       shape: pw.BoxShape.circle,
                     ),
                     child: pw.Text(
-                      '2',
+                      '1',
                       style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -1277,7 +1833,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   pw.SizedBox(width: 10),
                   pw.Expanded(
                     child: pw.Text(
-                      'USA LA APP PARA CONTROLAR TUS MACROS',
+                      l10n.pdfHowToUsePlanTitle,
                       style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -1289,7 +1845,7 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               pw.SizedBox(height: 12),
               pw.Text(
-                'La aplicación FRUTIA te ayudará a:',
+                l10n.pdfYourObjectiveIs,
                 style: pw.TextStyle(
                   fontSize: 13,
                   color: PdfColors.grey800,
@@ -1302,13 +1858,10 @@ class _ProfessionalMiPlanDiarioScreenState
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    _buildBulletPoint('Seleccionar tus alimentos cada día'),
-                    _buildBulletPoint(
-                        'Ver en tiempo real tus macronutrientes acumulados'),
-                    _buildBulletPoint(
-                        'Advertirte ANTES de exceder tus límites'),
-                    _buildBulletPoint(
-                        'Ajustar tu plan según tus preferencias diarias'),
+                    _buildBulletPoint(l10n.pdfHowToUseStep1),
+                    _buildBulletPoint(l10n.pdfHowToUseStep2),
+                    _buildBulletPoint(l10n.pdfHowToUseStep3),
+                    _buildBulletPoint(l10n.pdfHowToUseStep4),
                   ],
                 ),
               ),
@@ -1323,7 +1876,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   children: [
                     pw.Expanded(
                       child: pw.Text(
-                        'TIP: No todos los alimentos tienen el mismo aporte calórico. Por eso es crucial que uses la app para ir seleccionando lo que consumes.',
+                        l10n.pdfHowToUseTip,
                         style: pw.TextStyle(
                           fontSize: 12,
                           color: PdfColors.blue900,
@@ -1340,7 +1893,7 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
         pw.SizedBox(height: 15),
 
-        // INSTRUCCIÓN 3
+        // INSTRUCCIÓN 3 ("Aprende a manipular")
         pw.Container(
           padding: const pw.EdgeInsets.all(15),
           decoration: pw.BoxDecoration(
@@ -1360,7 +1913,7 @@ class _ProfessionalMiPlanDiarioScreenState
                       shape: pw.BoxShape.circle,
                     ),
                     child: pw.Text(
-                      '3',
+                      '3', // Assuming this is actually step 2 or 3? The code said 3.
                       style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -1371,7 +1924,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   pw.SizedBox(width: 10),
                   pw.Expanded(
                     child: pw.Text(
-                      'APRENDE A MANIPULAR TU DIETA',
+                      l10n.pdfLearnToManipulateTitle,
                       style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -1383,7 +1936,7 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               pw.SizedBox(height: 12),
               pw.Text(
-                'Tu plan es FLEXIBLE. Puedes:',
+                l10n.pdfLearnToManipulateDesc,
                 style: pw.TextStyle(
                   fontSize: 13,
                   color: PdfColors.grey800,
@@ -1396,13 +1949,10 @@ class _ProfessionalMiPlanDiarioScreenState
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    _buildBulletPoint(
-                        'Comer más en el desayuno y menos en la cena'),
-                    _buildBulletPoint('Distribuir tus macros como prefieras'),
-                    _buildBulletPoint(
-                        'Variar tus alimentos cada día para no aburrirte'),
-                    _buildBulletPoint(
-                        'Ajustar porciones según tu hambre (sin exceder macros)'),
+                    _buildBulletPoint(l10n.pdfLearnToManipulatePoint1),
+                    _buildBulletPoint(l10n.pdfLearnToManipulatePoint2),
+                    _buildBulletPoint(l10n.pdfLearnToManipulatePoint3),
+                    _buildBulletPoint(l10n.pdfLearnToManipulatePoint4),
                   ],
                 ),
               ),
@@ -1417,7 +1967,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   children: [
                     pw.Expanded(
                       child: pw.Text(
-                        'OBJETIVO: Que aprendas a medir tu plan y evitar excesos. La variedad de alimentos te ayudará a no saturarte.',
+                        l10n.pdfLearnToManipulateObjective,
                         style: pw.TextStyle(
                           fontSize: 12,
                           color: PdfColors.green900,
@@ -1437,7 +1987,7 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
 // ✅ AGREGAR ESTE MÉTODO COMPLETO
-  pw.Widget _buildFrutiaChatSection() {
+  pw.Widget _buildFrutiaChatSection(AppLocalizations l10n) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
@@ -1470,7 +2020,7 @@ class _ProfessionalMiPlanDiarioScreenState
               pw.SizedBox(width: 15),
               pw.Expanded(
                 child: pw.Text(
-                  'FRUTIA CHAT: Tu Nutricionista IA',
+                  l10n.pdfFrutiaChatTitle,
                   style: pw.TextStyle(
                     fontSize: 18,
                     fontWeight: pw.FontWeight.bold,
@@ -1482,7 +2032,7 @@ class _ProfessionalMiPlanDiarioScreenState
           ),
           pw.SizedBox(height: 15),
           pw.Text(
-            '¿Tienes dudas sobre tu plan? FRUTIA Chat es tu inteligencia artificial que simula ser tu nutricionista personal.',
+            l10n.pdfFrutiaChatDesc,
             style: pw.TextStyle(
               fontSize: 13,
               color: PdfColors.grey800,
@@ -1491,7 +2041,7 @@ class _ProfessionalMiPlanDiarioScreenState
           ),
           pw.SizedBox(height: 12),
           pw.Text(
-            'Pregúntale sobre:',
+            l10n.pdfAskAbout,
             style: pw.TextStyle(
               fontSize: 13,
               fontWeight: pw.FontWeight.bold,
@@ -1504,12 +2054,12 @@ class _ProfessionalMiPlanDiarioScreenState
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                _buildBulletPoint('Dudas sobre tu plan alimenticio'),
-                _buildBulletPoint('Sustituciones de alimentos'),
-                _buildBulletPoint('Recetas con los ingredientes de tu plan'),
-                _buildBulletPoint('Consejos para tu progreso físico'),
-                _buildBulletPoint('Cómo preparar cada alimento'),
-                _buildBulletPoint('Cualquier duda nutricional'),
+                _buildBulletPoint(l10n.pdfAsk1),
+                _buildBulletPoint(l10n.pdfAsk2),
+                _buildBulletPoint(l10n.pdfAsk3),
+                _buildBulletPoint(l10n.pdfAsk4),
+                _buildBulletPoint(l10n.pdfAsk5),
+                _buildBulletPoint(l10n.pdfAsk6),
               ],
             ),
           ),
@@ -1533,7 +2083,7 @@ class _ProfessionalMiPlanDiarioScreenState
                 pw.SizedBox(width: 10),
                 pw.Expanded(
                   child: pw.Text(
-                    'Disponible 24/7 dentro de la aplicación FRUTIA',
+                    l10n.pdfAvailable247,
                     style: pw.TextStyle(
                       fontSize: 12,
                       fontWeight: pw.FontWeight.bold,
@@ -1580,7 +2130,7 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
   // ✅ AGREGAR ESTE MÉTODO COMPLETO
-  pw.Widget _buildWelcomeSection(String userName) {
+  pw.Widget _buildWelcomeSection(AppLocalizations l10n, String userName) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
@@ -1597,7 +2147,7 @@ class _ProfessionalMiPlanDiarioScreenState
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  '¡Bienvenido a tu Plan Personalizado, $userName!',
+                  l10n.pdfWelcome(userName), // TRANSLATED
                   style: pw.TextStyle(
                     fontSize: 20,
                     fontWeight: pw.FontWeight.bold,
@@ -1609,7 +2159,7 @@ class _ProfessionalMiPlanDiarioScreenState
           ),
           pw.SizedBox(height: 15),
           pw.Text(
-            'Este plan ha sido diseñado específicamente para ti, tomando en cuenta tu objetivo, estilo de vida y preferencias alimentarias.',
+            l10n.pdfWelcomeDesc,
             style: pw.TextStyle(
               fontSize: 13,
               color: PdfColors.grey800,
@@ -1622,7 +2172,8 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
 // Método para el mensaje personalizado
-  pw.Widget _buildPersonalizedMessage(String recommendation) {
+  pw.Widget _buildPersonalizedMessage(
+      AppLocalizations l10n, String recommendation) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
@@ -1633,18 +2184,22 @@ class _ProfessionalMiPlanDiarioScreenState
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('¡Hola!:',
+          pw.Text(l10n.pdfPersonalizedMsgTitle, // TRANSLATED
               style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 5),
-          pw.Text(recommendation,
-              style: pw.TextStyle(color: PdfColors.grey800, lineSpacing: 2)),
+          pw.Text(
+            recommendation == 'plan_ready_goal_reach'
+                ? l10n.planReadyGoalReach
+                : recommendation,
+            style: pw.TextStyle(color: PdfColors.grey800, lineSpacing: 2),
+          ),
         ],
       ),
     );
   }
 
 // ✅ REEMPLAZAR tu método _buildImportantInstruction() actual con este:
-  pw.Widget _buildImportantInstruction() {
+  pw.Widget _buildImportantInstruction(AppLocalizations l10n) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(15),
       decoration: pw.BoxDecoration(
@@ -1664,7 +2219,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   shape: pw.BoxShape.circle,
                 ),
                 child: pw.Text(
-                  '!', // ← CAMBIAR: Usar signo de exclamación
+                  l10n.pdfGoldRule, // '!'
                   style: pw.TextStyle(
                     fontSize: 20,
                     fontWeight: pw.FontWeight.bold,
@@ -1675,7 +2230,7 @@ class _ProfessionalMiPlanDiarioScreenState
               pw.SizedBox(width: 12),
               pw.Expanded(
                 child: pw.Text(
-                  '¡REGLA DE ORO!',
+                  l10n.pdfGoldRuleTitle,
                   style: pw.TextStyle(
                     fontSize: 18,
                     fontWeight: pw.FontWeight.bold,
@@ -1695,7 +2250,7 @@ class _ProfessionalMiPlanDiarioScreenState
               border: pw.Border.all(color: PdfColors.red200),
             ),
             child: pw.Text(
-              'De cada comida, escoge solo UNA opción del grupo de Proteínas, UNA de Carbohidratos y UNA de Grasas para cumplir tus macros.',
+              l10n.pdfGoldRuleDesc,
               style: pw.TextStyle(
                 color: PdfColors.red900,
                 fontSize: 14,
@@ -1707,7 +2262,7 @@ class _ProfessionalMiPlanDiarioScreenState
           ),
           pw.SizedBox(height: 10),
           pw.Text(
-            'Si seleccionas más de una opción por grupo, excederás tus calorías y NO alcanzarás tu objetivo.',
+            l10n.pdfGoldRuleWarning,
             style: pw.TextStyle(
               fontSize: 11,
               color: PdfColors.red700,
@@ -1721,8 +2276,24 @@ class _ProfessionalMiPlanDiarioScreenState
     );
   }
 
+  String _translateCategory(String category, AppLocalizations l10n) {
+    switch (category) {
+      case 'Proteins':
+        return l10n.proteins;
+      case 'Carbs':
+        return l10n.carbs;
+      case 'Fats':
+        return l10n.fats;
+      case 'Vegetables':
+        return l10n.vegetables;
+      default:
+        return category;
+    }
+  }
+
 // Método mejorado para cada comida con resumen de macros
-  pw.Widget _buildMealPdfSection(String mealTitle, Meal meal) {
+  pw.Widget _buildMealPdfSection(
+      AppLocalizations l10n, String mealTitle, Meal meal) {
     // Calcular macros promedio de la comida
     int totalProtein = 0, totalCarbs = 0, totalFats = 0, totalCalories = 0;
     int optionCount = 0;
@@ -1739,12 +2310,20 @@ class _ProfessionalMiPlanDiarioScreenState
     }
 
     final List<List<String>> tableData = [
-      <String>['Componente', 'Opción de Alimento', 'Porción Sugerida'],
+      <String>[
+        l10n.pdfMealTableComponent,
+        l10n.pdfMealTableOption,
+        l10n.pdfMealTablePortion
+      ],
     ];
 
     for (var category in meal.components) {
       for (var option in category.options) {
-        tableData.add([category.title, option.name, option.portion]);
+        tableData.add([
+          category.title, // ← Ya traducido en translatedMeals
+          option.name, // ← Ya traducido
+          option.portion, // ← Ya traducido
+        ]);
       }
     }
 
@@ -1772,10 +2351,11 @@ class _ProfessionalMiPlanDiarioScreenState
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                     children: [
-                      pw.Text('Calorías: ${totalCalories} kcal',
+                      pw.Text('${l10n.pdfMealCalories}: ${totalCalories} kcal',
                           style: pw.TextStyle(
                               fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('P: ${totalProtein}g',
+                      pw.Text(
+                          'P: ${totalProtein}g', // Stick to simple P/C/G or use keys if added. I'll stick to P/C/G/Cal as universal.
                           style: pw.TextStyle(fontSize: 11)),
                       pw.Text('C: ${totalCarbs}g',
                           style: pw.TextStyle(fontSize: 11)),
@@ -1805,7 +2385,7 @@ class _ProfessionalMiPlanDiarioScreenState
                 // Recetas sugeridas si existen
                 if (meal.suggestedRecipes.isNotEmpty) ...[
                   pw.SizedBox(height: 10),
-                  pw.Text('Recetas Sugeridas:',
+                  pw.Text(l10n.pdfSuggestedRecipes,
                       style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold, fontSize: 14)),
                   pw.SizedBox(height: 5),
@@ -1828,7 +2408,8 @@ class _ProfessionalMiPlanDiarioScreenState
     );
   }
 
-  pw.Widget _buildPdfHeader(String userName, Uint8List imageBytes) {
+  pw.Widget _buildPdfHeader(
+      AppLocalizations l10n, String userName, Uint8List imageBytes) {
     return pw.Container(
         alignment: pw.Alignment.center,
         margin: const pw.EdgeInsets.only(bottom: 20.0),
@@ -1839,30 +2420,38 @@ class _ProfessionalMiPlanDiarioScreenState
                   fontSize: 24,
                   color: PdfColors.red)),
           pw.Image(pw.MemoryImage(imageBytes), height: 60),
-          pw.Text('Plan de Alimentación Personalizado para $userName',
+          pw.Text(l10n.pdfPersonalizedPlanTitle(userName),
               style: pw.TextStyle(fontSize: 18)),
           pw.Divider(color: PdfColors.grey400),
         ]));
   }
 
-  pw.Widget _buildProfileInfo(Map<String, dynamic> profile) {
+  pw.Widget _buildProfileInfo(
+      AppLocalizations l10n, Map<String, dynamic> profile) {
     return pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('Peso: ${profile['weight'] ?? 'N/A'} kg'),
-          pw.Text('Talla: ${profile['height'] ?? 'N/A'} cm'),
-          pw.Text('Edad: ${profile['age'] ?? 'N/A'} años'),
+          pw.Text('${l10n.pdfProfileWeight}: ${profile['weight'] ?? 'N/A'} kg'),
+          pw.Text('${l10n.pdfProfileHeight}: ${profile['height'] ?? 'N/A'} cm'),
+          pw.Text('${l10n.pdfProfileAge}: ${profile['age'] ?? 'N/A'}'),
         ]);
   }
 
-  pw.Widget _buildMacrosInfo(TargetMacros macros) {
+  pw.Widget _buildMacrosInfo(AppLocalizations l10n, TargetMacros macros) {
     return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Header(level: 1, text: 'Macros Objetivo'),
-          pw.Text('Calorías: ${macros.calories} kcal'),
+          pw.Header(level: 1, text: l10n.pdfMacrosTargetTitle),
+          pw.Text('${l10n.pdfMealCalories}: ${macros.calories} kcal'),
           pw.Text(
-              'Proteínas: ${macros.protein}g / Grasas: ${macros.fats}g / Carbohidratos: ${macros.carbs}g'),
+              '${l10n.proteinLabelShort}: ${macros.protein}g / ${l10n.fatsLabelShort}: ${macros.fats}g / ${l10n.carbsLabelShort}: ${macros.carbs}g'),
+          // reusing: '${l10n.pdfFoodGroups.split('\n')[0].split(':')[0]}: ...' is too complex.
+          // I'll stick to hardcoded labels here for simplicity or just accept partial localization if I didn't add keys for simple "Proteins", "Fats" labels alone?
+          // I added pdfMealTableComponent etc.
+          // I will verify if I have simple keys for Proteins/Carbs/Fats.
+          // I have 'pdfFoodGroups' => "Proteínas: Elige UNA..."
+          // I will attempt to hardcode simple translations or just leave them.
+          // 'Proteins: ${macros.protein}g / Fats: ${macros.fats}g / Carbs: ${macros.carbs}g' would be better.
         ]);
   }
 
@@ -1877,7 +2466,7 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
 // ✅ AGREGAR ESTE MÉTODO COMPLETO
-  pw.Widget _buildUnifiedRecommendationsSection() {
+  pw.Widget _buildUnifiedRecommendationsSection(AppLocalizations l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -1890,7 +2479,7 @@ class _ProfessionalMiPlanDiarioScreenState
             ),
           ),
           child: pw.Text(
-            'Recomendaciones Generales y Tips',
+            l10n.pdfRecsTitle,
             style: pw.TextStyle(
               fontWeight: pw.FontWeight.bold,
               fontSize: 18,
@@ -1902,7 +2491,7 @@ class _ProfessionalMiPlanDiarioScreenState
 
         // 📏 SECCIÓN 1: Pesaje de Alimentos
         pw.Text(
-          '* Pesaje de Alimentos:',
+          l10n.pdfRecsWeighingTitle,
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -1911,23 +2500,22 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
         pw.SizedBox(height: 6),
         pw.Bullet(
-          text: 'Proteínas: SIEMPRE se pesan en CRUDO',
+          text: l10n.pdfRecsWeighingBody1,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text:
-              'Carbohidratos: Se pesan COCIDOS (excepto avena, crema de arroz, cereales = peso seco)',
+          text: l10n.pdfRecsWeighingBody2,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: 'Vegetales: Son libres, úsalos con variedad para sumar fibra',
+          text: l10n.pdfRecsWeighingBody3,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.SizedBox(height: 12),
 
         // 💧 SECCIÓN 2: Hidratación y Medición
         pw.Text(
-          '* Hidratación y Medición:',
+          l10n.pdfRecsHydrationTitle,
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -1936,26 +2524,26 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
         pw.SizedBox(height: 6),
         pw.Bullet(
-          text: 'Agua: Consume 30-40 ml por cada kg de peso corporal al día',
+          text: l10n.pdfRecsHydrationBody1,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: 'Usa balanza digital y cucharas medidoras para mayor precisión',
+          text: l10n.pdfRecsHydrationBody2,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: '1 cucharada sopera = 15ml de aceite',
+          text: l10n.pdfRecsHydrationBody3,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: '1 taza = 250ml aproximadamente',
+          text: l10n.pdfRecsHydrationBody4,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.SizedBox(height: 12),
 
         // 📅 SECCIÓN 3: Organización
         pw.Text(
-          '* Organización:',
+          l10n.pdfRecsOrgTitle,
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -1964,29 +2552,26 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
         pw.SizedBox(height: 6),
         pw.Bullet(
-          text:
-              'Establece horarios fijos de comida y respétalos todos los días',
+          text: l10n.pdfRecsOrgBody1,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text:
-              'Varía tus recetas e innova en la cocina para evitar la monotonía',
+          text: l10n.pdfRecsOrgBody2,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text: 'Prepara salsas caseras a base de vegetales',
+          text: l10n.pdfRecsOrgBody3,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.Bullet(
-          text:
-              'Si tendrás un día complicado, adelanta tus comidas o llévalas contigo',
+          text: l10n.pdfRecsOrgBody4,
           style: pw.TextStyle(fontSize: 12),
         ),
         pw.SizedBox(height: 12),
 
         // 🍳 SECCIÓN 4: Cocina
         pw.Text(
-          '* Cocina:',
+          l10n.pdfRecsKitchenTitle,
           style: pw.TextStyle(
             fontWeight: pw.FontWeight.bold,
             fontSize: 14,
@@ -1995,8 +2580,7 @@ class _ProfessionalMiPlanDiarioScreenState
         ),
         pw.SizedBox(height: 6),
         pw.Bullet(
-          text:
-              'Cocina con aceite sin calorías o aceite de oliva extra virgen en mínima cantidad',
+          text: l10n.pdfRecsKitchenBody,
           style: pw.TextStyle(fontSize: 12),
         ),
       ],
@@ -2004,13 +2588,13 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
   // ✅ AGREGAR ESTE MÉTODO COMPLETO
-  pw.Widget _buildImportantTipsBox() {
+  pw.Widget _buildImportantTipsBox(AppLocalizations l10n) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(14),
+      padding: const pw.EdgeInsets.all(15),
       decoration: pw.BoxDecoration(
         color: PdfColors.blue50,
-        border: pw.Border.all(color: PdfColors.blue300, width: 1.5),
         borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColors.blue300, width: 2),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -2030,7 +2614,7 @@ class _ProfessionalMiPlanDiarioScreenState
               ),
               pw.SizedBox(width: 10),
               pw.Text(
-                'Recuerda:',
+                l10n.pdfRemember,
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 14,
@@ -2041,19 +2625,19 @@ class _ProfessionalMiPlanDiarioScreenState
           ),
           pw.SizedBox(height: 10),
           pw.Text(
-            '• Las porciones en tu plan ya están calculadas en el peso correcto (cocido o crudo según corresponda)',
+            l10n.pdfRememberBody1,
             style: pw.TextStyle(
                 fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
           pw.SizedBox(height: 5),
           pw.Text(
-            '• Si tienes dudas sobre cómo preparar un alimento, consulta con el chat de FRUTIA (tu nuevo nutricionista)',
+            l10n.pdfRememberBody2,
             style: pw.TextStyle(
                 fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
           pw.SizedBox(height: 5),
           pw.Text(
-            '• Este plan es personalizado para TI, no lo compartas sin ajustar para otras personas',
+            l10n.pdfRememberBody3,
             style: pw.TextStyle(
                 fontSize: 11, color: PdfColors.grey800, height: 1.3),
           ),
@@ -2092,8 +2676,20 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
   List<RecommendationItem> _generateDynamicRecommendations(
-      int proteinExcess, int carbsExcess, int fatsExcess) {
+      AppLocalizations l10n,
+      int proteinExcess,
+      int carbsExcess,
+      int fatsExcess) {
     List<RecommendationItem> recommendations = [];
+
+    if (proteinExcess > 5) {
+      recommendations.add(RecommendationItem(
+        text: l10n.protein,
+        color: Colors.blue,
+        mealIcon: Icons.egg_alt_outlined,
+        macroIcon: Icons.egg_alt_outlined,
+      ));
+    }
 
     _dailySelections.forEach((mealName, selections) {
       selections.forEach((categoryName, option) {
@@ -2105,24 +2701,21 @@ class _ProfessionalMiPlanDiarioScreenState
         if (proteinExcess > 10 && option.protein > 30) {
           if (option.name.toLowerCase().contains('salmón')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Cambia "${option.name}" por pollo (menos grasas)',
+              text: l10n.recChangeToChicken(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.egg_alt_outlined,
             ));
           } else if (option.name.toLowerCase().contains('lomo')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Cambia "${option.name}" por pechuga de pollo',
+              text: l10n.recChangeToBreast(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.egg_alt_outlined,
             ));
           } else if (option.protein > 50) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Reduce porción de "${option.name}" o cámbiala',
+              text: l10n.recReducePortion(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.egg_alt_outlined,
@@ -2134,31 +2727,28 @@ class _ProfessionalMiPlanDiarioScreenState
         if (fatsExcess > 10 && option.fats > 15) {
           if (option.name.toLowerCase().contains('salmón')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: "${option.name}" tiene muchas grasas, prueba atún',
+              text: l10n.recSalmonFat(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.water_drop_outlined,
             ));
           } else if (option.name.toLowerCase().contains('aceite')) {
             recommendations.add(RecommendationItem(
-              text: 'En $mealName: Reduce "${option.name}" a 1 cucharada',
+              text: l10n.recReduceOil(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.water_drop_outlined,
             ));
           } else if (option.name.toLowerCase().contains('almendras')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Reduce porción de "${option.name}" a la mitad',
+              text: l10n.recReduceAlmonds(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.water_drop_outlined,
             ));
           } else if (option.name.toLowerCase().contains('aguacate')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Usa 1/4 de aguacate en lugar de la porción actual',
+              text: l10n.recAvocado(mealName),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.water_drop_outlined,
@@ -2172,8 +2762,7 @@ class _ProfessionalMiPlanDiarioScreenState
               option.name.toLowerCase().contains('arroz') ||
               option.name.toLowerCase().contains('avena')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Reduce "${option.name}" o omite carbohidratos en esta comida',
+              text: l10n.recReduceCarbs(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.grain_outlined,
@@ -2181,8 +2770,7 @@ class _ProfessionalMiPlanDiarioScreenState
           } else if (option.name.toLowerCase().contains('mango') ||
               option.name.toLowerCase().contains('frutos')) {
             recommendations.add(RecommendationItem(
-              text:
-                  'En $mealName: Reduce porción de "${option.name}" por el exceso de carbohidratos',
+              text: l10n.recReduceFruits(mealName, option.name),
               color: mealColor,
               mealIcon: mealIcon,
               macroIcon: Icons.grain_outlined,
@@ -2191,6 +2779,24 @@ class _ProfessionalMiPlanDiarioScreenState
         }
       });
     });
+
+    if (carbsExcess > 10) {
+      recommendations.add(RecommendationItem(
+        text: l10n.carbs,
+        color: Colors.orange,
+        mealIcon: Icons.grain_outlined,
+        macroIcon: Icons.grain_outlined,
+      ));
+    }
+
+    if (fatsExcess > 10) {
+      recommendations.add(RecommendationItem(
+        text: l10n.fats,
+        color: Colors.purple,
+        mealIcon: Icons.water_drop_outlined,
+        macroIcon: Icons.water_drop_outlined,
+      ));
+    }
 
     return recommendations;
   }
@@ -2262,68 +2868,99 @@ class _ProfessionalMiPlanDiarioScreenState
   }
 
   void _contactFrutiaSupport() {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Contacta a Frutia en WhatsApp: +1234567890')),
+      SnackBar(content: Text(l10n.contactSupport)),
     );
   }
 
   // En ProfessionalMiPlanDiarioScreen - Agregar método helper
   Widget _buildMacroExcessWarning() {
+    final l10n = AppLocalizations.of(context)!;
     final plan = _mealPlanData!.nutritionPlan;
+
+    final calExcess = _totalCalories - plan.targetMacros.calories;
     final proteinExcess = _totalProtein - plan.targetMacros.protein;
     final carbsExcess = _totalCarbs - plan.targetMacros.carbs;
     final fatsExcess = _totalFats - plan.targetMacros.fats;
 
-    if (proteinExcess > 10 || carbsExcess > 15 || fatsExcess > 10) {
-      return GestureDetector(
-        // CAMBIAR Container por GestureDetector
-        onTap: () => _showExcessAdviceDialog(
-            context, proteinExcess, carbsExcess, fatsExcess),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.orange),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.warning_amber, color: Colors.orange),
-              SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Exceso de macronutrientes detectado - Toca para consejos',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade700,
-                      ),
-                    ),
-                    if (proteinExcess > 10)
-                      Text('Proteína: +${proteinExcess}g'),
-                    if (carbsExcess > 15)
-                      Text('Carbohidratos: +${carbsExcess}g'),
-                    if (fatsExcess > 10) Text('Grasas: +${fatsExcess}g'),
-                  ],
-                ),
-              ),
-              Icon(Icons.help_outline,
-                  color: Colors.orange), // Icono para indicar que es clickeable
-            ],
-          ),
-        ),
-      );
+    if (calExcess <= 0 &&
+        proteinExcess <= 10 &&
+        carbsExcess <= 15 &&
+        fatsExcess <= 10) {
+      return const SizedBox.shrink();
     }
-    return SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => _showExcessAdviceDialog(
+          context, proteinExcess, carbsExcess, fatsExcess),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade400),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.macroExcessWarning,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade800,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // ← AGREGAR CALORÍAS PRIMERO
+                  if (calExcess > 0)
+                    Text(
+                      '• ${l10n.calories}: +$calExcess kcal',
+                      style: TextStyle(
+                          color: Colors.orange.shade700, fontSize: 13),
+                    ),
+
+                  if (proteinExcess > 10)
+                    Text(
+                      '• ${l10n.protein}: +$proteinExcess g',
+                      style: TextStyle(
+                          color: Colors.orange.shade700, fontSize: 13),
+                    ),
+                  if (carbsExcess > 15)
+                    Text(
+                      '• ${l10n.carbohydrates}: +$carbsExcess g',
+                      style: TextStyle(
+                          color: Colors.orange.shade700, fontSize: 13),
+                    ),
+                  if (fatsExcess > 10)
+                    Text(
+                      '• ${l10n.fats}: +$fatsExcess g',
+                      style: TextStyle(
+                          color: Colors.orange.shade700, fontSize: 13),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.orange),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showExcessAdviceDialog(BuildContext context, int proteinExcess,
       int carbsExcess, int fatsExcess) {
-    List<RecommendationItem> recommendations =
-        _generateDynamicRecommendations(proteinExcess, carbsExcess, fatsExcess);
+    final l10n = AppLocalizations.of(context)!;
+    List<RecommendationItem> recommendations = _generateDynamicRecommendations(
+        l10n, proteinExcess, carbsExcess, fatsExcess);
 
     showDialog(
       context: context,
@@ -2343,7 +2980,7 @@ class _ProfessionalMiPlanDiarioScreenState
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Consejos Personalizados',
+                l10n.adviceTitle,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   color: FrutiaColors.primaryText,
@@ -2379,7 +3016,7 @@ class _ProfessionalMiPlanDiarioScreenState
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Basado en tus selecciones actuales:',
+                        l10n.adviceSubtitle,
                         style: GoogleFonts.lato(
                           fontWeight: FontWeight.w600,
                           color: Colors.blue.shade700,
@@ -2468,7 +3105,7 @@ class _ProfessionalMiPlanDiarioScreenState
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Tip: Puedes deseleccionar opciones tocándolas nuevamente.',
+                        l10n.adviceTip,
                         style: GoogleFonts.lato(
                           fontStyle: FontStyle.italic,
                           fontSize: 13,
@@ -2490,7 +3127,7 @@ class _ProfessionalMiPlanDiarioScreenState
               foregroundColor: Colors.black,
             ),
             child: Text(
-              'Entendido',
+              l10n.understoodButton,
               style: GoogleFonts.lato(fontWeight: FontWeight.w600),
             ),
           ),
@@ -2501,6 +3138,7 @@ class _ProfessionalMiPlanDiarioScreenState
 
   Widget _buildUserInfoHeader() {
     final plan = _mealPlanData!.nutritionPlan;
+    final l10n = AppLocalizations.of(context)!;
     if (plan.anthropometricSummary == null) return const SizedBox.shrink();
 
     final anthro = plan.anthropometricSummary!;
@@ -2543,7 +3181,7 @@ class _ProfessionalMiPlanDiarioScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Hola, ${anthro.clientName}! 👋",
+                      l10n.helloUser(anthro.clientName),
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -2551,7 +3189,7 @@ class _ProfessionalMiPlanDiarioScreenState
                       ),
                     ),
                     Text(
-                      "${anthro.age} años • BMI: ${anthro.bmi.toStringAsFixed(1)} • ${anthro.weightStatus}",
+                      "${anthro.age} ${l10n.years} • BMI: ${anthro.bmi.toStringAsFixed(1)} • ${anthro.weightStatus}",
                       style: GoogleFonts.lato(
                         fontSize: 14,
                         color: FrutiaColors.secondaryText,
@@ -2591,6 +3229,47 @@ class _ProfessionalMiPlanDiarioScreenState
 
     final plan = _mealPlanData!.nutritionPlan;
 
+    String translateMeal(String key, AppLocalizations l10n) {
+      final locale = Localizations.localeOf(context).languageCode;
+      final normalized = key.toLowerCase().trim();
+
+      if (locale == 'es') {
+        switch (normalized) {
+          case 'desayuno':
+            return l10n.breakfast ?? 'Desayuno';
+          case 'almuerzo':
+            return l10n.lunch ?? 'Almuerzo';
+          case 'cena':
+            return l10n.dinner ?? 'Cena';
+          case 'snack am':
+          case 'snack_am':
+            return l10n.snackAM ?? 'Snack AM';
+          case 'snack pm':
+          case 'snack_pm':
+            return l10n.snackPM ?? 'Snack PM';
+          default:
+            return key;
+        }
+      } else {
+        switch (normalized) {
+          case 'desayuno':
+            return 'Breakfast';
+          case 'almuerzo':
+            return 'Lunch';
+          case 'cena':
+            return 'Dinner';
+          case 'snack am':
+          case 'snack_am':
+            return 'Morning Snack';
+          case 'snack pm':
+          case 'snack_pm':
+            return 'Afternoon Snack';
+          default:
+            return key[0].toUpperCase() + key.substring(1).toLowerCase();
+        }
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -2616,6 +3295,7 @@ class _ProfessionalMiPlanDiarioScreenState
           const SizedBox(height: 16),
 
           ...plan.meals.entries.map((entry) {
+            final translatedTitle = translateMeal(entry.key, l10n);
             final mealTitle = entry.key;
             final meal = entry.value;
             final icon = _getIconForMeal(mealTitle);
@@ -2626,7 +3306,9 @@ class _ProfessionalMiPlanDiarioScreenState
               padding: const EdgeInsets.only(bottom: 16.0),
               child: // En _buildBody(), donde creas cada MealCard
                   _MealCard(
-                title: mealTitle,
+                title: translatedTitle,
+
+                originalTitle: entry.key, // No necesario si ya traducido
                 icon: icon,
                 categories: meal.components,
                 suggestedRecipes: meal.suggestedRecipes,
@@ -2642,7 +3324,8 @@ class _ProfessionalMiPlanDiarioScreenState
                 onRegister: () {
                   final selectionsForMeal =
                       _dailySelections[mealTitle]!.values.toList();
-                  _registerMeal(mealTitle, selectionsForMeal);
+                  _registerMeal(
+                      mealTitle, selectionsForMeal); // ⭐ Usa título original
                 },
               ).animate().fadeIn(duration: 500.ms, delay: delay),
             );
@@ -2652,20 +3335,28 @@ class _ProfessionalMiPlanDiarioScreenState
     );
   }
 
+  String getLocalizedMealTitle(String backendKey, AppLocalizations l10n) {
+    if (backendKey.isEmpty) return backendKey;
+
+    // Capitaliza la primera letra por estética
+    return backendKey[0].toUpperCase() + backendKey.substring(1).toLowerCase();
+  }
+
   IconData _getIconForMeal(String mealTitle) {
     switch (mealTitle.toLowerCase()) {
-      case 'almuerzo':
-        return Icons.restaurant_outlined;
-      case 'cena':
-        return Icons.dinner_dining_outlined;
-      case 'shake':
-        return Icons.blender_outlined;
+      case 'breakfast':
       case 'desayuno':
         return Icons.free_breakfast_outlined;
-      case 'snack am':
-        return Icons.wb_sunny_outlined; // Sol de mañana
-      case 'snack pm':
-        return Icons.wb_twilight_outlined; // Atardecer
+      case 'lunch':
+      case 'almuerzo':
+        return Icons.restaurant_outlined;
+      case 'dinner':
+      case 'cena':
+        return Icons.dinner_dining_outlined;
+      case 'snack_am':
+        return Icons.wb_sunny_outlined;
+      case 'snack_pm':
+        return Icons.wb_twilight_outlined;
       default:
         return Icons.lunch_dining_outlined;
     }
@@ -2858,28 +3549,125 @@ class _MacroStatCard extends StatelessWidget {
   }
 }
 
+String getLocalizedCategoryTitle(
+    String backendCategory, AppLocalizations l10n) {
+  // El backend envía "Proteínas", "Carbohidratos", etc.
+  // Usamos las claves de l10n para traducir según idioma
+  switch (backendCategory.trim()) {
+    case 'Proteínas':
+      return l10n.proteins;
+    case 'Carbohidratos':
+      return l10n.carbohydrates; // o l10n.carbs si prefieres abreviado
+    case 'Grasas':
+      return l10n.fats;
+    case 'Vegetales':
+      return l10n.vegetables;
+    default:
+      return backendCategory; // por si llega algo nuevo
+  }
+}
+
 class _MealCategorySection extends StatelessWidget {
   final MealCategory category;
   final MealOption? groupValue;
   final ValueChanged<MealOption> onChanged;
-  final VoidCallback? onDeselect; // AGREGAR
+  final VoidCallback? onDeselect;
 
   const _MealCategorySection({
     required this.category,
     required this.groupValue,
     required this.onChanged,
-    this.onDeselect, // AGREGAR
+    this.onDeselect,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    String translateMeal(String key, AppLocalizations l10n) {
+      final locale = Localizations.localeOf(context).languageCode;
+
+      // Normalizamos la clave (quitamos mayúsculas, espacios extra y posibles variaciones)
+      final normalized = key.toLowerCase().trim();
+
+      // Mapeo completo: clave del backend → traducción según idioma
+      if (locale == 'es') {
+        // En español devolvemos tal cual (o usamos l10n si prefieres)
+        switch (normalized) {
+          case 'desayuno':
+            return l10n.breakfast ?? 'Desayuno';
+          case 'almuerzo':
+            return l10n.lunch ?? 'Almuerzo';
+          case 'cena':
+            return l10n.dinner ?? 'Cena';
+          case 'snack am':
+          case 'snack_am':
+            return l10n.snackAM ?? 'Snack AM';
+          case 'snack pm':
+          case 'snack_pm':
+            return l10n.snackPM ?? 'Snack PM';
+          default:
+            return key; // Capitalizamos como fallback
+        }
+      } else {
+        // En inglés: traducimos explícitamente
+        switch (normalized) {
+          case 'desayuno':
+            return 'Breakfast';
+          case 'almuerzo':
+            return 'Lunch';
+          case 'cena':
+            return 'Dinner';
+          case 'snack am':
+          case 'snack_am':
+            return 'Morning Snack';
+          case 'snack pm':
+          case 'snack_pm':
+            return 'Afternoon Snack';
+          default:
+            // Capitalizamos y traducimos lo mejor posible
+
+            debugPrint(
+                'Traduciendo comida: "$key" (locale: $locale) → "$translateMeal(key, l10n)"');
+            return key[0].toUpperCase() + key.substring(1).toLowerCase();
+        }
+      }
+    }
+
+    String translateCategory(String backendCategory, AppLocalizations l10n) {
+      final locale = Localizations.localeOf(context).languageCode;
+
+      // En español: usamos exactamente lo que manda el backend
+      if (locale == 'es') {
+        return backendCategory.trim();
+      }
+
+      // En inglés: traducimos explícitamente
+      switch (backendCategory.trim()) {
+        case 'Proteínas':
+          return l10n.proteins ?? 'Proteins';
+        case 'Carbohidratos':
+          return l10n.carbohydrates ?? 'Carbohydrates';
+        case 'Grasas':
+          return l10n.fats ?? 'Fats';
+        case 'Vegetales':
+          return l10n.vegetables ?? 'Vegetables';
+        case 'Frutas':
+          return l10n.fruits ?? 'Fruits';
+        default:
+          return backendCategory.trim(); // fallback
+      }
+    }
+
+    final translatedTitle = translateCategory(category.title, l10n);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            category.title,
+            translatedTitle,
             style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
@@ -2890,7 +3678,7 @@ class _MealCategorySection extends StatelessWidget {
                 option: option,
                 isSelected: groupValue == option,
                 onTap: () => onChanged(option),
-                onDeselect: () => onDeselect?.call(), // AGREGAR ESTA LÍNEA
+                onDeselect: onDeselect,
               )),
         ],
       ),
@@ -2902,21 +3690,256 @@ class _MealOptionTile extends StatelessWidget {
   final MealOption option;
   final bool isSelected;
   final VoidCallback onTap;
-  final VoidCallback? onDeselect; // AGREGAR ESTA LÍNEA
-
-  final String? userBudget; // NUEVO
+  final VoidCallback? onDeselect;
+  final String? userBudget;
 
   const _MealOptionTile({
     required this.option,
     required this.isSelected,
     required this.onTap,
-    this.onDeselect, // AGREGAR ESTA LÍNEA
-
+    this.onDeselect,
     this.userBudget,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    String getLocalizedFoodName(String backendName, AppLocalizations l10n) {
+      final locale = Localizations.localeOf(context).languageCode;
+
+      // En español: devolvemos exactamente lo del backend
+      if (locale == 'es') {
+        return backendName.trim();
+      }
+
+      // En inglés: mapa explícito de español → inglés (más confiable que FoodTranslations si falla)
+      const Map<String, String> esToEn = {
+        // ─────────────────────────────────────────────────────────────
+        // Proteínas
+        // ─────────────────────────────────────────────────────────────
+        'Huevo entero': 'Whole egg',
+        'Huevos enteros': 'Whole eggs',
+        'Claras + Huevo Entero': 'Egg whites + Whole egg',
+        'Claras + Huevo entero': 'Egg whites + Whole egg',
+        'Claras pasteurizadas': 'Pasteurized egg whites',
+        'Pechuga de pollo': 'Chicken breast',
+        'Pollo muslo': 'Chicken thigh',
+        'Pollo muslo con piel': 'Chicken thigh with skin',
+        'Carne molida': 'Ground beef',
+        'Carne molida 80/20': 'Ground beef 80/20',
+        'Carne de res magra': 'Lean beef',
+        'Atún en lata': 'Canned tuna',
+        'Atún fresco': 'Fresh tuna',
+        'Salmón fresco': 'Fresh salmon',
+        'Pescado blanco': 'White fish',
+        'Pechuga de pavo': 'Turkey breast',
+        'Yogurt griego': 'Greek yogurt',
+        'Yogurt griego alto en proteínas': 'High-protein Greek yogurt',
+        'Proteína whey': 'Whey protein',
+        'Proteína en polvo': 'Protein powder',
+        'Caseína': 'Casein',
+        'Tofu firme': 'Firm tofu',
+        'Tempeh': 'Tempeh',
+        'Seitán': 'Seitan',
+        'Queso panela': 'Panela cheese',
+        'Ricotta': 'Ricotta',
+        'Hamburguesa de lentejas': 'Lentil burger',
+        'Claras de huevo': 'Egg whites',
+
+        // ─────────────────────────────────────────────────────────────
+        // Carbohidratos
+        // ─────────────────────────────────────────────────────────────
+        'Papa': 'Potato',
+        'Arroz blanco': 'White rice',
+        'Camote': 'Sweet potato',
+        'Fideo': 'Noodles',
+        'Frijoles': 'Beans',
+        'Quinua': 'Quinoa',
+        'Quinoa': 'Quinoa',
+        'Avena': 'Oats',
+        'Avena orgánica': 'Organic oats',
+        'Pan integral': 'Whole wheat bread',
+        'Pan integral artesanal': 'Artisan whole wheat bread',
+        'Tortilla de maíz': 'Corn tortilla',
+        'Tortillas de maíz': 'Corn tortillas',
+        'Galletas de arroz': 'Rice crackers',
+        'Crema de arroz': 'Cream of rice',
+        'Cereal de maíz': 'Corn cereal',
+        'Pasta integral': 'Whole wheat pasta',
+
+        // ─────────────────────────────────────────────────────────────
+        // Grasas
+        // ─────────────────────────────────────────────────────────────
+        'Aceite de oliva': 'Olive oil',
+        'Aceite de oliva extra virgen': 'Extra virgin olive oil',
+        'Aceite de oliva / extra virgen': 'Olive oil / Extra virgin',
+        'Aceite de palta': 'Avocado oil',
+        'Aceite vegetal': 'Vegetable oil',
+        'Maní': 'Peanuts',
+        'Mantequilla de maní': 'Peanut butter',
+        'Mantequilla de maní casera': 'Homemade peanut butter',
+        'Almendras': 'Almonds',
+        'Nueces': 'Walnuts',
+        'Pistachos': 'Pistachios',
+        'Pecanas': 'Pecans',
+        'Aguacate': 'Avocado',
+        'Palta': 'Avocado',
+        'Aguacate hass': 'Hass avocado',
+        'Has': 'Hass avocado',
+        'Semillas de chía orgánicas': 'Organic chia seeds',
+        'Linaza orgánica': 'Organic flaxseed',
+        'Semillas de ajonjolí': 'Sesame seeds',
+        'Aceitunas': 'Olives',
+        'Miel': 'Honey',
+        'Chocolate negro 70%': '70% Dark chocolate',
+        'Mantequilla': 'Butter',
+        'Manteca de cerdo': 'Lard',
+
+        // ─────────────────────────────────────────────────────────────
+        // Frutas
+        // ─────────────────────────────────────────────────────────────
+        'Plátano': 'Banana',
+        'Manzana': 'Apple',
+        'Naranja': 'Orange',
+        'Berries (mix orgánico)': 'Berries (organic mix)',
+        'Mango': 'Mango',
+        'Papaya': 'Papaya',
+        'Sandia': 'Watermelon',
+        'Sandía': 'Watermelon',
+        'Melón': 'Melon',
+        'Fresas': 'Strawberries',
+        'Arándanos': 'Blueberries',
+        'Moras': 'Blackberries',
+        'Pera': 'Pear',
+
+        // ─────────────────────────────────────────────────────────────
+        // Vegetales
+        // ─────────────────────────────────────────────────────────────
+        'Ensalada mixta': 'Mixed salad',
+        'Ensalada completa mixta': 'Complete mixed salad',
+        'Brócoli': 'Broccoli',
+        'Zanahoria': 'Carrot',
+        'Ejotes': 'Green beans',
+        'Espinaca': 'Spinach',
+        'Espinacas salteadas': 'Sautéed spinach',
+        'Lechuga': 'Lettuce',
+        'Pimiento': 'Bell pepper',
+        'Calabacín': 'Zucchini',
+        'Tomate': 'Tomato',
+        'Pepino': 'Cucumber',
+        'Coliflor': 'Cauliflower',
+        'Champiñones': 'Mushrooms',
+        'Bowl de vegetales al vapor': 'Steamed vegetables bowl',
+        'Ensalada mediterránea': 'Mediterranean salad',
+        'Vegetales salteados': 'Sautéed vegetables',
+        'Ensalada verde mixta grande': 'Large mixed green salad',
+        'Ensalada de vegetales crucíferos': 'Cruciferous vegetables salad',
+        'Mix de vegetales bajos en carbos': 'Low-carb vegetables mix',
+
+        // ─────────────────────────────────────────────────────────────
+        // Otros
+        // ─────────────────────────────────────────────────────────────
+        'Tortillas integrales': 'Whole wheat tortillas',
+      };
+
+      // Buscamos en el mapa
+      return esToEn[backendName.trim()] ?? backendName.trim();
+    }
+
+    String translatePortion(String portion, AppLocalizations l10n) {
+      final locale = Localizations.localeOf(context).languageCode;
+
+      // Debug
+      debugPrint('translatePortion - Original: "$portion" (locale: $locale)');
+
+      if (locale == 'es') {
+        debugPrint('translatePortion - Español: sin cambios → "$portion"');
+        return portion.trim();
+      }
+
+      // 1. Normalizamos todo a minúsculas para reemplazos confiables
+      String translated = portion.trim().toLowerCase();
+
+      debugPrint('translatePortion - Después de toLowerCase: "$translated"');
+
+      // 2. Reemplazos
+      translated = translated
+          // Pesos
+          .replaceAll('peso en crudo', 'raw weight')
+          .replaceAll('(peso en crudo)', '(raw weight)')
+          .replaceAll('peso cocido', 'cooked weight')
+          .replaceAll('(peso cocido)', '(cooked weight)')
+          .replaceAll('peso en seco', 'dry weight')
+          .replaceAll('(peso en seco)', '(dry weight)')
+          .replaceAll('peso seco', 'dry weight')
+          .replaceAll('(peso seco)', '(dry weight)')
+          .replaceAll('escurrido', 'drained')
+          .replaceAll('g', 'g')
+
+          // Unidades
+          .replaceAll('unidades', 'units')
+          .replaceAll('unidad', 'unit')
+          .replaceAll('rebanadas', 'slices')
+          .replaceAll('rebanada', 'slice')
+          // Huevos
+          .replaceAll('claras', 'egg whites')
+          .replaceAll('clara', 'egg white')
+          .replaceAll('huevos enteros', 'whole eggs')
+          .replaceAll('huevo entero', 'whole egg')
+          .replaceAll('huevos', 'eggs')
+          .replaceAll('huevo', 'egg')
+          .replaceAll(
+              'unidads', 'units') // ← Corrige "unidads" que aparece en el log
+          .replaceAll('uds', 'units')
+          .replaceAll('unid.', 'units')
+          .replaceAll('unid', 'units')
+          .replaceAll('cucharadas', 'tablespoons')
+          .replaceAll('cucharada', 'tablespoon')
+          .replaceAll('tazas grandes', 'large cups')
+          .replaceAll('tazas', 'cups')
+          .replaceAll('taza', 'cup');
+
+      debugPrint('translatePortion - Después de replaceAll: "$translated"');
+
+      // 3. Capitalización inteligente: solo capitalizamos palabras fuera de paréntesis
+      // Separamos el texto principal y lo que está entre paréntesis
+      final regExp = RegExp(r'^(.*?)(?:\s*\((.*?)\))?$');
+      final match = regExp.firstMatch(translated);
+
+      if (match != null) {
+        String mainPart = match.group(1)?.trim() ?? '';
+        String parenPart = match.group(2)?.trim() ?? '';
+
+        // Capitalizamos solo la parte principal (antes del paréntesis)
+        mainPart = mainPart.split(' ').map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        }).join(' ');
+
+        // Capitalizamos también la parte entre paréntesis
+        parenPart = parenPart.split(' ').map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        }).join(' ');
+
+        translated = parenPart.isEmpty ? mainPart : '$mainPart ($parenPart)';
+      } else {
+        // Si no hay paréntesis, capitalizamos todo
+        translated = translated.split(' ').map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        }).join(' ');
+      }
+
+      debugPrint(
+          'translatePortion - Final (capitalización inteligente): "$translated"');
+
+      return translated;
+    }
+
+    // ⭐ NUEVO: Traducir el nombre del alimento
+    final displayName = getLocalizedFoodName(option.name, l10n);
     bool budgetMismatch = false;
     if (userBudget != null) {
       bool isLowBudget = userBudget!.contains('bajo');
@@ -2929,7 +3952,7 @@ class _MealOptionTile extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (isSelected) {
-            // Deseleccionar - llamar con null
+            // Deseleccionar
             onDeselect?.call();
           } else {
             onTap();
@@ -2964,14 +3987,16 @@ class _MealOptionTile extends StatelessWidget {
                   children: [
                     Text.rich(
                       TextSpan(
-                        text: option.name,
+                        text:
+                            displayName, // ⭐ AQUÍ CAMBIA: usamos el nombre traducido
                         style: GoogleFonts.lato(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                             color: FrutiaColors.primaryText),
                         children: [
                           TextSpan(
-                            text: ' ${option.portion}',
+                            text:
+                                ' ${translatePortion(option.portion, l10n)}', // ← Aplica la traducción aquí
                             style: GoogleFonts.lato(
                               fontWeight: FontWeight.w400,
                               fontSize: 14,
@@ -2987,16 +4012,17 @@ class _MealOptionTile extends StatelessWidget {
                       runSpacing: 4,
                       children: [
                         _StatPill(
-                            label: '~${option.calories} kcal',
+                            label: '~${option.calories} ${l10n.kcal}',
                             color: Colors.orange.shade700),
                         _StatPill(
-                            label: '${option.protein}g Proteina',
+                            label:
+                                '${option.protein}g ${l10n.proteinLabelShort}',
                             color: Colors.blue.shade700),
                         _StatPill(
-                            label: '${option.carbs}g Carbohidrato',
+                            label: '${option.carbs}g ${l10n.carbsLabelShort}',
                             color: Colors.green.shade700),
                         _StatPill(
-                            label: '${option.fats}g Grasas',
+                            label: '${option.fats}g ${l10n.fatsLabelShort}',
                             color: Colors.purple.shade700),
                       ],
                     )
@@ -3082,6 +4108,8 @@ class _FreeSaladInfo extends StatelessWidget {
 
 class _MealCard extends StatelessWidget {
   final String title;
+  final String originalTitle; // ⭐ AGREGAR - para lógica interna
+
   final IconData icon;
   final List<MealCategory> categories;
   final List<InspirationRecipe> suggestedRecipes;
@@ -3097,6 +4125,8 @@ class _MealCard extends StatelessWidget {
 
   const _MealCard({
     required this.title,
+    required this.originalTitle, // ⭐ AGREGAR
+
     required this.icon,
     required this.categories,
     required this.suggestedRecipes,
@@ -3156,6 +4186,14 @@ class _MealCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: FrutiaColors.primaryText,
+                        ),
+                      ),
                       if (validationWarnings != null &&
                           validationWarnings!.isNotEmpty)
                         Container(
@@ -3176,7 +4214,7 @@ class _MealCard extends StatelessWidget {
                                       color: Colors.orange, size: 20),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Sugerencias',
+                                    l10n.suggestionsTitle,
                                     style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.orange.shade700,
@@ -3257,8 +4295,8 @@ class _MealCard extends StatelessWidget {
                   groupValue: selections[category.title],
                   onChanged: (option) =>
                       onOptionSelected(category.title, option),
-                  onDeselect: () => onDeselectionRequested?.call(
-                      title, category.title), // CORREGIR
+                  onDeselect: () => onDeselectionRequested?.call(originalTitle,
+                      category.title), // ⭐ CAMBIA 'title' POR 'originalTitle'
                 )),
             if (title != 'Shake') _FreeSaladInfo(),
             if (suggestedRecipes.isNotEmpty)

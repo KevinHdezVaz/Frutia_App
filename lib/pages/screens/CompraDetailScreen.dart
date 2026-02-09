@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
 import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/utils/colors.dart';
@@ -7,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // --- MODELOS DE DATOS PARA ESTA PANTALLA ---
-
 class Ingredient {
   final String item;
   final String quantity;
@@ -24,14 +24,12 @@ class Ingredient {
   factory Ingredient.fromMealOption(MealOption option) {
     String item = option.name;
     String quantity = '';
-
     final regex = RegExp(r'\((.*?)\)');
     final match = regex.firstMatch(option.name);
     if (match != null) {
       item = option.name.substring(0, match.start).trim();
       quantity = match.group(1) ?? '';
     }
-
     return Ingredient(
       item: item,
       quantity: option.portion,
@@ -40,9 +38,10 @@ class Ingredient {
     );
   }
 
-  factory Ingredient.fromExtended(Map<String, dynamic> extended) {
+  factory Ingredient.fromExtended(
+      Map<String, dynamic> extended, AppLocalizations l10n) {
     return Ingredient(
-      item: extended['name'] as String? ?? 'Ingrediente',
+      item: extended['name'] as String? ?? l10n.defaultIngredientName,
       quantity: extended['original'] as String? ?? '',
       prices: const [],
     );
@@ -81,16 +80,8 @@ class _ComprasScreenState extends State<ComprasScreen> {
   final PlanService _planService = PlanService();
   late SharedPreferences _prefs;
 
-  // --- CAMBIO 1: Añadir estado para el símbolo de la moneda ---
   String? _currencySymbol;
-
   final Map<String, bool> _isCategoryExpanded = {};
-  final Map<String, String> _categoryImages = {
-    'Desayuno': 'assets/images/desayun.webp',
-    'Almuerzo': 'assets/images/almuerzo.webp',
-    'Cena': 'assets/images/cena.webp',
-    'Snacks': 'assets/images/snack.webp',
-  };
 
   @override
   void initState() {
@@ -112,26 +103,29 @@ class _ComprasScreenState extends State<ComprasScreen> {
     try {
       final MealPlanData? planData = await _planService.getCurrentPlan();
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
 
       if (planData == null) {
-        throw Exception('No se encontró un plan de alimentación activo.');
+        throw Exception(l10n.noActivePlanError);
       }
 
-      // --- CAMBIO 2: Extraer y guardar el símbolo de la moneda ---
       final String? currency = planData.nutritionPlan.currencySymbol;
-
       final List<ShoppingIngredientItem> tempShoppingList = [];
 
-      planData.nutritionPlan.meals.forEach((mealType, meal) {
+      planData.nutritionPlan.meals.forEach((mealTypeKey, meal) {
+        // Traducir mealTypeKey para usar como categoría en la lista
+        final translatedMealType = getLocalizedMealTitle(mealTypeKey, l10n);
+
         for (var category in meal.components) {
           for (var option in category.options) {
             final ingredient = Ingredient.fromMealOption(option);
             if (!tempShoppingList.any((item) =>
-                item.item == ingredient.item && item.mealType == mealType)) {
+                item.item == ingredient.item &&
+                item.mealType == translatedMealType)) {
               tempShoppingList.add(
                 ShoppingIngredientItem(
                   ingredientData: ingredient,
-                  mealType: mealType,
+                  mealType: translatedMealType,
                 ),
               );
             }
@@ -140,14 +134,15 @@ class _ComprasScreenState extends State<ComprasScreen> {
 
         for (var recipe in meal.suggestedRecipes) {
           for (var extIngredient in recipe.extendedIngredients) {
-            final ingredient =
-                Ingredient.fromExtended(extIngredient as Map<String, dynamic>);
+            final ingredient = Ingredient.fromExtended(
+                extIngredient as Map<String, dynamic>, l10n);
             if (!tempShoppingList.any((item) =>
-                item.item == ingredient.item && item.mealType == mealType)) {
+                item.item == ingredient.item &&
+                item.mealType == translatedMealType)) {
               tempShoppingList.add(
                 ShoppingIngredientItem(
                   ingredientData: ingredient,
-                  mealType: mealType,
+                  mealType: translatedMealType,
                 ),
               );
             }
@@ -162,7 +157,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
 
       setState(() {
         _ingredients = tempShoppingList;
-        _currencySymbol = currency; // Guardar en el estado
+        _currencySymbol = currency;
         _isLoading = false;
       });
     } catch (e) {
@@ -187,44 +182,207 @@ class _ComprasScreenState extends State<ComprasScreen> {
     });
   }
 
-  void _showFullScreenImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.8),
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(10),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              InteractiveViewer(
-                panEnabled: true,
-                boundaryMargin: const EdgeInsets.all(20),
-                minScale: 0.5,
-                maxScale: 4,
-                child: Image.network(imageUrl, fit: BoxFit.contain),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.black.withOpacity(0.6),
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  String getLocalizedMealTitle(String backendKey, AppLocalizations l10n) {
+    final lower = backendKey.toLowerCase().trim();
+    switch (lower) {
+      case 'breakfast':
+        return l10n.breakfast;
+      case 'lunch':
+        return l10n.lunch;
+      case 'dinner':
+        return l10n.dinner;
+      case 'snack_am':
+      case 'morning snack':
+        return l10n.snackAM;
+      case 'snack_pm':
+      case 'afternoon snack':
+        return l10n.snackPM;
+      default:
+        return backendKey
+            .split(' ')
+            .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+            .join(' ');
+    }
+  }
+
+  // ⭐ NUEVA VERSIÓN: Insensible a mayúsculas y más variantes
+  String getLocalizedFoodName(String backendName, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    if (locale == 'es') {
+      return backendName.trim();
+    }
+
+    final String input = backendName.trim().toLowerCase();
+
+    // Mapa base en minúsculas para búsqueda robusta
+    const Map<String, String> esToEn = {
+      'huevo entero': 'Whole egg',
+      'huevos enteros': 'Whole eggs',
+      'claras + huevo entero': 'Egg whites + Whole egg',
+      'claras pasteurizadas': 'Pasteurized egg whites',
+      'pechuga de pollo': 'Chicken breast',
+      'pollo muslo': 'Chicken thigh',
+      'pollo muslo con piel': 'Chicken thigh with skin',
+      'carne molida': 'Ground beef',
+      'carne molida 80/20': 'Ground beef 80/20',
+      'carne de res magra': 'Lean beef',
+      'atún en lata': 'Canned tuna',
+      'atún fresco': 'Fresh tuna',
+      'salmón fresco': 'Fresh salmon',
+      'pescado blanco': 'White fish',
+      'pechuga de pavo': 'Turkey breast',
+      'yogurt griego': 'Greek yogurt',
+      'yogur griego': 'Greek yogurt',
+      'yogurt griego alto en proteínas': 'High-protein Greek yogurt',
+      'yogur griego alto en proteínas': 'High-protein Greek yogurt',
+      'proteína whey': 'Whey protein',
+      'proteína en polvo': 'Protein powder',
+      'caseína': 'Casein',
+      'tofu firme': 'Firm tofu',
+      'tempeh': 'Tempeh',
+      'seitán': 'Seitan',
+      'queso panela': 'Panela cheese',
+      'ricotta': 'Ricotta',
+      'hamburguesa de lentejas': 'Lentil burger',
+      'claras de huevo': 'Egg whites',
+      'papa': 'Potato',
+      'arroz blanco': 'White rice',
+      'camote': 'Sweet potato',
+      'fideo': 'Noodles',
+      'frijoles': 'Beans',
+      'quinua': 'Quinoa',
+      'quinoa': 'Quinoa',
+      'quinua/quinoa': 'Quinoa',
+      'avena': 'Oats',
+      'avena orgánica': 'Organic oats',
+      'avena / avena orgánica': 'Organic oats',
+      'pan integral': 'Whole wheat bread',
+      'pan integral artesanal': 'Artisan whole wheat bread',
+      'pan integral / pan integral artesanal': 'Whole wheat bread',
+      'tortilla de maíz': 'Corn tortilla',
+      'tortillas de maíz': 'Corn tortillas',
+      'galletas de arroz': 'Rice crackers',
+      'crema de arroz': 'Cream of rice',
+      'cereal de maíz': 'Corn cereal',
+      'pasta integral': 'Whole wheat pasta',
+      'aceite de oliva': 'Olive oil',
+      'aceite de oliva extra virgen': 'Extra virgin olive oil',
+      'aceite de oliva / extra virgen': 'Extra virgin olive oil',
+      'aceite de palta': 'Avocado oil',
+      'aceite vegetal': 'Vegetable oil',
+      'maní': 'Peanuts',
+      'mantequilla de maní': 'Peanut butter',
+      'mantequilla de maní casera': 'Homemade peanut butter',
+      'mantequilla de maní / casera': 'Peanut butter',
+      'almendras': 'Almonds',
+      'nueces': 'Walnuts',
+      'pistachos': 'Pistachios',
+      'pecanas': 'Pecans',
+      'aguacate': 'Avocado',
+      'palta': 'Avocado',
+      'aguacate / palta / hass': 'Hass Avocado',
+      'aguacate hass': 'Hass avocado',
+      'hass': 'Hass avocado',
+      'semillas de chía orgánicas': 'Organic chia seeds',
+      'linaza orgánica': 'Organic flaxseed',
+      'semillas de ajonjolí': 'Sesame seeds',
+      'aceitunas': 'Olives',
+      'miel': 'Honey',
+      'chocolate negro 70%': '70% Dark chocolate',
+      'mantequilla': 'Butter',
+      'manteca de cerdo': 'Lard',
+      'plátano': 'Banana',
+      'manzana': 'Apple',
+      'naranja': 'Orange',
+      'berries (mix orgánico)': 'Berries (organic mix)',
+      'mango': 'Mango',
+      'papaya': 'Papaya',
+      'sandia': 'Watermelon',
+      'sandía': 'Watermelon',
+      'melón': 'Melon',
+      'fresas': 'Strawberries',
+      'arándanos': 'Blueberries',
+      'moras': 'Blackberries',
+      'pera': 'Pear',
+      'ensalada mixta': 'Mixed salad',
+      'ensalada completa mixta': 'Complete mixed salad',
+      'brócoli': 'Broccoli',
+      'zanahoria': 'Carrot',
+      'ejotes': 'Green beans',
+      'espinaca': 'Spinach',
+      'espinacas salteadas': 'Sautéed spinach',
+      'lechuga': 'Lettuce',
+      'pimiento': 'Bell pepper',
+      'calabacín': 'Zucchini',
+      'tomate': 'Tomato',
+      'pepino': 'Cucumber',
+      'coliflor': 'Cauliflower',
+      'champiñones': 'Mushrooms',
+      'bowl de vegetales al vapor': 'Steamed vegetables bowl',
+      'ensalada mediterránea': 'Mediterranean salad',
+      'vegetales salteados': 'Sautéed vegetables',
+      'ensalada verde mixta grande': 'Large mixed green salad',
+      'ensalada de vegetales crucíferos': 'Cruciferous vegetables salad',
+      'mix de vegetales bajos en carbos': 'Low-carb vegetables mix',
+      'tortillas integrales': 'Whole wheat tortillas',
+    };
+
+    return esToEn[input] ?? backendName.trim();
+  }
+
+  String translatePortion(String portion, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+
+    if (locale == 'es') {
+      return portion.trim();
+    }
+
+    String translated = portion.trim();
+    final lower = translated.toLowerCase();
+
+    // Reemplazos de unidades y frases comunes
+    translated = translated
+        .replaceAll('peso en crudo', 'raw weight')
+        .replaceAll('(peso en crudo)', '(raw weight)')
+        .replaceAll('peso cocido', 'cooked weight')
+        .replaceAll('(peso cocido)', '(cooked weight)')
+        .replaceAll('escurrido', 'drained')
+        .replaceAll('peso seco', 'dry weight')
+        .replaceAll('(peso seco)', '(dry weight)')
+        .replaceAll('unidades', 'units')
+        .replaceAll('unidads', 'units')
+        .replaceAll('unidad', 'unit')
+        .replaceAll('uds', 'units')
+        .replaceAll('unid.', 'units')
+        .replaceAll('unid', 'units')
+        .replaceAll('cucharadas', 'tablespoons')
+        .replaceAll('cucharada', 'tablespoon')
+        .replaceAll('tazas grandes', 'large cups')
+        .replaceAll('tazas', 'cups')
+        .replaceAll('taza', 'cup');
+
+    return translated;
+  }
+
+  // ⭐ Imagen dinámica según categoría traducida
+  String _getCategoryImage(String translatedCategory) {
+    final lower = translatedCategory.toLowerCase();
+    if (lower.contains('desayuno') || lower.contains('breakfast')) {
+      return 'assets/images/desayun.webp';
+    }
+    if (lower.contains('almuerzo') || lower.contains('lunch')) {
+      return 'assets/images/almuerzo.webp';
+    }
+    if (lower.contains('cena') || lower.contains('dinner')) {
+      return 'assets/images/cena.webp';
+    }
+    return 'assets/images/snack.webp'; // Para snacks
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: FrutiaColors.primaryBackground,
       appBar: AppBar(
@@ -239,7 +397,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
           ),
         ),
         title: Text(
-          'Lista de compras',
+          l10n.shoppingListTitle,
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w500,
@@ -254,10 +412,11 @@ class _ComprasScreenState extends State<ComprasScreen> {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: FrutiaColors.accent),
-      );
+          child: CircularProgressIndicator(color: FrutiaColors.accent));
     }
 
     if (_error != null) {
@@ -271,7 +430,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   size: 48, color: Colors.redAccent),
               const SizedBox(height: 16),
               Text(
-                'Error al cargar ingredientes',
+                l10n.errorLoadingIngredients,
                 style: GoogleFonts.lato(
                     fontSize: 20,
                     color: Colors.redAccent,
@@ -287,7 +446,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadIngredientsFromPlan,
-                child: const Text('Reintentar'),
+                child: Text(l10n.retryButton),
               ),
             ],
           ),
@@ -303,13 +462,13 @@ class _ComprasScreenState extends State<ComprasScreen> {
             Icon(Icons.shopping_cart_outlined,
                 size: 60, color: FrutiaColors.secondaryText.withOpacity(0.5)),
             const SizedBox(height: 16),
-            Text('Tu lista de compras está vacía.',
+            Text(l10n.emptyShoppingList,
                 style: GoogleFonts.lato(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: FrutiaColors.secondaryText)),
             const SizedBox(height: 8),
-            Text('Genera un plan de alimentación para obtener tu lista.',
+            Text(l10n.generatePlanToSeeList,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
                     fontSize: 16,
@@ -337,7 +496,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
   Widget _buildCategorySection(
       String category, List<ShoppingIngredientItem> items) {
     final isExpanded = _isCategoryExpanded[category] ?? false;
-
     return Column(
       children: [
         _buildCategoryHeader(
@@ -357,7 +515,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
-              // --- CAMBIO 3: Pasar el símbolo de la moneda al widget ---
               return _buildIngredientCard(items[index], _currencySymbol);
             },
           ),
@@ -373,6 +530,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
     required int checkedCount,
     required VoidCallback onTap,
   }) {
+    final translatedCategory = _getLocalizedMealLabel(context, category);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: InkWell(
@@ -387,8 +545,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
           child: Stack(
             children: [
               Image.asset(
-                _categoryImages[category] ??
-                    'assets/images/fondoAppFrutia.webp', // Fallback image
+                _getCategoryImage(translatedCategory),
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -401,13 +558,13 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        category,
+                        translatedCategory,
                         style: GoogleFonts.lato(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          shadows: [
-                            const Shadow(
+                          shadows: const [
+                            Shadow(
                                 blurRadius: 4.0,
                                 color: Colors.black54,
                                 offset: Offset(2.0, 2.0))
@@ -432,8 +589,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                     ),
                     const SizedBox(width: 10),
                     Transform.rotate(
-                      angle:
-                          isExpanded ? 0 : -3.14159, // -180 grados en radianes
+                      angle: isExpanded ? 0 : -3.14159,
                       child: const Icon(Icons.expand_more,
                           color: Colors.white, size: 28),
                     ),
@@ -447,9 +603,12 @@ class _ComprasScreenState extends State<ComprasScreen> {
     );
   }
 
-  // --- CAMBIO 4: Actualizar la firma del método ---
   Widget _buildIngredientCard(
       ShoppingIngredientItem ingredient, String? currencySymbol) {
+    final l10n = AppLocalizations.of(context)!;
+    // ⭐ Traducir el nombre del ingrediente
+    final displayName = getLocalizedFoodName(ingredient.item, l10n);
+
     return GestureDetector(
       onTap: () => _toggleIngredientCheck(ingredient),
       child: Card(
@@ -471,7 +630,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${ingredient.item} ${ingredient.quantity.isNotEmpty ? '(${ingredient.quantity})' : ''}',
+                      '${displayName} ${ingredient.quantity.isNotEmpty ? '(${translatePortion(ingredient.quantity, l10n)})' : ''}',
                       style: GoogleFonts.lato(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
@@ -487,7 +646,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
                       const SizedBox(height: 8),
                       const Divider(),
                       const SizedBox(height: 8),
-                      // --- CAMBIO 5: Usar el símbolo de la moneda ---
                       ...ingredient.prices.map((price) => Text(
                             '${price.store}: ${price.price.toStringAsFixed(2)} ${currencySymbol ?? ''}',
                             style: GoogleFonts.lato(
@@ -512,5 +670,31 @@ class _ComprasScreenState extends State<ComprasScreen> {
         ),
       ),
     );
+  }
+
+  String _getLocalizedMealLabel(BuildContext context, String key) {
+    final l10n = AppLocalizations.of(context)!;
+    final lowerKey = key.toLowerCase();
+    if (lowerKey.contains('desayuno') || lowerKey.contains('breakfast')) {
+      return l10n.breakfast;
+    }
+    if (lowerKey.contains('almuerzo') ||
+        lowerKey.contains('lunch') ||
+        lowerKey.contains('comida')) {
+      return l10n.lunch;
+    }
+    if (lowerKey.contains('cena') || lowerKey.contains('dinner')) {
+      return l10n.dinner;
+    }
+    if (lowerKey.contains('snack')) {
+      if (lowerKey.contains('mañana') || lowerKey.contains('am')) {
+        return l10n.snackAM;
+      }
+      if (lowerKey.contains('tarde') || lowerKey.contains('pm')) {
+        return l10n.snackPM;
+      }
+      return l10n.snackAM; // fallback
+    }
+    return key;
   }
 }

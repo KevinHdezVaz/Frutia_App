@@ -709,18 +709,86 @@ class NutritionalProfileCard extends StatelessWidget {
 // 3. MENSAJE PERSONALIZADO CARD
 class PersonalizedMessageCard extends StatelessWidget {
   final MealPlanData? mealPlanData;
+  final String userName;
 
   const PersonalizedMessageCard({
     Key? key,
     required this.mealPlanData,
+    this.userName = '',
   }) : super(key: key);
+
+  // ⭐ TRADUCE LA CLAVE Y REEMPLAZA :name POR EL NOMBRE REAL
+  String getTranslatedPersonalizedMessage(String? key, AppLocalizations l10n) {
+    String message;
+    switch (key) {
+      case 'personalized_message_am':
+        message = l10n.personalizedMessageAM;
+        break;
+      case 'personalized_message_pm':
+        message = l10n.personalizedMessagePM;
+        break;
+      case 'personalized_message_default':
+      default:
+        message = l10n.personalizedMessageDefault;
+    }
+    return message.replaceAll(':name', userName);
+  }
+
+  // Lógica simple para determinar la clave basada en los datos del plan
+  String _deriveMessageKey() {
+    if (mealPlanData == null) return 'personalized_message_default';
+
+    // Buscar snacks en los horarios o comidas
+    bool hasAMSnack = false;
+    bool hasPMSnack = false;
+
+    // Opción 1: Verificar el horario de comidas si existe
+    if (mealPlanData!.nutritionPlan.mealSchedule != null) {
+      final schedule = mealPlanData!.nutritionPlan.mealSchedule!;
+      // Claves típicas que podrían indicar snacks (ajustar según backend real)
+      hasAMSnack = schedule.keys.any((k) =>
+          k.toLowerCase().contains('media mañana') ||
+          k.toLowerCase().contains('mid-morning'));
+      hasPMSnack = schedule.keys.any((k) =>
+          k.toLowerCase().contains('media tarde') ||
+          k.toLowerCase().contains('mid-afternoon') ||
+          k.toLowerCase().contains('merienda'));
+    }
+
+    // Opción 2: Verificar las comidas (Meal objects) si la opción 1 no funcionó o para complementar
+    if (!hasAMSnack && !hasPMSnack) {
+      final meals = mealPlanData!.nutritionPlan.meals;
+      // Iterar keys del mapa de comidas
+      for (var key in meals.keys) {
+        final lowerKey = key.toLowerCase();
+        if (lowerKey.contains('media mañana') || lowerKey.contains('am'))
+          hasAMSnack = true;
+        if (lowerKey.contains('media tarde') ||
+            lowerKey.contains('pm') ||
+            lowerKey.contains('merienda')) hasPMSnack = true;
+      }
+    }
+
+    if (hasPMSnack) return 'personalized_message_pm';
+    if (hasAMSnack) return 'personalized_message_am';
+
+    return 'personalized_message_default';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // ✅ Agregar esto
-    final message = mealPlanData?.nutritionPlan.personalizedMessage;
+    final l10n = AppLocalizations.of(context)!;
 
-    if (message == null || message.isEmpty) {
+    // Usar el mensaje del backend si existe Y no queremos forzar la traducción,
+    // PERO el usuario pidió explícitamente usar la traducción cliente.
+    // Así que ignoramos el mensaje del backend y generamos uno nuevo.
+    // O podríamos usar el del backend solo si está en el idioma correcto... pero eso es difícil de saber.
+    // Implementamos la lógica solicitada:
+
+    final messageKey = _deriveMessageKey();
+    final message = getTranslatedPersonalizedMessage(messageKey, l10n);
+
+    if (message.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -760,7 +828,7 @@ class PersonalizedMessageCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.personalMessage, // ✅ CAMBIO
+                  l10n.personalMessage,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

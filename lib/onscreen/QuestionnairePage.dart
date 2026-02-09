@@ -44,11 +44,29 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
           'height': _height,
           'weight': _weight,
           'age': _age,
-          'sex': l10n.male, // ⭐ CAMBIADO
+          'sex': 'masculino', // ⭐ CAMBIADO: valor interno por defecto
           'pais': _selectedCountry?.name ?? '',
         });
       }
     });
+  }
+
+  String _normalizeSex(String? sex) {
+    if (sex == null) return 'masculino';
+    final s = sex.toLowerCase().trim();
+    if (s.contains('male') ||
+        s.contains('masculino') ||
+        s.contains('hombre') ||
+        s == 'm') {
+      return 'masculino';
+    }
+    if (s.contains('female') ||
+        s.contains('femenino') ||
+        s.contains('mujer') ||
+        s == 'f') {
+      return 'femenino';
+    }
+    return 'masculino'; // default seguro
   }
 
   Future<void> _submitForm() async {
@@ -60,7 +78,7 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
         'height': _height.round().toString(),
         'weight': _weight.toStringAsFixed(1),
         'age': _age.round().toString(),
-        'sex': formData['sex'],
+        'sex': _normalizeSex(formData['sex']), // ← agrega esta función
         'pais': formData['pais'] ?? _selectedCountry?.name ?? '',
       };
 
@@ -642,42 +660,42 @@ class _PersonalDataPageState extends State<PersonalDataPage> {
   Widget _buildSexSelector() {
     return FormBuilderField<String>(
       name: 'sex',
-      initialValue: l10n.male, // ⭐ CAMBIADO
+      initialValue: 'masculino', // ⭐ CAMBIADO: masculino por defecto
       validator: FormBuilderValidators.compose([
-        FormBuilderValidators.required(
-            errorText: l10n.selectOptionRequired), // ⭐ CAMBIADO
+        FormBuilderValidators.required(errorText: l10n.selectOptionRequired),
       ]),
       builder: (FormFieldState<String> field) {
         return Column(
           children: [
             const SizedBox(height: 10),
             Text(
-              l10n.iIdentifyAs, // ⭐ CAMBIADO
-              style: GoogleFonts.lato(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              l10n.iIdentifyAs,
+              style:
+                  GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: GenderCard(
-                    title: l10n.male, // ⭐ CAMBIADO
+                    title:
+                        l10n.male, // muestra "Male" o "Masculino" según idioma
                     icon: Icons.male,
-                    value: l10n.male, // ⭐ CAMBIADO
+                    value: 'masculino', // ← VALOR INTERNO SIEMPRE en español
                     selectedValue: field.value,
-                    onTap: (value) => field.didChange(value),
+                    onTap: (value) =>
+                        field.didChange('masculino'), // ← fuerza español
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: GenderCard(
-                    title: l10n.female, // ⭐ CAMBIADO
+                    title: l10n.female,
                     icon: Icons.female,
-                    value: l10n.female, // ⭐ CAMBIADO
+                    value: 'femenino', // ← VALOR INTERNO SIEMPRE en español
                     selectedValue: field.value,
-                    onTap: (value) => field.didChange(value),
+                    onTap: (value) =>
+                        field.didChange('femenino'), // ← fuerza español
                   ),
                 ),
               ],
