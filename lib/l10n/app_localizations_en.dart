@@ -1738,11 +1738,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'OBJECTIVE: Learn to measure your plan and avoid excesses. Variety helps you not get saturated.';
 
   @override
-  String get pdfFrutiaChatTitle => 'FRUTIA CHAT: Your AI Nutritionist';
+  String get pdfFrutiaChatTitle => 'FRUTIA CHAT: Your new personal coach';
 
   @override
   String get pdfFrutiaChatDesc =>
-      'Have doubts? FRUTIA Chat is your AI personal nutritionist.';
+      'Have doubts? FRUTIA Chat is your new personal coach.';
 
   @override
   String get pdfAskAbout => 'Ask about:';
@@ -2422,4 +2422,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get planReadyGoalReach =>
       'Your plan is ready for you to reach your goals!';
+
+  @override
+  String exceededBy(String amount) => 'You exceeded by $amount';
 }

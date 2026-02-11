@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/utils/TranslationHelper.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -162,23 +163,24 @@ class _MealLogCard extends StatelessWidget {
 
   // ⭐ AGREGAR ESTE MÉTODO
   String _translateMealType(String mealType, AppLocalizations l10n) {
-    switch (mealType.toLowerCase()) {
+    final normalized = mealType.toLowerCase().trim();
+    // Mapa de claves de backend a getters de l10n
+    switch (normalized) {
       case 'desayuno':
-        return l10n.mealBreakfast;
+        return l10n.breakfast;
       case 'almuerzo':
-        return l10n.mealLunch;
+        return l10n.lunch;
       case 'cena':
-        return l10n.mealDinner;
+        return l10n.dinner;
       case 'snack am':
-        return l10n.mealSnackAm;
+      case 'snack_am':
+        return l10n.snackAM;
       case 'snack pm':
-        return l10n.mealSnackPm;
-      case 'snack de frutas':
-        return l10n.mealSnackFruit;
-      case 'shake':
-        return l10n.mealShake;
+      case 'snack_pm':
+        return l10n.snackPM;
+      // Casos específicos si existen en l10n, sino fallback a capitalizado
       default:
-        return mealType;
+        return mealType[0].toUpperCase() + mealType.substring(1).toLowerCase();
     }
   }
 
@@ -220,7 +222,8 @@ class _MealLogCard extends StatelessWidget {
             ...log.selections
                 .map((option) => Padding(
                       padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                      child: Text("• ${option.name}"),
+                      child: Text(
+                          "• ${TranslationHelper.getLocalizedFoodName(context, option.name, l10n)}"),
                     ))
                 .toList(),
           ],

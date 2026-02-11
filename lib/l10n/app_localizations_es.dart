@@ -1578,11 +1578,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'OBJETIVO: Que aprendas a medir tu plan y evitar excesos. La variedad de alimentos te ayudará a no saturarte.';
 
   @override
-  String get pdfFrutiaChatTitle => 'FRUTIA CHAT: Tu Nutricionista IA';
+  String get pdfFrutiaChatTitle => 'FRUTIA CHAT: Tu nuevo coach personal';
 
   @override
   String get pdfFrutiaChatDesc =>
-      '¿Tienes dudas sobre tu plan? FRUTIA Chat es tu inteligencia artificial que simula ser tu nutricionista personal.';
+      '¿Tienes dudas sobre tu plan? FRUTIA Chat es tu nuevo coach personal que simula ser tu nutricionista personal.';
 
   @override
   String get pdfAskAbout => 'Pregúntale sobre:';
@@ -2262,6 +2262,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get anthropometricGuidanceTitle => 'Guía Antropométrica';
+
+  @override
+  String exceededBy(String amount) => 'Te pasaste por $amount';
 
   @override
   String get difficultySupportTitle => 'Apoyo para Dificultades';

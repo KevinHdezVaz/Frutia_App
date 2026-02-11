@@ -798,6 +798,7 @@ abstract class AppLocalizations {
   String get selectLanguage;
   String get personalizedTipsTitle;
   String get anthropometricGuidanceTitle;
+  String exceededBy(String amount);
   String get difficultySupportTitle;
   String get eatingOutGuidanceTitle;
   String get motivationTitle;

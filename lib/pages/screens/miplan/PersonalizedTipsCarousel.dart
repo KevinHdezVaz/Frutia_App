@@ -11,11 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:Frutia/pages/screens/miplan/plan_data.dart';
-import 'package:Frutia/utils/colors.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:Frutia/utils/TranslationHelper.dart';
 
 class PersonalizedTipsCarousel extends StatefulWidget {
   final MealPlanData? mealPlanData;
@@ -579,17 +575,13 @@ class NutritionalProfileCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Text(
-                    "🎯",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          nutritionalSummary.goal,
+                          TranslationHelper.getLocalizedGoal(
+                              context, nutritionalSummary.goal, l10n),
                           style: GoogleFonts.lato(
                             fontSize: 13, // ✅ Reducido de 14 a 13
                             fontWeight: FontWeight.bold,

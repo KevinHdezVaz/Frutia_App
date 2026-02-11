@@ -10,6 +10,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:video_player/video_player.dart';
+import 'package:Frutia/utils/TranslationHelper.dart';
 
 class DynamicTheme {
   final String imagePath;
@@ -68,7 +69,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
       if (profile != null) {
         setState(() {
           _currentStreak = profile['racha_actual'] ?? 0;
-          _userGoal = profile['goal'] ?? l10n.notDefined; // ⭐ CAMBIADO
+          _userGoal = profile['goal'] != null
+              ? TranslationHelper.getLocalizedGoal(
+                  context, profile['goal'], l10n)
+              : l10n.notDefined;
 
           if (profile['ultima_fecha_racha'] != null) {
             _lastStreakUpdateDate =

@@ -8,6 +8,7 @@ import 'package:Frutia/services/RecommendationItem.dart';
 import 'package:Frutia/services/profile_service.dart';
 import 'package:Frutia/services/plan_service.dart';
 import 'package:Frutia/utils/colors.dart';
+import 'package:Frutia/utils/TranslationHelper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -184,24 +185,33 @@ class _ProfessionalMiPlanDiarioScreenState
     int carbsExcess = projectedCarbs - targetCarbs;
     int fatsExcess = projectedFats - targetFats;
 
-    // 3. VALIDAR Y AGREGAR WARNINGS CON CÁLCULO DE AJUSTE
+    final l10n = AppLocalizations.of(context)!;
     if (caloriesExcess > 0) {
+      final localizedName =
+          TranslationHelper.getLocalizedFoodName(context, option.name, l10n);
       warnings.add(
-          '🔴CALORIAS|${caloriesExcess}|${option.name}|${option.calories}|${caloriesExcess}|0|0|0');
+          '🔴${l10n.calories}|${caloriesExcess}|${localizedName}|${option.calories}|${caloriesExcess}|0|0|0');
     }
 
     if (proteinExcess > 10) {
+      final localizedName =
+          TranslationHelper.getLocalizedFoodName(context, option.name, l10n);
       warnings.add(
-          '🔴PROTEINA|${proteinExcess}|${option.name}|0|${proteinExcess}|0|0');
+          '🔴${l10n.protein}|${proteinExcess}|${localizedName}|0|${proteinExcess}|0|0');
     }
 
     if (carbsExcess > 15) {
+      final localizedName =
+          TranslationHelper.getLocalizedFoodName(context, option.name, l10n);
       warnings.add(
-          '🔴CARBOHIDRATOS|${carbsExcess}|${option.name}|0|0|${carbsExcess}|0');
+          '🔴${l10n.carbohydrates}|${carbsExcess}|${localizedName}|0|0|${carbsExcess}|0');
     }
 
     if (fatsExcess > 10) {
-      warnings.add('🔴GRASAS|${fatsExcess}|${option.name}|0|0|0|${fatsExcess}');
+      final localizedName =
+          TranslationHelper.getLocalizedFoodName(context, option.name, l10n);
+      warnings.add(
+          '🔴${l10n.fats}|${fatsExcess}|${localizedName}|0|0|0|${fatsExcess}');
     }
 
     // 4. Validar presupuesto
@@ -421,7 +431,7 @@ class _ProfessionalMiPlanDiarioScreenState
                                       color: Colors.red, fontSize: 16)),
                               Expanded(
                                 child: Text(
-                                  '🔴 CALORÍAS: Te pasaste por **$totalCaloriesExcess kcal**',
+                                  '🔴 ${AppLocalizations.of(context)!.calories.toUpperCase()}: ${AppLocalizations.of(context)!.exceededBy("**$totalCaloriesExcess kcal**")}',
                                   style: GoogleFonts.lato(
                                     fontSize: 14,
                                     color: Colors.red.shade700,
@@ -438,7 +448,7 @@ class _ProfessionalMiPlanDiarioScreenState
                         final parts = w.split('|');
                         final macro = parts[0].replaceAll('🔴', '').trim();
                         final excess = parts[1];
-                        if (macro == 'CALORIAS')
+                        if (macro == l10n.calories || macro == 'CALORIAS')
                           return const SizedBox
                               .shrink(); // ya lo mostramos arriba
                         return Padding(
@@ -869,6 +879,47 @@ class _ProfessionalMiPlanDiarioScreenState
     );
   }
 
+  String _getTranslatedMealTitle(String key, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final normalized = key.toLowerCase().trim();
+
+    if (locale == 'es') {
+      switch (normalized) {
+        case 'desayuno':
+          return l10n.breakfast;
+        case 'almuerzo':
+          return l10n.lunch;
+        case 'cena':
+          return l10n.dinner;
+        case 'snack am':
+        case 'snack_am':
+          return l10n.snackAM;
+        case 'snack pm':
+        case 'snack_pm':
+          return l10n.snackPM;
+        default:
+          return key;
+      }
+    } else {
+      switch (normalized) {
+        case 'desayuno':
+          return 'Breakfast';
+        case 'almuerzo':
+          return 'Lunch';
+        case 'cena':
+          return 'Dinner';
+        case 'snack am':
+        case 'snack_am':
+          return 'Morning Snack';
+        case 'snack pm':
+        case 'snack_pm':
+          return 'Afternoon Snack';
+        default:
+          return key;
+      }
+    }
+  }
+
   Future<void> _registerMeal(
       String mealTitle, List<MealOption> selections) async {
     final l10n = AppLocalizations.of(context)!;
@@ -927,7 +978,8 @@ class _ProfessionalMiPlanDiarioScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.mealRegisteredSuccess(mealTitle)),
+          content: Text(l10n
+              .mealRegisteredSuccess(_getTranslatedMealTitle(mealTitle, l10n))),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 4),
         ),
