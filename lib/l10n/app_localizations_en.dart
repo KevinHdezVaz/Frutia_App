@@ -2425,4 +2425,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String exceededBy(String amount) => 'You exceeded by $amount';
+
+  // PlanCarousel
+  @override
+  String get planCarouselPersonalizedRecipes => 'Personalized Recipes';
+
+  @override
+  String get planCarouselActivateSubscription =>
+      'Activate your subscription to access recipes for your profile';
+
+  @override
+  String get planCarouselUpgradePlan => 'Upgrade Plan';
+
+  @override
+  String get planCarouselErrorLoading => 'Error loading';
 }

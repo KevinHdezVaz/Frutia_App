@@ -1,3 +1,4 @@
+import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:Frutia/pages/Pantalla2.dart';
 import 'package:Frutia/pages/screens/miplan/PremiumScreen.dart';
 import 'package:Frutia/pages/screens/miplan/plan_data.dart';
@@ -12,23 +13,23 @@ class PlanCarousel extends StatelessWidget {
   const PlanCarousel({Key? key, required this.recipes}) : super(key: key);
 
   @override
-Widget build(BuildContext context) {
-  if (recipes.isEmpty) {
-    return _buildTrialEmptyState(context);
-  }
+  Widget build(BuildContext context) {
+    if (recipes.isEmpty) {
+      return _buildTrialEmptyState(context);
+    }
 
-  return SizedBox(
-    height: 220,
-    child: PageView.builder(
-      controller: PageController(viewportFraction: 0.85),
-      itemCount: recipes.length,
-      itemBuilder: (context, index) {
-        final recipe = recipes[index];
-        return _PlanCarouselCard(recipe: recipe, index: index);
-      },
-    ),
-  );
-}
+    return SizedBox(
+      height: 220,
+      child: PageView.builder(
+        controller: PageController(viewportFraction: 0.85),
+        itemCount: recipes.length,
+        itemBuilder: (context, index) {
+          final recipe = recipes[index];
+          return _PlanCarouselCard(recipe: recipe, index: index);
+        },
+      ),
+    );
+  }
 }
 
 Widget _buildTrialEmptyState(BuildContext context) {
@@ -53,7 +54,8 @@ Widget _buildTrialEmptyState(BuildContext context) {
         ),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: SingleChildScrollView( // 👈 SOLUCIÓN
+          child: SingleChildScrollView(
+            // 👈 SOLUCIÓN
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -64,7 +66,7 @@ Widget _buildTrialEmptyState(BuildContext context) {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Recetas Personalizadas',
+                  AppLocalizations.of(context)!.planCarouselPersonalizedRecipes,
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -74,7 +76,8 @@ Widget _buildTrialEmptyState(BuildContext context) {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Activa tu suscripción para acceder a recetas para tu perfil',
+                  AppLocalizations.of(context)!
+                      .planCarouselActivateSubscription,
                   style: GoogleFonts.lato(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 14,
@@ -86,20 +89,22 @@ Widget _buildTrialEmptyState(BuildContext context) {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const PremiumScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const PremiumScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: FrutiaColors.accent,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                     elevation: 2,
                   ),
                   child: Text(
-                    'Actualizar Plan',
+                    AppLocalizations.of(context)!.planCarouselUpgradePlan,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -114,8 +119,6 @@ Widget _buildTrialEmptyState(BuildContext context) {
     ),
   );
 }
-
-
 
 class _PlanCarouselCard extends StatelessWidget {
   final InspirationRecipe recipe;
@@ -292,7 +295,9 @@ class _GeneratingImagePlaceholder extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
                 Text(
-                  isError ? 'Error al cargar' : 'Cargando imagen...',
+                  isError
+                      ? AppLocalizations.of(context)!.planCarouselErrorLoading
+                      : AppLocalizations.of(context)!.loadingImage,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     color: Colors.white,

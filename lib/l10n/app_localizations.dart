@@ -867,6 +867,12 @@ abstract class AppLocalizations {
   String get personalizedMessageDefault;
 
   String get planReadyGoalReach;
+
+  // PlanCarousel
+  String get planCarouselPersonalizedRecipes;
+  String get planCarouselActivateSubscription;
+  String get planCarouselUpgradePlan;
+  String get planCarouselErrorLoading;
 }
 
 class _AppLocalizationsDelegate

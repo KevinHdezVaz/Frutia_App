@@ -809,7 +809,10 @@ class _ProfessionalMiPlanDiarioScreenState
                   child: Text(
                     AppLocalizations.of(context)!
                         .askFrutiaChatExample
-                        .replaceFirst('[X]', option.name),
+                        .replaceFirst(
+                            '[X]',
+                            TranslationHelper.getLocalizedFoodName(context,
+                                option.name, AppLocalizations.of(context)!)),
                     style: GoogleFonts.lato(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -831,6 +834,10 @@ class _ProfessionalMiPlanDiarioScreenState
     if (!mounted) return '';
     final l10n = AppLocalizations.of(context)!;
 
+    // Traducir el nombre del alimento
+    final localizedName =
+        TranslationHelper.getLocalizedFoodName(context, option.name, l10n);
+
     // Calcular variables acumuladas
     int consumedCalories = _totalCalories;
     final plan = _mealPlanData!.nutritionPlan;
@@ -839,19 +846,19 @@ class _ProfessionalMiPlanDiarioScreenState
         _completedMeals.length; // Suponiendo 3 comidas principales
 
     if (consumedCalories == 0) {
-      return l10n.adviceExceedMacrosNoMeals(option.name);
+      return l10n.adviceExceedMacrosNoMeals(localizedName);
     }
 
     if (remainingCalories < option.calories) {
       return l10n.adviceExceedMacrosConsumed(
-          consumedCalories, option.name, option.calories, remainingCalories);
+          consumedCalories, localizedName, option.calories, remainingCalories);
     }
 
     if (mealsLeft <= 0) {
-      return l10n.adviceExceedMacrosAllMeals(option.name);
+      return l10n.adviceExceedMacrosAllMeals(localizedName);
     }
 
-    return l10n.adviceExceedMacrosRemaining(consumedCalories, option.name,
+    return l10n.adviceExceedMacrosRemaining(consumedCalories, localizedName,
         option.calories, remainingCalories - option.calories, mealsLeft);
   }
 
@@ -1414,6 +1421,7 @@ class _ProfessionalMiPlanDiarioScreenState
       'Pescado blanco': 'White fish',
       'Pechuga de pavo': 'Turkey breast',
       'Yogurt griego': 'Greek yogurt',
+      'Yogurt griego alto en proteína': 'High-protein Greek yogurt',
       'Yogurt griego alto en proteínas': 'High-protein Greek yogurt',
       'Proteína whey': 'Whey protein',
       'Proteína en polvo': 'Protein powder',
@@ -3787,7 +3795,9 @@ class _MealOptionTile extends StatelessWidget {
         'Pescado blanco': 'White fish',
         'Pechuga de pavo': 'Turkey breast',
         'Yogurt griego': 'Greek yogurt',
+        'Yogurt griego alto en proteína': 'High-protein Greek yogurt',
         'Yogurt griego alto en proteínas': 'High-protein Greek yogurt',
+
         'Proteína whey': 'Whey protein',
         'Proteína en polvo': 'Protein powder',
         'Caseína': 'Casein',

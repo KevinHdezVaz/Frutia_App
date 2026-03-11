@@ -2443,4 +2443,18 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get planReadyGoalReach =>
       '¡Tu plan está listo para que alcances tus metas!';
+
+  // PlanCarousel
+  @override
+  String get planCarouselPersonalizedRecipes => 'Recetas Personalizadas';
+
+  @override
+  String get planCarouselActivateSubscription =>
+      'Activa tu suscripción para acceder a recetas para tu perfil';
+
+  @override
+  String get planCarouselUpgradePlan => 'Actualizar Plan';
+
+  @override
+  String get planCarouselErrorLoading => 'Error al cargar';
 }

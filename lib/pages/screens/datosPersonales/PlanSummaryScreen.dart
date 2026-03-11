@@ -477,7 +477,7 @@ class _PlanSummaryScreenState extends State<PlanSummaryScreen> {
       'Pescado blanco': 'White fish',
       'Pechuga de pavo': 'Turkey breast',
       'Yogurt griego': 'Greek yogurt',
-      'Yogurt griego alto en proteínas': 'High-protein Greek yogurt',
+      'Yogurt griego alto en proteína': 'High-protein Greek yogurt',
       'Proteína whey': 'Whey protein',
       'Proteína en polvo': 'Protein powder',
       'Caseína': 'Casein',

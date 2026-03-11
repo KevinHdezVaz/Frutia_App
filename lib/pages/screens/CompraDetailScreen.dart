@@ -234,7 +234,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
       'pechuga de pavo': 'Turkey breast',
       'yogurt griego': 'Greek yogurt',
       'yogur griego': 'Greek yogurt',
-      'yogurt griego alto en proteínas': 'High-protein Greek yogurt',
+      'yogurt griego alto en proteína': 'High-protein Greek yogurt',
       'yogur griego alto en proteínas': 'High-protein Greek yogurt',
       'proteína whey': 'Whey protein',
       'proteína en polvo': 'Protein powder',

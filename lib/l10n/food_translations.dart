@@ -43,7 +43,7 @@ class FoodTranslations {
     'natural_yogurt': {'en': 'Natural Yogurt', 'es': 'Yogurt natural'},
     'high_protein_greek_yogurt': {
       'en': 'High Protein Greek Yogurt',
-      'es': 'Yogurt griego alto en proteínas'
+      'es': 'Yogurt griego alto en proteína'
     },
 
     'fresh_cheese': {'en': 'Fresh Cheese', 'es': 'Queso fresco'},
