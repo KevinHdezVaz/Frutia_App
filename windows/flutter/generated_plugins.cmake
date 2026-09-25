@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
+  clipboard
   file_selector_windows
   firebase_auth
   firebase_core
@@ -11,7 +12,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   permission_handler_windows
   printing
   share_plus
-  smart_auth
   speech_to_text_windows
   url_launcher_windows
 )

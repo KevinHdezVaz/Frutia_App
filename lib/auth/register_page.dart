@@ -3,7 +3,6 @@ import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/auth/login_page.dart';
@@ -31,10 +30,6 @@ class _RegisterPageState extends State<RegisterPage>
   final _phoneController = TextEditingController();
   final _ageController = TextEditingController();
   final _authService = AuthService();
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId:
-        '237230625824-uhg81q3ro2at559t31bnorjqrlooe3lr.apps.googleusercontent.com',
-  );
   final _affiliateCodeController = TextEditingController();
 
   late AnimationController _controller;

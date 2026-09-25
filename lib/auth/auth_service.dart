@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:Frutia/services/storage_service.dart';
 import 'package:Frutia/utils/LocaleHelper.dart';
 import 'package:Frutia/utils/constantes.dart';
@@ -23,16 +22,6 @@ class AuthService {
 
   final storage = StorageService();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    // Configuración para iOS:
-    clientId: Platform.isIOS
-        ? '730095641142-qj58r88ha7vnjlro9b5gsmb8upo9idcu.apps.googleusercontent.com' // De GoogleService-Info.plist
-        : null,
-    serverClientId:
-        '730095641142-2sc256o1n605r12hshom8sop83l5p4sk.apps.googleusercontent.com', // De google-services.json (client_type 3)
-  );
-// En AuthService.dart
 
   Future<Map<String, dynamic>> register({
     required String name,
@@ -87,14 +76,12 @@ class AuthService {
   Future<bool> signInWithGoogle() async {
     try {
       debugPrint('Iniciando login con Google...');
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return false;
+      final GoogleSignInAccount googleUser =
+          await GoogleSignIn.instance.authenticate();
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
@@ -108,7 +95,7 @@ class AuthService {
 
       final success = await sendTokenToBackend(firebaseToken, 'google');
       if (success) {
-        await _sendOneSignalPlayerIdToBackend(); // <--- Llamada aquí
+        await _sendOneSignalPlayerIdToBackend();
       }
       return success;
     } on AuthException catch (e) {
@@ -116,6 +103,8 @@ class AuthService {
       rethrow;
     } catch (e) {
       debugPrint('Error inesperado en Google Sign-In: $e');
+      if (e.toString().contains('sign_in_canceled') ||
+          e.toString().contains('canceled')) return false;
       throw AuthException('Error inesperado al iniciar sesión con Google');
     }
   }
@@ -205,10 +194,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      // También es buena práctica desautenticar de Google si se usó
-      if (await _googleSignIn.isSignedIn()) {
-        await _googleSignIn.signOut();
-      }
+      await GoogleSignIn.instance.signOut();
 
       // Y de Firebase
       await _firebaseAuth.signOut();

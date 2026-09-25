@@ -1,7 +1,6 @@
 import 'package:Frutia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:Frutia/auth/auth_check.dart';
 import 'package:Frutia/auth/auth_service.dart';
 import 'package:Frutia/auth/forget_pass_page.dart';
@@ -22,10 +21,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId:
-        '237230625824-uhg81q3ro2at559t31bnorjqrlooe3lr.apps.googleusercontent.com',
-  );
   final _authService = AuthService();
 
   late AnimationController _controller;
